@@ -1,0 +1,657 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1016</width>
+    <height>647</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_5">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QLabel" name="feedbackLabel">
+           <property name="text">
+            <string>Feedback</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="PVComboBox" name="feedbackComboBox"/>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <widget class="QLabel" name="shutterLlabel">
+           <property name="text">
+            <string>Shutter</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="PVComboBox" name="shutterComboBox"/>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <widget class="QLabel" name="monBLabel">
+           <property name="text">
+            <string>MonB</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="PVText" name="monBCountsLabel">
+           <property name="text">
+            <string>0</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_7">
+         <item>
+          <widget class="QLabel" name="monPLabel">
+           <property name="text">
+            <string>MonP</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="PVText" name="monPCountsLabel">
+           <property name="text">
+            <string>0</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <item>
+          <widget class="QLabel" name="monDLabel">
+           <property name="text">
+            <string>MonD</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="PVText" name="monDCountsLabel">
+           <property name="text">
+            <string>0</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_6">
+         <item>
+          <widget class="QLabel" name="pdLabel">
+           <property name="text">
+            <string>Photodiode</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="PVText" name="pdCountsLabel">
+           <property name="text">
+            <string>0</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="energyLabel">
+         <property name="text">
+          <string>Monochromator Energy (keV)</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="lambdaLabel">
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lambda (Å)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="braggLabel">
+         <property name="text">
+          <string>Bragg (deg.)</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="PVText" name="energyRDBKLabel">
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="PVText" name="lambdaRDBKLabel">
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="PVText" name="braggRDBKLabel">
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="PVText" name="monoStatusLabel">
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="PVLineEdit" name="energyLineEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="PVLineEdit" name="lambdaLineEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2">
+        <widget class="PVLineEdit" name="braggLineEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="3">
+        <widget class="PVComboBox" name="monoModeComboBox"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="1">
+        <widget class="QLabel" name="gapLabel">
+         <property name="text">
+          <string>Gap (mm)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="PVText" name="undulatorGapLabel">
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="PVText" name="undulatorEnergyLabel">
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="PVLineEdit" name="undulatorGapLineEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" rowspan="2">
+        <widget class="QLabel" name="harmonicLabel">
+         <property name="text">
+          <string>Undulator Energy (keV)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="energylabel">
+         <property name="text">
+          <string>Harmonic</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="PVText" name="undulatorStatusLabel">
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3" rowspan="2">
+        <widget class="QPushButton" name="undulatorStartPushButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Start</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="2">
+        <widget class="PVLineEdit" name="undulatorHarmonicLineEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="3">
+        <widget class="QPushButton" name="undulatorStopPushButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Stop</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="PVLineEdit" name="undulatorEnergyLineEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="Line" name="line_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QLabel" name="xtalDACLabel">
+         <property name="text">
+          <string>2nd Xtal</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="PVLineEdit" name="xtalDACLineEdit"/>
+       </item>
+       <item>
+        <widget class="QLabel" name="xtalDetectorLabel">
+         <property name="text">
+          <string>Detector</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="xtalDetectorComboBox">
+         <item>
+          <property name="text">
+           <string>MonD</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>PD</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>MonB</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>MonP</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="xtalMinLabel">
+         <property name="text">
+          <string>Relative min</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="xtalMinLineEdit">
+         <property name="text">
+          <string>-0.3</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="xtalMaxLabel">
+         <property name="text">
+          <string>Relative max</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="xtalMaxLineEdit">
+         <property name="text">
+          <string>0.3</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="xtalStepsLabel">
+         <property name="text">
+          <string>Steps</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="xtalStepsLineEdit">
+         <property name="text">
+          <string>61</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="xtalScanPushButton">
+         <property name="text">
+          <string>Scan</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="trackXtalCheckBox">
+         <property name="text">
+          <string>Track Xtal</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QLabel" name="mirrorLabel">
+         <property name="text">
+          <string>2nd Mirror</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="PVLineEdit" name="mirrorDACLineEdit"/>
+       </item>
+       <item>
+        <widget class="QLabel" name="mirrorDetectorLabel">
+         <property name="text">
+          <string>Detector</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="mirrorDetectorComboBox">
+         <item>
+          <property name="text">
+           <string>PD</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>MonD</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>MonP</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>MonB</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="mirrorMinLabel">
+         <property name="text">
+          <string>Relative min</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="mirrorMinLineEdit">
+         <property name="text">
+          <string>-0.2</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="mirrorMaxLabel">
+         <property name="text">
+          <string>Relative max</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="mirrorMaxLineEdit">
+         <property name="text">
+          <string>0.2</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="mirrorStepsLabel">
+         <property name="text">
+          <string>Steps</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="mirrorStepsLineEdit">
+         <property name="text">
+          <string>41</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="mirrorScanPushButton">
+         <property name="text">
+          <string>Scan</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="trackMirrorCheckBox">
+         <property name="text">
+          <string>Track Mirror</string>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="Line" name="line_4">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTabWidget" name="tabWidget">
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="PlotWidget" name="xtalPlotTab">
+        <attribute name="title">
+         <string>Tab 1</string>
+        </attribute>
+       </widget>
+       <widget class="PlotWidget" name="mirrorPlotTab">
+        <attribute name="title">
+         <string>Tab 2</string>
+        </attribute>
+       </widget>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <item>
+        <widget class="QLabel" name="udulatorOffsetLabel">
+         <property name="text">
+          <string>Udulator Offset (kev)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="undulatorOffsetLineEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="getUndulatorOffsetPushButton">
+         <property name="text">
+          <string>Get Undulator Offset</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="startTrackingPushButton">
+         <property name="text">
+          <string>Start Tracking</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="stopTrackingPushButton">
+         <property name="text">
+          <string>Stop Tracking</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PVLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>pyepics_Qt</header>
+  </customwidget>
+  <customwidget>
+   <class>PVText</class>
+   <extends>QLabel</extends>
+   <header>pyepics_Qt</header>
+  </customwidget>
+  <customwidget>
+   <class>PVComboBox</class>
+   <extends>QComboBox</extends>
+   <header>pyepics_Qt</header>
+  </customwidget>
+  <customwidget>
+   <class>PlotWidget</class>
+   <extends>QWidget</extends>
+   <header>PlotWidget</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

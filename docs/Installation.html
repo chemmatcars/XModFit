@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Installation &#8212; XModFit 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Brief Tutorial" href="Brief_Tutorial.html" />
+    <link rel="prev" title="Introduction" href="Introduction.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="installation">
+<span id="id1"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>Follow the following instructions for installation:</p>
+<ol class="arabic">
+<li><p>Install Anaconda python (Python 3.8 and higher) for your operating system from <a class="reference external" href="https://www.anaconda.com/products/individual">Anaconda website</a></p></li>
+<li><p>Open a terminal (Anaconda prompt for Win 10) and create a virtual environment by running this commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="n">xmodfit</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.8</span>
+</pre></div>
+</div>
+</li>
+<li><p>Once the virtual environment is installed, activate the environment by running this in the same terminal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">xmodfit</span>
+</pre></div>
+</div>
+</li>
+<li><p>In the terminal run the following to install all the dependency packages:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">PyQt5</span> <span class="n">pyqtgraph</span> <span class="n">sqlalchemy</span> <span class="n">scipy</span> <span class="n">six</span> <span class="n">matplotlib</span> <span class="n">pandas</span> <span class="n">lmfit</span> <span class="n">pylint</span> <span class="n">periodictable</span> <span class="n">corner</span> <span class="n">emcee</span> <span class="n">tabulate</span> <span class="n">python</span><span class="o">-</span><span class="n">docx</span> <span class="n">numba</span> <span class="n">numba</span><span class="o">-</span><span class="n">scipy</span> <span class="n">statsmodels</span> <span class="n">sympy</span>
+</pre></div>
+</div>
+</li>
+<li><p>The installation can be done in two different ways:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li><p>Easier and preferred way is through <a class="reference external" href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">GIT</a>. If git is not already installed in your computer you can install it</p></li>
+</ol>
+</div></blockquote>
+</li>
+</ol>
+<p>through Anaconda by running this command in the terminal (Anaconda prompt for Win 10):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">conda</span> <span class="n">install</span> <span class="n">git</span>
+
+<span class="n">After</span> <span class="n">GIT</span> <span class="n">installation</span> <span class="n">go</span> <span class="n">to</span> <span class="n">the</span> <span class="n">folder</span> <span class="p">(</span><span class="k">for</span> <span class="n">example</span><span class="p">:</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">mrinal</span><span class="o">/</span><span class="n">Download</span><span class="p">)</span> <span class="n">you</span> <span class="n">wish</span> <span class="n">to</span> <span class="n">download</span> <span class="n">XModFit</span> <span class="n">run</span> <span class="n">the</span> <span class="n">following</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">terminal</span><span class="p">::</span>
+
+    <span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">nayanbera</span><span class="o">/</span><span class="n">XModFit</span>
+
+
+   <span class="n">The</span> <span class="n">method</span> <span class="n">will</span> <span class="n">create</span> <span class="o">**</span><span class="n">XModFit</span><span class="o">**</span> <span class="n">folder</span> <span class="k">with</span> <span class="nb">all</span> <span class="n">updated</span> <span class="n">packages</span> <span class="ow">in</span> <span class="n">installation</span> <span class="n">folder</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">e</span><span class="o">.</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">mrinal</span><span class="o">/</span><span class="n">Download</span><span class="p">)</span><span class="o">.</span> <span class="n">The</span> <span class="n">advantage</span> <span class="n">of</span> <span class="n">this</span> <span class="n">method</span> <span class="ow">is</span> <span class="n">that</span> <span class="n">it</span> <span class="ow">is</span> <span class="n">easy</span> <span class="n">to</span> <span class="n">upgrade</span> <span class="n">the</span> <span class="n">package</span> <span class="n">later</span> <span class="n">on</span><span class="o">.</span> <span class="n">In</span> <span class="n">order</span> <span class="n">to</span> <span class="n">upgrade</span><span class="p">,</span> <span class="n">go</span> <span class="n">to</span> <span class="n">the</span> <span class="n">folder</span> <span class="n">named</span> <span class="o">**</span><span class="n">XModFit</span><span class="o">**</span> <span class="ow">and</span> <span class="n">run</span> <span class="n">the</span> <span class="n">following</span> <span class="n">command</span><span class="p">::</span>
+
+        <span class="n">git</span> <span class="n">pull</span>
+
+<span class="n">b</span><span class="p">)</span> <span class="n">Universal</span> <span class="n">way</span> <span class="n">which</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">need</span> <span class="n">GIT</span> <span class="n">installation</span><span class="p">:</span>
+        <span class="n">i</span><span class="p">)</span> <span class="n">Open</span> <span class="n">a</span> <span class="n">web</span> <span class="n">browser</span> <span class="ow">and</span> <span class="n">go</span> <span class="n">to</span> <span class="n">the</span> <span class="n">webpage</span> <span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">nayanbera</span><span class="o">/</span><span class="n">XModFit</span>
+        <span class="n">ii</span><span class="p">)</span> <span class="n">Click</span> <span class="n">the</span> <span class="n">green</span> <span class="n">button</span> <span class="n">named</span> <span class="s2">&quot;Clone or download&quot;</span>
+        <span class="n">iii</span><span class="p">)</span> <span class="n">Download</span> <span class="n">the</span> <span class="nb">zip</span> <span class="n">file</span>
+        <span class="n">iv</span><span class="p">)</span> <span class="n">Extract</span> <span class="n">the</span> <span class="nb">zip</span> <span class="n">file</span> <span class="n">into</span> <span class="n">a</span> <span class="n">folder</span>
+        <span class="n">v</span><span class="p">)</span> <span class="n">In</span> <span class="n">the</span> <span class="n">Anaconda</span> <span class="n">terminal</span> <span class="n">go</span> <span class="n">the</span> <span class="n">the</span> <span class="n">extracted</span> <span class="n">folder</span><span class="p">::</span>
+
+                <span class="n">cd</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">mrinal</span><span class="o">/</span><span class="n">Download</span><span class="o">/</span><span class="n">XModFit</span><span class="o">-</span><span class="n">master</span>
+</pre></div>
+</div>
+<ol class="arabic" start="6">
+<li><p>Run the command to run <strong>XModFit</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">xmodfit</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</li>
+<li><p>Once the installation is completed and for running the software at any later time you need to open a terminal (Anaconda prompt for Win 10) and activate to the ‘xmodfit’ virtual environment first before running the software:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">xmodfit</span>
+<span class="n">python</span> <span class="n">xmodfit</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">XModFit</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Brief_Tutorial.html">Brief Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Acknowledgement.html">Acknowledgements</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="Introduction.html" title="previous chapter">Introduction</a></li>
+      <li>Next: <a href="Brief_Tutorial.html" title="next chapter">Brief Tutorial</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Mrinal Bera, Wei Bu.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/Installation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

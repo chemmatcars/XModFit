@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brief Tutorial &#8212; XModFit 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Acknowledgements" href="Acknowledgement.html" />
+    <link rel="prev" title="Installation" href="Installation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="brief-tutorial">
+<span id="id1"></span><h1>Brief Tutorial<a class="headerlink" href="#brief-tutorial" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial is focused on showing a beginner how to use the <strong>XModFit</strong> to:</p>
+<ol class="arabic simple">
+<li><p>Simulate an already available function</p></li>
+<li><p>Data Importing and Fitting</p></li>
+<li><p>Write your own model/function using the <span class="xref std std-ref">Function_Editor</span></p></li>
+</ol>
+<div class="section" id="simulate-an-already-available-function">
+<h2>Simulate an already available function<a class="headerlink" href="#simulate-an-already-available-function" title="Permalink to this headline">¶</a></h2>
+<p>The available functions can be simulated by following these steps:</p>
+<ol class="arabic simple">
+<li><p>Go to a <strong>Function</strong> tab</p></li>
+<li><p>Select a categories among the <strong>Function Categories</strong> which will populate the <strong>Functions</strong> lists with functions/models available for that category.</p></li>
+<li><p>Click on one of the functions which will create a plot the simulated curve in the <strong>Data and Fit</strong> tab and also it will populates the parameter tables in <strong>Parameters</strong> tab with the parameter values required for the functions.</p></li>
+<li><p>The values of <strong>X-axis</strong> of the simulated curve can be changed by changing the <strong>x</strong> parameter located at the to of the <strong>Parameters</strong> tab.</p></li>
+<li><p>All the parameters can be changed and on change of each of the parameters the function/model will be re-calculated and the plot will be updated.</p></li>
+</ol>
+</div>
+<div class="section" id="data-importing-and-fitting">
+<h2>Data Importing and Fitting<a class="headerlink" href="#data-importing-and-fitting" title="Permalink to this headline">¶</a></h2>
+<p>The main objective of <strong>XModFit</strong> is to provide a user to fit a model/function to a data. Please follow these to perform a data fitting using <span class="xref std std-ref">XAnoS_Fit</span>:</p>
+<ol class="arabic simple">
+<li><p>Click the <strong>Data</strong> tab.</p></li>
+<li><p>Import data file(s) by clicking the <strong>Add Files</strong> button which will prompt for selecting the data files.</p></li>
+<li><p>Once imported the data files with their path will be listed in the <strong>Data files</strong> list below the <strong>Add Files</strong> button</p></li>
+<li><p>Select the data file in the list which you would like to fit.</p></li>
+<li><p>Go to <strong>Functions</strong> tab and select the necessary Category from the <strong>Function Category</strong> list and then select the necessary function from the <strong>Functions</strong> list.</p></li>
+<li><p>Now you will have both data and simulated curve/function plotted as symbols and lines, respectively.</p></li>
+<li><p>At this point play with the parameters value in the <strong>Parameters</strong> tab to make the simulated curve/function close to the data.</p></li>
+<li><p>Once the simulated curve looks very close to the data you can select the parameters available in the <strong>Single fitting parameters</strong> and <strong>Multiple fitting parameters</strong> as fitting parameters by checking out the checkbox (☑) available in box carrying the parameter values.</p></li>
+<li><p>Constraints on the <strong>Single fitting parameters</strong> can be implemented by adding values to the cell corresponding to <strong>Min/Max</strong> columns which are kept by default as <strong>-inf/inf</strong>, respectively, for no limits.</p></li>
+<li><p>Constraints on the <strong>Multiple fitting parameters</strong> can be implemented by <strong>double-clicking</strong> the cell displaying the value of parameter of interest. This will open a dialog to chose for the <strong>Min/Max</strong> values for the parameters which are also kept as <strong>-inf/inf</strong>, respectively, for no constraints.</p></li>
+<li><p>Go back to the <strong>Data</strong> tab and provide the <strong>X-range</strong> of the data in this format <strong>Xmin:Xmax</strong> to perform the fit. By default, the values of <strong>Xmin:Xmax</strong> is taken from the <strong>Xmin</strong> and <strong>Xmax</strong> of the data.</p></li>
+<li><p>Select the <strong>Fit Scale</strong>  between the <strong>Linear|Log</strong> option. By default the <strong>Linear</strong> option is selected. <strong>Fit Scale</strong> determines how the <strong>Chi-Square</strong> (<span class="math notranslate nohighlight">\(\chi^2\)</span>) will be calculated i.e.:</p>
+<ul class="simple">
+<li><p>For <strong>Fit Scale=Log</strong>: <span class="math notranslate nohighlight">\(\chi^2\)</span> is calculated using <span class="math notranslate nohighlight">\(\log{(DataY)}-\log{(SimulatedY)}\)</span></p></li>
+<li><p>For <strong>Fit Scale=Linear</strong>: <span class="math notranslate nohighlight">\(\chi^2\)</span> is calculated using <span class="math notranslate nohighlight">\(DataY-SimulatedY\)</span></p></li>
+</ul>
+</li>
+<li><p>Click the <strong>Fit</strong> button to start fitting the data which will open up a <a class="reference internal" href="#fit-progress"><span class="std std-ref">Fit Progress Dialog</span></a> dialog showing the number of iterations and the <span class="math notranslate nohighlight">\(\chi^2\)</span> corresponding to the current iterations. The plot of the simulated data will also be updated with the parameters, corresponding to the iteration, as the fit progresses.</p></li>
+<li><p>The iterations will continue until either the minimum <span class="math notranslate nohighlight">\(\chi^2\)</span> is obtained or <strong>maximum number of iterations (default=1000)</strong>  are reached.</p></li>
+<li><p>Once the fitting concluded a <a class="reference internal" href="#fit-results"><span class="std std-ref">Fit Results Dialog</span></a> dialog will appear showing all the necessary details about the fitting.</p></li>
+<li><p>At this point the user has freedom to either <strong>Accept/Reject</strong> the fitting results.</p>
+<ul class="simple">
+<li><p><strong>Accepting</strong> will update all the fitting parameters with the <span class="math notranslate nohighlight">\(\chi^2\)</span>-minimized parameters</p></li>
+<li><p><strong>Rejecting</strong> will keep the parameters unaltered with the values before starting the fit.</p></li>
+</ul>
+</li>
+</ol>
+<div class="figure align-default" id="id2" style="width: 30%">
+<span id="fit-progress"></span><img alt="_images/Fit_Progress.png" src="_images/Fit_Progress.png" />
+<p class="caption"><span class="caption-text">Fit Progress Dialog</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+<div class="figure align-default" id="id3" style="width: 70%">
+<span id="fit-results"></span><img alt="_images/Fit_Results.png" src="_images/Fit_Results.png" />
+<p class="caption"><span class="caption-text">Fit Results Dialog</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">XModFit</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Brief Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#simulate-an-already-available-function">Simulate an already available function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-importing-and-fitting">Data Importing and Fitting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Acknowledgement.html">Acknowledgements</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="Installation.html" title="previous chapter">Installation</a></li>
+      <li>Next: <a href="Acknowledgement.html" title="next chapter">Acknowledgements</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Mrinal Bera, Wei Bu.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/Brief_Tutorial.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

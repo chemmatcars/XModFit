@@ -1,0 +1,52 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module ff_cylinder ! in 
+    interface  ! in :ff_cylinder
+        subroutine ff_cylinder(q,r,l,ff,m) ! in :ff_cylinder:ff_cylinder.f90
+            double precision dimension(m + 1), intent(in) :: q
+            double precision, intent(in) :: r
+            double precision, intent(in) :: l
+            double precision dimension(m + 1),depend(m), intent(out) :: ff
+            integer, optional,check((len(q)-1)>=m),depend(q) :: m=(len(q)-1)
+        end subroutine ff_cylinder
+        subroutine ff_cylinder_dist(q,r,rdist,l,ldist,ff,m,n) ! in :ff_cylinder:ff_cylinder.f90
+            double precision dimension(m + 1), intent(in) :: q
+            double precision dimension(n + 1), intent(in) :: r
+            double precision dimension(n + 1),depend(n), intent(in) :: rdist
+            double precision dimension(n + 1),depend(n), intent(in) :: l
+            double precision dimension(n + 1),depend(n), intent(in) :: ldist
+            double precision dimension(m + 1),depend(m), intent(out) :: ff
+            integer, optional,check((len(q)-1)>=m),depend(q) :: m=(len(q)-1)
+            integer, optional,check((len(r)-1)>=n),depend(r) :: n=(len(r)-1)
+        end subroutine ff_cylinder_dist
+        subroutine ff_cylinder_ml(q,rho,r,l,ff,ffamp,m,nl) ! in :ff_cylinder:ff_cylinder.f90
+            double precision dimension(m + 1), intent(in) :: q
+            double complex dimension(nl + 1), intent(in) :: rho
+            double precision dimension(nl + 1),depend(nl), intent(in) :: r
+            double precision, intent(in) :: l
+            double precision dimension(m + 1),depend(m), intent(out) :: ff
+            double complex dimension(m + 1),depend(m), intent(out) :: ffamp
+            integer, optional,check((len(q)-1)>=m),depend(q) :: m=(len(q)-1)
+            integer, optional,check((len(rho)-1)>=nl),depend(rho) :: nl=(len(rho)-1)
+        end subroutine ff_cylinder_ml
+        subroutine ff_cylinder_ml_asaxs(q,h,r,rho,eirho,adensity,nalf,fft,ffs,ffc,ffr,m,nlayers) ! in :ff_cylinder:ff_cylinder.f90
+            double precision dimension(m), intent(in) :: q
+            double precision, intent(in) :: h
+            double precision dimension(nlayers), intent(in) :: r
+            double complex dimension(nlayers),depend(nlayers), intent(in) :: rho
+            double precision dimension(nlayers),depend(nlayers), intent(in) :: eirho
+            double precision dimension(nlayers),depend(nlayers), intent(in) :: adensity
+            integer, intent(in) :: nalf
+            double precision dimension(m),depend(m), intent(out) :: fft
+            double precision dimension(m),depend(m), intent(out) :: ffs
+            double precision dimension(m),depend(m), intent(out) :: ffc
+            double precision dimension(m),depend(m), intent(out) :: ffr
+            integer, optional,check(len(q)>=m),depend(q) :: m=len(q)
+            integer, optional,check(len(r)>=nlayers),depend(r) :: nlayers=len(r)
+        end subroutine ff_cylinder_ml_asaxs
+    end interface 
+end python module ff_cylinder
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/
