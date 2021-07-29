@@ -25,12 +25,12 @@ through Anaconda by running this command in the terminal (Anaconda prompt for Wi
 
         conda install git
 
-    After GIT installation go to the folder (for example: /home/mrinal/Download) you wish to download XModFit run the following in the terminal::
+After GIT installation go to the folder (for example: /home/mrinal/Download) you wish to download XModFit run the following in the terminal::
 
         git clone https://github.com/nayanbera/XModFit
 
 
-       The method will create **XModFit** folder with all updated packages in installation folder (i.e. /home/mrinal/Download). The advantage of this method is that it is easy to upgrade the package later on. In order to upgrade, go to the folder named **XModFit** and run the following command::
+The method will create **XModFit** folder with all updated packages in installation folder (i.e. /home/mrinal/Download). The advantage of this method is that it is easy to upgrade the package later on. In order to upgrade, go to the folder named **XModFit** and run the following command::
 
             git pull
 
