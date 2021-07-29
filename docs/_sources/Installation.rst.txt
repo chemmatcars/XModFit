@@ -20,8 +20,7 @@ Follow the following instructions for installation:
 
 5) The installation can be done in two different ways:
 
-a) Easier and preferred way is through `GIT <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_. If git is not already installed in your computer you can install it
-through Anaconda by running this command in the terminal (Anaconda prompt for Win 10)::
+a. **Easier and preferred way** is through `GIT <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_. If git is not already installed in your computer you can install it through Anaconda by running this command in the terminal (Anaconda prompt for Win 10)::
 
         conda install git
 
@@ -29,12 +28,11 @@ After GIT installation go to the folder (for example: /home/mrinal/Download) you
 
         git clone https://github.com/chemmatcars/XModFit
 
-
 The method will create **XModFit** folder with all updated packages in installation folder (i.e. /home/mrinal/Download). The advantage of this method is that it is easy to upgrade the package later on. In order to upgrade, go to the folder named **XModFit** and run the following command::
 
             git pull
 
-b) Universal way which does not need GIT installation:
+b. **Universal way** which does not need GIT installation:
 	    i) Open a web browser and go to the webpage : https://github.com/chemmatcars/XModFit
 	    ii) Click the green button named "Clone or download"
 	    iii) Download the zip file
