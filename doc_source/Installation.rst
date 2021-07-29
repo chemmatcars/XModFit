@@ -27,7 +27,7 @@ through Anaconda by running this command in the terminal (Anaconda prompt for Wi
 
 After GIT installation go to the folder (for example: /home/mrinal/Download) you wish to download XModFit run the following in the terminal::
 
-        git clone https://github.com/nayanbera/XModFit
+        git clone https://github.com/chemmatcars/XModFit
 
 
 The method will create **XModFit** folder with all updated packages in installation folder (i.e. /home/mrinal/Download). The advantage of this method is that it is easy to upgrade the package later on. In order to upgrade, go to the folder named **XModFit** and run the following command::
@@ -35,7 +35,7 @@ The method will create **XModFit** folder with all updated packages in installat
             git pull
 
     b) Universal way which does not need GIT installation:
-	    i) Open a web browser and go to the webpage : https://github.com/nayanbera/XModFit
+	    i) Open a web browser and go to the webpage : https://github.com/chemmatcars/XModFit
 	    ii) Click the green button named "Clone or download"
 	    iii) Download the zip file
    	    iv) Extract the zip file into a folder
