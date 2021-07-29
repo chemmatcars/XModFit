@@ -1000,6 +1000,7 @@ class XModFit(QWidget):
         self.calcErrPushButtons={}
         self.errProgressBars={}
         self.plotErrPushButtons={}
+        self.stopCalc=False
         for fpar in self.fit.result.params.keys():
             if self.fit.fit_params[fpar].vary:
                 row = fitTableWidget.rowCount()
@@ -1026,6 +1027,7 @@ class XModFit(QWidget):
                 self.plotErrPushButtons[fpar].clicked.connect(partial(self.plotErrPushButtonClicked,row,fpar))
         fitTableWidget.resizeColumnsToContents()
         self.confIntervalWidget.plotAllPushButton.clicked.connect(self.plotAllErrPushButtonClicked)
+        self.confIntervalWidget.stopPushButton.clicked.connect(self.stopErrCalc)
         self.confIntervalWidget.calcAllPushButton.clicked.connect(self.calcAllErr)
         self.confIntervalWidget.saveAllPushButton.clicked.connect(self.saveAllErr)
         self.confIntervalWidget.confIntervalSpinBox.valueChanged.connect(self.setTargetChiSqr)
@@ -1036,6 +1038,9 @@ class XModFit(QWidget):
         self.right_limit={}
         self.min_value={}
         self.calcAll=False
+
+    def stopErrCalc(self):
+        self.stopCalc=True
 
     def setTargetChiSqr(self):
         self.confInterval = self.confIntervalWidget.confIntervalSpinBox.value()
@@ -1048,9 +1053,13 @@ class XModFit(QWidget):
 
     def calcAllErr(self):
         self.calcAll=True
+        self.stopCalc=False
         for row in range(self.confIntervalWidget.fitParamTableWidget.rowCount()):
-            fpar=self.confIntervalWidget.fitParamTableWidget.cellWidget(row,0).text()
-            self.calcErrPushButtonClicked(row,fpar)
+            if not self.stopCalc:
+                fpar=self.confIntervalWidget.fitParamTableWidget.cellWidget(row,0).text()
+                self.calcErrPushButtonClicked(row,fpar)
+            else:
+                return
         self.plotAllErrPushButtonClicked()
         self.errInfoTable = []
         for key in self.chidata.keys():
@@ -1102,6 +1111,7 @@ class XModFit(QWidget):
 
 
     def calcErrPushButtonClicked(self,row,fpar):
+        self.stopCalc=False
         for key in self.minimafitparameters:
             self.fit.fit_params[key].value = self.minimafitparameters[key].value
 
@@ -1128,6 +1138,10 @@ class XModFit(QWidget):
             pvalues=np.linspace(value+(vmax-value)*2/Nval, vmax, int(Nval/2))
             i=1
             for parvalue in pvalues:
+                if self.stopCalc:
+                    for key in self.minimafitparameters:
+                        self.fit.fit_params[key].value = self.minimafitparameters[key].value
+                    return
                 for key in self.minimafitparameters: # Putting back the minima parameters
                     self.fit.fit_params[key].value = self.minimafitparameters[key].value
                 self.fit.fit_params[fpar].value=parvalue
@@ -1147,6 +1161,10 @@ class XModFit(QWidget):
             #Fitting the left hand of the minima starting from the minima point
             pvalues=np.linspace(value-step, vmin, int(Nval / 2))
             for parvalue in pvalues:
+                if self.stopCalc:
+                    for key in self.minimafitparameters:
+                        self.fit.fit_params[key].value = self.minimafitparameters[key].value
+                    return
                 for key in self.minimafitparameters: # Putting back the minima parameters
                     self.fit.fit_params[key].value = self.minimafitparameters[key].value
                 self.fit.fit_params[fpar].value = parvalue
