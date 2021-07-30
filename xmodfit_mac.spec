@@ -2,7 +2,7 @@
 from PyInstaller.utils.hooks import collect_submodules
 
 block_cipher = None
-homedir='/Users/mrinalkb/PycharmProjects/XModFit'
+homedir='/Users/mrinalkb/PycharmProjects/chemmatcars/XModFit'
 
 hutils=collect_submodules('utils')
 hchemform=collect_submodules('Chemical_Formula')
