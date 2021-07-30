@@ -13,6 +13,7 @@ hnnumpy=collect_submodules('numba-numpy')
 hstatsmodels=collect_submodules('statsmodels')
 hpatsy=collect_submodules('patsy')
 
+
 all_hidden_imports=hutils+hchemform+hnumba+hnumba_scipy+hllvmlite+hstatsmodels+hpatsy
 
 a = Analysis(['xmodfit.py'],
