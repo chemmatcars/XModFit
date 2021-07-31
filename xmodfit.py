@@ -313,7 +313,7 @@ class XModFit(QWidget):
         self.create_fitResultDock()
         self.update_catagories()
         self.create_paramDock()
-        self.xminmaxChanged()
+        # self.xminmaxChanged()
         self.sfnames=None
         self.expressions={}
 

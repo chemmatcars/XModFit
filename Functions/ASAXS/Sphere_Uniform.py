@@ -9,8 +9,8 @@ sys.path.append(os.path.abspath('./Fortran_routines'))
 ####Please do not remove lines above####
 
 ####Import your modules below if needed####
-from FormFactors.Sphere import Sphere
-from ff_sphere import ff_sphere_ml
+# from FormFactors.Sphere import Sphere
+# from ff_sphere import ff_sphere_ml
 from Chemical_Formula import Chemical_Formula
 from PeakFunctions import LogNormal, Gaussian
 from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
@@ -18,10 +18,22 @@ from utils import find_minmax, calc_rho, create_steps
 from functools import lru_cache
 import time
 
-# from numba import jit
-#
-# @jit(nopython=True)
-# def ff_sphere_numba(q,R,Rho):
+from numba import jit
+
+@jit(nopython=True)
+def ff_sphere_ml(q,R,rho):
+    Nlayers=len(R)
+    aff=np.ones_like(q)*complex(0,0)
+    ff=np.zeros_like(q)
+    for i,q1 in enumerate(q):
+        fact = 0.0
+        rt = 0.0
+        for j in range(1,Nlayers):
+            rt = rt + R[j - 1]
+            fact = fact + (rho[j - 1] - rho[j]) * (np.sin(q1 * rt) - q1 * rt * np.cos(q1 * rt)) / q1 ** 3
+        aff[i] = fact
+        ff[i] = abs(fact) ** 2
+    return ff,aff
 
 
 
