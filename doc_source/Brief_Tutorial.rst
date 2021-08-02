@@ -18,7 +18,7 @@ The available functions can be simulated by following these steps:
 4. The values of **X-axis** of the simulated curve can be changed by changing the **x** parameter located at the to of the **Parameters** tab.
 5. All the parameters can be changed and on change of each of the parameters the function/model will be re-calculated and the plot will be updated.
 
-Data Importing and Fitting
+Data importing and fitting
 --------------------------
 The main objective of **XModFit** is to provide a user to fit a model/function to a data. Please follow these to perform a data fitting using :ref:`XAnoS_Fit`:
 
@@ -44,6 +44,7 @@ The main objective of **XModFit** is to provide a user to fit a model/function t
 
     * **Accepting** will update all the fitting parameters with the :math:`\chi^2`-minimized parameters
     * **Rejecting** will keep the parameters unaltered with the values before starting the fit.
+17. The `Fit Results` will be available in the `Fit Results` tab besides the `Data and Fit` tab.
 
 .. _Fit_Progress:
 

@@ -992,9 +992,9 @@ class XModFit(QWidget):
     def confInterval_ChiSqrDist(self):
         self.fit_method = self.fitMethods[self.fitMethodComboBox.currentText()]
         self.confIntervalWidget=QWidget()
-        self.confIntervalWidget.setWindowTitle("Confidence Interval Calculator")
         self.confIntervalWidget.setWindowModality(Qt.ApplicationModal)
         uic.loadUi('./UI_Forms/ConfInterval_ChiSqrDist.ui',self.confIntervalWidget)
+        self.confIntervalWidget.setWindowTitle("ChiSqrDist Confidence Interval Calculator")
         self.chidata={}
         fitTableWidget = self.confIntervalWidget.fitParamTableWidget
         self.calcErrPushButtons={}
@@ -1358,9 +1358,9 @@ class XModFit(QWidget):
              emcee_burn=tnum*self.emcee_frac/(1.0-self.emcee_frac)
              self.emcee_burn=int(emcee_burn+self.emcee_steps*self.emcee_frac)
         self.emceeConfIntervalWidget = QWidget()
-        self.emceeConfIntervalWidget.setWindowTitle("Confidence Interval Calculator")
         self.emceeConfIntervalWidget.setWindowModality(Qt.ApplicationModal)
         uic.loadUi('./UI_Forms/EMCEE_ConfInterval_Widget.ui', self.emceeConfIntervalWidget)
+        self.emceeConfIntervalWidget.setWindowTitle('MCMC Confidence Interval Caclulator')
         self.emceeConfIntervalWidget.MCMCWalkerLineEdit.setText(str(self.emcee_walker))
         self.emceeConfIntervalWidget.MCMCStepsLineEdit.setText(str(self.emcee_steps))
         self.emceeConfIntervalWidget.MCMCBurnLineEdit.setText(str(self.emcee_burn))
