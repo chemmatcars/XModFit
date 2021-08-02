@@ -961,8 +961,7 @@ class XModFit(QWidget):
                     self.emceeConfIntervalWidget.reuseSamplerCheckBox.setCheckState(Qt.Checked)
                     self.fit.functionCalled.disconnect()
                     self.perform_post_sampling_tasks()
-                    # self.fitErrorDialog()
-                    self.showConfIntervalButton.setEnabled(True)
+                    # self.showConfIntervalButton.setEnabled(True)
             except:
                 try:
                     self.closeFitInfoDlg()
