@@ -3284,11 +3284,11 @@ if __name__=='__main__':
     # QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     # app = QApplication(sys.argv)
-    try:
-        # app.setAttribute(Qt.AA_EnableHighDpiScaling)
-        app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    except:
-        pass
+    # try:
+    #     # app.setAttribute(Qt.AA_EnableHighDpiScaling)
+    #     app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    # except:
+    #     pass
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     app = QApplication(sys.argv)
