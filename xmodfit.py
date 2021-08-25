@@ -313,7 +313,7 @@ class XModFit(QWidget):
         self.create_fitResultDock()
         self.update_catagories()
         self.create_paramDock()
-        self.xminmaxChanged()
+        # self.xminmaxChanged()
         self.sfnames=None
         self.expressions={}
 
@@ -961,8 +961,7 @@ class XModFit(QWidget):
                     self.emceeConfIntervalWidget.reuseSamplerCheckBox.setCheckState(Qt.Checked)
                     self.fit.functionCalled.disconnect()
                     self.perform_post_sampling_tasks()
-                    # self.fitErrorDialog()
-                    self.showConfIntervalButton.setEnabled(True)
+                    # self.showConfIntervalButton.setEnabled(True)
             except:
                 try:
                     self.closeFitInfoDlg()
@@ -992,14 +991,15 @@ class XModFit(QWidget):
     def confInterval_ChiSqrDist(self):
         self.fit_method = self.fitMethods[self.fitMethodComboBox.currentText()]
         self.confIntervalWidget=QWidget()
-        self.confIntervalWidget.setWindowTitle("Confidence Interval Calculator")
         self.confIntervalWidget.setWindowModality(Qt.ApplicationModal)
         uic.loadUi('./UI_Forms/ConfInterval_ChiSqrDist.ui',self.confIntervalWidget)
+        self.confIntervalWidget.setWindowTitle("ChiSqrDist Confidence Interval Calculator")
         self.chidata={}
         fitTableWidget = self.confIntervalWidget.fitParamTableWidget
         self.calcErrPushButtons={}
         self.errProgressBars={}
         self.plotErrPushButtons={}
+        self.stopCalc=False
         for fpar in self.fit.result.params.keys():
             if self.fit.fit_params[fpar].vary:
                 row = fitTableWidget.rowCount()
@@ -1026,6 +1026,7 @@ class XModFit(QWidget):
                 self.plotErrPushButtons[fpar].clicked.connect(partial(self.plotErrPushButtonClicked,row,fpar))
         fitTableWidget.resizeColumnsToContents()
         self.confIntervalWidget.plotAllPushButton.clicked.connect(self.plotAllErrPushButtonClicked)
+        self.confIntervalWidget.stopPushButton.clicked.connect(self.stopErrCalc)
         self.confIntervalWidget.calcAllPushButton.clicked.connect(self.calcAllErr)
         self.confIntervalWidget.saveAllPushButton.clicked.connect(self.saveAllErr)
         self.confIntervalWidget.confIntervalSpinBox.valueChanged.connect(self.setTargetChiSqr)
@@ -1036,6 +1037,9 @@ class XModFit(QWidget):
         self.right_limit={}
         self.min_value={}
         self.calcAll=False
+
+    def stopErrCalc(self):
+        self.stopCalc=True
 
     def setTargetChiSqr(self):
         self.confInterval = self.confIntervalWidget.confIntervalSpinBox.value()
@@ -1048,9 +1052,13 @@ class XModFit(QWidget):
 
     def calcAllErr(self):
         self.calcAll=True
+        self.stopCalc=False
         for row in range(self.confIntervalWidget.fitParamTableWidget.rowCount()):
-            fpar=self.confIntervalWidget.fitParamTableWidget.cellWidget(row,0).text()
-            self.calcErrPushButtonClicked(row,fpar)
+            if not self.stopCalc:
+                fpar=self.confIntervalWidget.fitParamTableWidget.cellWidget(row,0).text()
+                self.calcErrPushButtonClicked(row,fpar)
+            else:
+                return
         self.plotAllErrPushButtonClicked()
         self.errInfoTable = []
         for key in self.chidata.keys():
@@ -1102,6 +1110,7 @@ class XModFit(QWidget):
 
 
     def calcErrPushButtonClicked(self,row,fpar):
+        self.stopCalc=False
         for key in self.minimafitparameters:
             self.fit.fit_params[key].value = self.minimafitparameters[key].value
 
@@ -1128,6 +1137,10 @@ class XModFit(QWidget):
             pvalues=np.linspace(value+(vmax-value)*2/Nval, vmax, int(Nval/2))
             i=1
             for parvalue in pvalues:
+                if self.stopCalc:
+                    for key in self.minimafitparameters:
+                        self.fit.fit_params[key].value = self.minimafitparameters[key].value
+                    return
                 for key in self.minimafitparameters: # Putting back the minima parameters
                     self.fit.fit_params[key].value = self.minimafitparameters[key].value
                 self.fit.fit_params[fpar].value=parvalue
@@ -1147,6 +1160,10 @@ class XModFit(QWidget):
             #Fitting the left hand of the minima starting from the minima point
             pvalues=np.linspace(value-step, vmin, int(Nval / 2))
             for parvalue in pvalues:
+                if self.stopCalc:
+                    for key in self.minimafitparameters:
+                        self.fit.fit_params[key].value = self.minimafitparameters[key].value
+                    return
                 for key in self.minimafitparameters: # Putting back the minima parameters
                     self.fit.fit_params[key].value = self.minimafitparameters[key].value
                 self.fit.fit_params[fpar].value = parvalue
@@ -1340,9 +1357,9 @@ class XModFit(QWidget):
              emcee_burn=tnum*self.emcee_frac/(1.0-self.emcee_frac)
              self.emcee_burn=int(emcee_burn+self.emcee_steps*self.emcee_frac)
         self.emceeConfIntervalWidget = QWidget()
-        self.emceeConfIntervalWidget.setWindowTitle("Confidence Interval Calculator")
         self.emceeConfIntervalWidget.setWindowModality(Qt.ApplicationModal)
         uic.loadUi('./UI_Forms/EMCEE_ConfInterval_Widget.ui', self.emceeConfIntervalWidget)
+        self.emceeConfIntervalWidget.setWindowTitle('MCMC Confidence Interval Caclulator')
         self.emceeConfIntervalWidget.MCMCWalkerLineEdit.setText(str(self.emcee_walker))
         self.emceeConfIntervalWidget.MCMCStepsLineEdit.setText(str(self.emcee_steps))
         self.emceeConfIntervalWidget.MCMCBurnLineEdit.setText(str(self.emcee_burn))

@@ -13,7 +13,7 @@ from functools import lru_cache
 from Chemical_Formula import Chemical_Formula
 from PeakFunctions import LogNormal, Gaussian
 from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
-from ff_cylinder import ff_cylinder_ml_asaxs
+# from ff_cylinder import ff_cylinder_ml_asaxs
 from utils import find_minmax, calc_rho, create_steps
 
 from numba import jit
