@@ -2110,6 +2110,7 @@ class XModFit(QWidget):
         self.calcConfInterButton.setDisabled(True)
         
     def add_uncoupled_mpar(self):
+        cur_index = self.mfitParamTabWidget.currentIndex()
         mkey=self.mfitParamTabWidget.tabText(self.mfitParamTabWidget.currentIndex())
         try:
             self.mfitParamTableWidget[mkey].cellChanged.disconnect()
@@ -2170,6 +2171,7 @@ class XModFit(QWidget):
             self.reuse_sampler = False
             self.calcConfInterButton.setDisabled(True)
             # self.remove_mpar_button.setEnabled(True)
+            self.mfitParamTabWidget.setCurrentIndex(cur_index)
         else:
             QMessageBox.warning(self,'Warning','Please select a row at which you would like to add a set of parameters',QMessageBox.Ok)
         self.mfitParamTableWidget[mkey].cellChanged.connect(self.mfitParamChanged_new)
