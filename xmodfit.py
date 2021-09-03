@@ -2011,7 +2011,7 @@ class XModFit(QWidget):
                 self.mfitParamTableWidget[mkey].item(row, col).setCheckState(Qt.Checked)
             else:
                 self.mfitParamTableWidget[mkey].item(row, col).setCheckState(Qt.Unchecked)
-            self.mfitParamTableWidget[mkey].cellChanged.connect(self.mfitParamChanged_new)
+
             try:
                 self.mfitParamData[mkey][pkey][row] = value
                 # self.fit.fit_params[key].set(value=value)
@@ -2021,11 +2021,14 @@ class XModFit(QWidget):
                                              brute_step=brute_step)
                 self.update_plot()
             except:
+                self.mfitParamTableWidget[mkey].item(row, col).setText(self.format % ovalue)
                 self.mfitParamData[mkey][pkey][row] = ovalue
                 self.fit.fit_params[key].set(value=ovalue, vary=ovary, min=ominimum, max=omaximum, expr=oexpr,
                                              brute_step=brute_step)
                 self.update_plot()
                 QMessageBox.warning(self,'Parameter Error','Some parameter value you just entered are not correct. Please enter the values carefully',QMessageBox.Ok)
+
+            self.mfitParamTableWidget[mkey].cellChanged.connect(self.mfitParamChanged_new)
             self.errorAvailable = False
             self.reuse_sampler = False
             self.calcConfInterButton.setDisabled(True)
