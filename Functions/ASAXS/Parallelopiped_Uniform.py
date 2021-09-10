@@ -23,7 +23,7 @@ import numba_scipy.special
 @jit(nopython=True)
 def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi):
     dphi=np.pi/Nphi
-    dpsi=2*np.pi/Npsi
+    dpsi=2.0*np.pi/Npsi
     fft = np.zeros_like(q)
     ffs = np.zeros_like(q)
     ffc = np.zeros_like(q)
@@ -35,14 +35,14 @@ def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi):
     dadensity=2.0*np.diff(np.array(adensity))*V
     for i, q1 in enumerate(q):
         for phi in np.linspace(0, np.pi, Nphi+1):
-            qh = q1*H*np.cos(phi) / 2
-            for psi in np.linspace(0, 2*np.pi, Npsi+1):
+            qh = q1*H*np.cos(phi) / 2.0
+            for psi in np.linspace(0, 2.0*np.pi, Npsi+1):
                 tft = np.complex(0.0, 0.0)
                 tfs = 0.0
                 tfr = 0.0
                 for k in range(Nlayers-1):
-                    ql=q1*L[k]*np.sin(phi)*np.cos(psi)/2
-                    qb=q1*B[k]*np.sin(phi)*np.sin(psi)/2
+                    ql=q1*L[k]*np.sin(phi)*np.cos(psi)/2.0
+                    qb=q1*B[k]*np.sin(phi)*np.sin(psi)/2.0
                     fac=np.sinc(ql)*np.sinc(qb)*np.sinc(qh)
                     tft = tft + drho[k] * fac
                     tfs = tfs + deirho[k] * fac
