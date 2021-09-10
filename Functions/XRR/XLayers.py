@@ -149,7 +149,7 @@ class XLayers: #Please put the class name same as the function name
     @lru_cache(maxsize=10)
     def py_parratt(self, x, lam, d, rho, mu):
         return parratt_numba(np.array(x), lam, np.array(d), np.array(rho), np.array(mu))
-        # return parratt(np.array(x), lam, np.array(d), np.array(rho), np.array(mu))
+# return parratt(np.array(x), lam, np.array(d), np.array(rho), np.array(mu))
 
     def update_parameters(self):
         for mkey in self.__mpar__.keys():
