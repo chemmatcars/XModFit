@@ -2827,14 +2827,17 @@ class XModFit(QWidget):
 
     def fixedParamChanged(self,row,col):
         self.fixedParamTableWidget.cellChanged.disconnect()
+
         txt=self.fixedParamTableWidget.item(row,0).text()
         if txt in self.fit.params['choices'].keys():
+            self.fixedParamTableWidget.cellWidget(row, 1).currentIndexChanged.disconnect()
             try: # if the parameter is a number
                 self.fit.params[txt]=eval(self.fixedParamTableWidget.cellWidget(row,1).currentText())
             except: # if the parameter is a string
                 self.fit.params[txt] = str(self.fixedParamTableWidget.cellWidget(row, 1).currentText())
             self.fchanged = False
             self.update_plot()
+            self.fixedParamTableWidget.cellWidget(row, 1).currentIndexChanged.connect(lambda x:self.fixedParamChanged(row,1))
         else:
             try: # if the parameter is a number
                 val=eval(self.fixedParamTableWidget.item(row,col).text())
@@ -3025,6 +3028,7 @@ class XModFit(QWidget):
             if len(self.funcListWidget.selectedItems())>0:
                 try:
                     stime = time.time()
+                    self.fit.func.__fit__=False
                     self.fit.evaluate()
                     exectime = time.time() - stime
                 except:
@@ -3144,6 +3148,7 @@ class XModFit(QWidget):
         if len(self.funcListWidget.selectedItems())>0:
             try:
                 stime=time.perf_counter()
+                self.fit.func.__fit__=False
                 self.fit.evaluate()
                 ntime=time.perf_counter()
                 exectime=ntime-stime

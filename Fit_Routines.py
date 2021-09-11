@@ -56,7 +56,7 @@ class Fit(QObject):
             self.imax=len(self.x)
 
     def evaluate(self):
-        self.func.__fit__=False
+        # self.func.__fit__=False
         if type(self.x) == dict:
             self.func.x = {}
             for key in self.x.keys():
@@ -66,22 +66,23 @@ class Fit(QObject):
         self.yfit = self.func.y()
         return self.yfit
         
-    def evaluate4fit(self):
-        self.func.__fit__=True
-        if type(self.x)==dict:
-            self.func.x={}
-            for key in self.x.keys():
-                self.func.x[key]=self.x[key][self.imin[key]:self.imax[key]+1]
-        else:
-            self.func.x = self.x[self.imin:self.imax + 1]
-        self.yfit=self.func.y()
-        return self.yfit
+    # def evaluate4fit(self):
+    #     self.func.__fit__=True
+    #     if type(self.x)==dict:
+    #         self.func.x={}
+    #         for key in self.x.keys():
+    #             self.func.x[key]=self.x[key][self.imin[key]:self.imax[key]+1]
+    #     else:
+    #         self.func.x = self.x[self.imin:self.imax + 1]
+    #     self.yfit=self.func.y()
+    #     return self.yfit
     
     def residual(self,params,fit_scale):
         for key in self.fit_params.keys():
             self.params[key]=params[key].value
             self.fit_params[key].value=params[key].value
-        yfit=self.evaluate4fit()
+        self.__fit__=True
+        yfit=self.evaluate()
         if type(yfit)==dict:
             y=[]
             for key in yfit.keys():
