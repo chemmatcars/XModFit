@@ -21,49 +21,43 @@ from scipy.special import j1
 import numba_scipy.special
 
 @jit(nopython=True)
-def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nalf):
-    #HvvgtR: H>>R means infinitely long cylinder
-    dalf = np.pi/Nalf
+def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi):
+    dphi=np.pi/Nphi
+    dpsi=2.0*np.pi/Npsi
     fft = np.zeros_like(q)
     ffs = np.zeros_like(q)
     ffc = np.zeros_like(q)
     ffr = np.zeros_like(q)
-    Nlayers=len(R)
-    tR=np.cumsum(R)
-    V = np.pi*tR[:-1]**2*H
+    Nlayers=len(L)
+    V = L[:-1]*B[:-1]*H
     drho=2.0*np.diff(np.array(rho))*V
     deirho=2.0*np.diff(np.array(eirho))*V
     dadensity=2.0*np.diff(np.array(adensity))*V
     for i, q1 in enumerate(q):
-        for ialf in range(Nalf):
-            alf = ialf*dalf + 1e-6
-            tft = np.complex(0.0,0.0)
-            tfs = 0.0
-            tfr = 0.0
-            for k in range(Nlayers-1):
-                qh=np.abs(q1*H*np.cos(alf)/2)
-                fach=(1.0-HvvgtR)*np.sin(qh)/qh+HvvgtR*np.cos(qh-np.pi/4.0)*np.sqrt(2/np.pi/qh)
-                qr=q1*tR[k]*np.sin(alf)
-                facR=j1(qr)/qr
-                fac =  fach*facR
-                tft = tft + drho[k] * fac
-                tfs = tfs + deirho[k] * fac
-                tfr = tfr + dadensity[k] * fac
-            fft[i] = fft[i] + np.abs(tft) ** 2 * np.sin(alf)
-            ffs[i] = ffs[i] + tfs ** 2 * np.sin(alf)
-            ffc[i] = ffc[i] + tfs * tfr * np.sin(alf)
-            ffr[i] = ffr[i] + tfr ** 2 * np.sin(alf)
-        fft[i] = fft[i] * dalf
-        ffs[i] = ffs[i] * dalf
-        ffc[i] = ffc[i] * dalf
-        ffr[i] = ffr[i] * dalf
+        for phi in np.linspace(0, np.pi, Nphi+1):
+            qh = q1*H*np.cos(phi) / 2.0
+            for psi in np.linspace(0, 2.0*np.pi, Npsi+1):
+                tft = np.complex(0.0, 0.0)
+                tfs = 0.0
+                tfr = 0.0
+                for k in range(Nlayers-1):
+                    ql=q1*L[k]*np.sin(phi)*np.cos(psi)/2.0
+                    qb=q1*B[k]*np.sin(phi)*np.sin(psi)/2.0
+                    fac=np.sinc(ql)*np.sinc(qb)*np.sinc(qh)
+                    tft = tft + drho[k] * fac
+                    tfs = tfs + deirho[k] * fac
+                    tfr = tfr + dadensity[k] * fac
+                fft[i] = fft[i] + np.abs(tft) ** 2 * np.sin(phi)* dphi*dpsi
+                ffs[i] = ffs[i] + tfs ** 2 * np.sin(phi)* dphi*dpsi
+                ffc[i] = ffc[i] + tfs * tfr * np.sin(phi)* dphi*dpsi
+                ffr[i] = ffr[i] + tfr ** 2 * np.sin(phi)* dphi*dpsi
     return fft,ffs,ffc,ffr
 
 class Parallelopiped_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, flux=1e13, dist='Gaussian', Energy=None, relement='Au', NrDep='False', L=1.0, B=1.0,
                  H=1.0, sig=0.0, norm=1.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=200,Npsi=400, term='Total',
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
-                                  'Rmoles': [1.0, 0.0], 'Thickness': [0.0.1.0]}}):
+                                  'Rmoles': [1.0, 0.0], 'Thickness': [0.0, 0.0]}}):
         """
         Documentation
         Calculates the Energy dependent form factor of multilayered cylinders with different materials
@@ -106,7 +100,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         self.cbkg=cbkg
         self.abkg=abkg
         self.dist=dist
-        self.Rsig=Rsig
+        self.sig=sig
         self.Np=Np
         self.L=L
         self.B=B
@@ -150,7 +144,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         self.params.add('cbkg', value=self.cbkg, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('abkg', value=self.abkg, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('U', value=self.U, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
-        self.params.add('Rsig', value=self.Rsig, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
+        self.params.add('sig', value=self.sig, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
         for mkey in self.__mpar__.keys():
             for key in self.__mpar__[mkey].keys():
                 if key != 'Material':
@@ -164,8 +158,8 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         B = np.array(B)
         totalL = np.sum(L[:-1])
         totalB = np.sum(B[:-1])
-        if Rsig > 0.001:
-            fdist = eval(dist + '.' + dist + '(x=0.001, pos=totalR, wid=Rsig)')
+        if sig > 0.001:
+            fdist = eval(dist + '.' + dist + '(x=0.001, pos=totalL, wid=sig)')
             if dist=='Gaussian':
                 Lmin, Lmax = max(0.001, totalL - 5 * sig), totalL + 5 * sig
                 Bmin, Bmax = max(0.001, totalB - 5 * sig), totalB + 5 * sig
@@ -195,15 +189,17 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         aform = np.zeros_like(q)
         cform = np.zeros_like(q)
         pfac = (2.818e-5 * 1.0e-8) ** 2
-        for i in range(len(dr)):
+        sumL=np.sum(Ldist)
+        sumB=np.sum(Bdist)
+        for i in range(len(dL)):
             l = np.array(L) * (1 + (dL[i] - totalL) / totalL)
             b = np.array(B) * (1 + (dB[i] - totalB) / totalB)
             # fft, ffs, ffc, ffr = ff_cylinder_ml_asaxs(q, H, r, rho, eirho, adensity, Nalf)
             fft, ffs, ffc, ffr = parallelopiped_ml_asaxs(q, l, b, H, rho, eirho, adensity, Nphi, Npsi)
-            form = form + rdist[i] * fft
-            eiform = eiform + rdist[i] * ffs
-            aform = aform + rdist[i] * ffr
-            cform = cform + rdist[i] * ffc
+            form = form + Ldist[i] * Bdist[i] * fft/sumL/sumB
+            eiform = eiform + Ldist[i] * Bdist[i] * ffs/sumL/sumB
+            aform = aform + Ldist[i] * Bdist[i] * ffr/sumL/sumB
+            cform = cform + Ldist[i] * Bdist[i] * ffc/sumL/sumB
         return pfac * form, pfac * eiform, pfac * aform, np.abs(pfac * cform)  # in cm^2
 
     @lru_cache(maxsize=10)
@@ -245,7 +241,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         if type(self.x) == dict:
             sqf = {}
             key='SAXS-term'
-            sqft=self.parallelopiped_dict(tuple(self.x[key]), tuple(self.__L__), tuple(self.__B__)
+            sqft=self.parallelopiped_dict(tuple(self.x[key]), tuple(self.__L__), tuple(self.__B__),
                                                                        self.H, self.sig,
                                                                        tuple(rho), tuple(eirho), tuple(adensity),
                                                                        dist = self.dist, Np = self.Np, Nphi = self.Nphi, Npsi = self.Npsi)
@@ -278,9 +274,9 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1] * scale,
                                                     'names': ['r (Angs)', 'Density (Molar)']}
                 self.output_params['Structure_Factor'] = {'x': self.x[key], 'y': struct}
-                xtmp,ytmp=create_steps(x=self.__R__[:-1],y=self.__Rmoles__[:-1])
+                xtmp,ytmp=create_steps(x=self.__L__[:-1],y=self.__Rmoles__[:-1])
                 self.output_params['Rmoles_radial']={'x':xtmp,'y':ytmp}
-                xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__density__[:-1])
+                xtmp, ytmp = create_steps(x=self.__L__[:-1], y=self.__density__[:-1])
                 self.output_params['Density_radial'] = {'x': xtmp, 'y': ytmp}
         else:
             if self.SF is None:
@@ -290,9 +286,9 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             else:
                 struct = sticky_sphere_sf(self.x, D=self.D, phi=self.phi, U=self.U, delta=0.01)
 
-            tsqf, eisqf, asqf, csqf = self.parallelopiped(tuple(self.x), tuple(self.__L__), tuple(self.__B__), self.H, Rsig,
+            tsqf, eisqf, asqf, csqf = self.parallelopiped(tuple(self.x), tuple(self.__L__), tuple(self.__B__), self.H, self.sig,
                                                      tuple(rho), tuple(eirho),
-                                                      tuple(adensity), dist=self.dist, Np=self.Np, Nalf=self.Nalf)
+                                                      tuple(adensity), dist=self.dist, Np=self.Np, Nphi=self.Nphi, Npsi=self.Npsi)
             sqf = self.norm * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
             # if not self.__fit__: #Generate all the quantities below while not fitting
             asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
@@ -312,12 +308,12 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1] * scale,
                                                 'names': ['r (Angs)', 'Density (Molar)']}  # in Molar
             self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
-            xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__Rmoles__[:-1])
+            xtmp, ytmp = create_steps(x=self.__L__[:-1], y=self.__Rmoles__[:-1])
             self.output_params['Rmoles_radial'] = {'x':xtmp , 'y': ytmp}
             sqf = self.output_params[self.term]['y']
-            xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__density__[:-1])
+            xtmp, ytmp = create_steps(x=self.__L__[:-1], y=self.__density__[:-1])
             self.output_params['Density_radial'] = {'x': xtmp, 'y': ytmp}
-            dL, Ldist, totalL, dB, Bdist, totalB = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.Rsig, self.dist, self.Np)
+            dL, Ldist, totalL, dB, Bdist, totalB = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
             self.output_params['L_Distribution'] = {'x': dL, 'y': Ldist}
             self.output_params['B_Distribution'] = {'x': dB, 'y': Bdist}
         return sqf

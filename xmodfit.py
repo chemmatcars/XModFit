@@ -1996,29 +1996,39 @@ class XModFit(QWidget):
             pkey=self.mfitParamTableWidget[mkey].horizontalHeaderItem(col).text()
             key='__%s_%s_%03d'%(mkey,pkey,row)
             ovalue=self.fit.fit_params[key].value
-            vary=self.fit.fit_params[key].vary
-            minimum=self.fit.fit_params[key].min
-            maximum=self.fit.fit_params[key].max
-            expr=self.fit.fit_params[key].expr
-            brute_step=self.fit.fit_params[key].brute_step
-            dlg=minMaxDialog(ovalue,vary=vary,minimum=minimum,maximum=maximum,expr=expr,brute_step=brute_step,title=key)
+            ovary=self.fit.fit_params[key].vary
+            ominimum=self.fit.fit_params[key].min
+            omaximum=self.fit.fit_params[key].max
+            oexpr=self.fit.fit_params[key].expr
+            obrute_step=self.fit.fit_params[key].brute_step
+            dlg=minMaxDialog(ovalue,vary=ovary,minimum=ominimum,maximum=omaximum,expr=oexpr,brute_step=obrute_step,title=key)
             if dlg.exec_():
                 value,vary,maximum,minimum,expr,brute_step=(dlg.value,dlg.vary,dlg.maximum,dlg.minimum,dlg.expr,dlg.brute_step)
             else:
-                value=ovalue
+                value,vary,maximum,minimum,expr,brute_step=copy.copy(ovalue),copy.copy(ovary),copy.copy(maximum),copy.copy(minimum),copy.copy(expr),copy.copy(brute_step)
             self.mfitParamTableWidget[mkey].item(row,col).setText(self.format%value)
             if vary:
                 self.mfitParamTableWidget[mkey].item(row, col).setCheckState(Qt.Checked)
             else:
                 self.mfitParamTableWidget[mkey].item(row, col).setCheckState(Qt.Unchecked)
-            self.mfitParamTableWidget[mkey].cellChanged.connect(self.mfitParamChanged_new)
-            self.mfitParamData[mkey][pkey][row]=value
-            #self.fit.fit_params[key].set(value=value)
-            if expr=='None':
-                expr=''
-            self.fit.fit_params[key].set(value=value,vary=vary,min=minimum,max=maximum,expr=expr,brute_step=brute_step)
-            if ovalue!=value:
+
+            try:
+                self.mfitParamData[mkey][pkey][row] = value
+                # self.fit.fit_params[key].set(value=value)
+                if expr == 'None':
+                    expr = ''
+                self.fit.fit_params[key].set(value=value, vary=vary, min=minimum, max=maximum, expr=expr,
+                                             brute_step=brute_step)
                 self.update_plot()
+            except:
+                self.mfitParamTableWidget[mkey].item(row, col).setText(self.format % ovalue)
+                self.mfitParamData[mkey][pkey][row] = ovalue
+                self.fit.fit_params[key].set(value=ovalue, vary=ovary, min=ominimum, max=omaximum, expr=oexpr,
+                                             brute_step=brute_step)
+                self.update_plot()
+                QMessageBox.warning(self,'Parameter Error','Some parameter value you just entered are not correct. Please enter the values carefully',QMessageBox.Ok)
+
+            self.mfitParamTableWidget[mkey].cellChanged.connect(self.mfitParamChanged_new)
             self.errorAvailable = False
             self.reuse_sampler = False
             self.calcConfInterButton.setDisabled(True)
@@ -2816,6 +2826,7 @@ class XModFit(QWidget):
 
 
     def fixedParamChanged(self,row,col):
+        self.fixedParamTableWidget.cellChanged.disconnect()
         txt=self.fixedParamTableWidget.item(row,0).text()
         if txt in self.fit.params['choices'].keys():
             try: # if the parameter is a number
@@ -2840,6 +2851,7 @@ class XModFit(QWidget):
         self.fixedParamTableWidget.resizeRowsToContents()
         self.fixedParamTableWidget.resizeColumnsToContents()
         self.update_fit_parameters()
+        self.fixedParamTableWidget.cellChanged.connect(self.fixedParamChanged)
 
 
         
@@ -3138,6 +3150,7 @@ class XModFit(QWidget):
             except:
                 QMessageBox.warning(self, 'Evaluation Error', traceback.format_exc(), QMessageBox.Ok)
                 self.fit.yfit = self.fit.func.x
+                exectime=np.nan
             if len(self.dataListWidget.selectedItems()) > 0:
                 self.fit.set_x(x, y=y, yerr=yerr)
                 try:
