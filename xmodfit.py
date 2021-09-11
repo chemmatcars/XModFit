@@ -2826,6 +2826,7 @@ class XModFit(QWidget):
 
 
     def fixedParamChanged(self,row,col):
+        self.fixedParamTableWidget.cellChanged.disconnect()
         txt=self.fixedParamTableWidget.item(row,0).text()
         if txt in self.fit.params['choices'].keys():
             try: # if the parameter is a number
@@ -2850,6 +2851,7 @@ class XModFit(QWidget):
         self.fixedParamTableWidget.resizeRowsToContents()
         self.fixedParamTableWidget.resizeColumnsToContents()
         self.update_fit_parameters()
+        self.fixedParamTableWidget.cellChanged.connect(self.fixedParamChanged)
 
 
         
@@ -3148,6 +3150,7 @@ class XModFit(QWidget):
             except:
                 QMessageBox.warning(self, 'Evaluation Error', traceback.format_exc(), QMessageBox.Ok)
                 self.fit.yfit = self.fit.func.x
+                exectime=np.nan
             if len(self.dataListWidget.selectedItems()) > 0:
                 self.fit.set_x(x, y=y, yerr=yerr)
                 try:
