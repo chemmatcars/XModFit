@@ -15,19 +15,19 @@ from functools import lru_cache
 from PeakFunctions import LogNormal, Gaussian
 from utils import find_minmax, calc_rho
 
-from numba import jit
+from numba import njit, prange
 
-@jit(nopython=True)
+@njit(parallel=True,cache=True)
 def ff_sphere_ml(q,R,rho):
     Nlayers=len(R)
     aff=np.ones_like(q)*complex(0,0)
     ff=np.zeros_like(q)
-    for i,q1 in enumerate(q):
+    for i in range(len(q)):
         fact = 0.0
         rt = 0.0
-        for j in range(1,Nlayers):
-            rt = rt + R[j - 1]
-            fact = fact + (rho[j - 1] - rho[j]) * (np.sin(q1 * rt) - q1 * rt * np.cos(q1 * rt)) / q1 ** 3
+        for j in prange(1,Nlayers):
+            rt+= R[j - 1]
+            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
         aff[i] = fact
         ff[i] = abs(fact) ** 2
     return ff,aff

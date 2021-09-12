@@ -2120,6 +2120,7 @@ class XModFit(QWidget):
         self.calcConfInterButton.setDisabled(True)
         
     def add_uncoupled_mpar(self):
+
         cur_index = self.mfitParamTabWidget.currentIndex()
         mkey=self.mfitParamTabWidget.tabText(self.mfitParamTabWidget.currentIndex())
         try:
@@ -2606,8 +2607,10 @@ class XModFit(QWidget):
                         lnum=i+1
                         break
                 if 'x' in lines[lnum]:
-                    xline=lines[lnum].split('=')[1].strip()
-                    self.xLineEdit.setText(xline)
+                    self.xline=lines[lnum].split('=')[1].strip()
+                else:
+                    self.xline='np.linspace(0.0,1.0,100)'
+                self.xLineEdit.setText(self.xline)
                 self.fixedParamTableWidget.clear()
                 self.sfitParamTableWidget.clear()
                 self.mfitParamTabWidget.clear()
@@ -3014,6 +3017,7 @@ class XModFit(QWidget):
         
             
     def xChanged(self):
+        self.xLineEdit.returnPressed.disconnect()
         try:
             x=eval(self.xLineEdit.text())
             #x=np.array(x)
@@ -3082,7 +3086,8 @@ class XModFit(QWidget):
                 QApplication.processEvents()
         except:
             QMessageBox.warning(self,'Value Error','The value just entered is not seem to be right.\n'+traceback.format_exc(),QMessageBox.Ok)
-            self.xLineEdit.setText('np.linspace(0.001,0.1,100)')
+            self.xLineEdit.setText(self.xline)
+        self.xLineEdit.returnPressed.connect(self.xChanged)
 
         
     def update_plot(self):

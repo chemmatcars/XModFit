@@ -16,11 +16,11 @@ from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 # from ff_cylinder import ff_cylinder_ml_asaxs
 from utils import find_minmax, calc_rho, create_steps
 
-from numba import jit
+from numba import njit, prange
 from scipy.special import j1
 import numba_scipy.special
 
-@jit(nopython=True)
+@njit(parallel=True,cache=True, fastmath=True)
 def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi):
     dphi=np.pi/Nphi
     dpsi=2.0*np.pi/Npsi
@@ -33,24 +33,26 @@ def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi):
     drho=2.0*np.diff(np.array(rho))*V
     deirho=2.0*np.diff(np.array(eirho))*V
     dadensity=2.0*np.diff(np.array(adensity))*V
-    for i, q1 in enumerate(q):
-        for phi in np.linspace(0, np.pi, Nphi+1):
-            qh = q1*H*np.cos(phi) / 2.0
-            for psi in np.linspace(0, 2.0*np.pi, Npsi+1):
+    for i in prange(len(q)):
+        for iphi in prange(0, Nphi):
+            phi = iphi*dphi
+            qh = q[i]*H*np.cos(phi) / 2.0
+            for ipsi in prange(0, Npsi):
+                psi = ipsi*dpsi
                 tft = np.complex(0.0, 0.0)
                 tfs = 0.0
                 tfr = 0.0
-                for k in range(Nlayers-1):
-                    ql=q1*L[k]*np.sin(phi)*np.cos(psi)/2.0
-                    qb=q1*B[k]*np.sin(phi)*np.sin(psi)/2.0
+                for k in prange(Nlayers-1):
+                    ql=q[i]*L[k]*np.sin(phi)*np.cos(psi)/2.0
+                    qb=q[i]*B[k]*np.sin(phi)*np.sin(psi)/2.0
                     fac=np.sinc(ql)*np.sinc(qb)*np.sinc(qh)
-                    tft = tft + drho[k] * fac
-                    tfs = tfs + deirho[k] * fac
-                    tfr = tfr + dadensity[k] * fac
-                fft[i] = fft[i] + np.abs(tft) ** 2 * np.sin(phi)* dphi*dpsi
-                ffs[i] = ffs[i] + tfs ** 2 * np.sin(phi)* dphi*dpsi
-                ffc[i] = ffc[i] + tfs * tfr * np.sin(phi)* dphi*dpsi
-                ffr[i] = ffr[i] + tfr ** 2 * np.sin(phi)* dphi*dpsi
+                    tft += drho[k] * fac
+                    tfs += deirho[k] * fac
+                    tfr += dadensity[k] * fac
+                fft[i] += np.abs(tft) ** 2 * np.sin(phi)* dphi*dpsi
+                ffs[i] += tfs ** 2 * np.sin(phi)* dphi*dpsi
+                ffc[i] += tfs * tfr * np.sin(phi)* dphi*dpsi
+                ffr[i] += tfr ** 2 * np.sin(phi)* dphi*dpsi
     return fft,ffs,ffc,ffr
 
 class Parallelopiped_Uniform: #Please put the class name same as the function name
@@ -163,11 +165,14 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             if dist=='Gaussian':
                 Lmin, Lmax = max(0.001, totalL - 5 * sig), totalL + 5 * sig
                 Bmin, Bmax = max(0.001, totalB - 5 * sig), totalB + 5 * sig
+                dL = np.linspace(Lmin, Lmax, N)
+                dB = np.linspace(Bmin, Bmax, N)
             else:
-                Lmin, Lmax= max(0.001, np.exp(np.log(totalL) - 5*sig)), np.exp(np.log(totalL) + 5*sig)
-                Bmin, Bmax = max(0.001, np.exp(np.log(totalB) - 5 * sig)), np.exp(np.log(totalB) + 5 * sig)
-            dL = np.linspace(Lmin, Lmax, N)
-            dB = np.linspace(Bmin, Bmax, N)
+                Lmin, Lmax= max(-3, np.log(totalL) - 5*sig), np.log(totalL) + 5*sig
+                Bmin, Bmax = max(-3, np.log(totalB) - 5 * sig), np.log(totalB) + 5 * sig
+                print(Lmin, Lmax)
+                dL = np.logspace(Lmin, Lmax, N, base=np.exp(1.0))
+                dB = np.logspace(Bmin, Bmax, N, base=np.exp(1.0))
             fdist.x = dL
             Ldist = fdist.y()
             sumdist = np.sum(Ldist)
@@ -196,10 +201,10 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             b = np.array(B) * (1 + (dB[i] - totalB) / totalB)
             # fft, ffs, ffc, ffr = ff_cylinder_ml_asaxs(q, H, r, rho, eirho, adensity, Nalf)
             fft, ffs, ffc, ffr = parallelopiped_ml_asaxs(q, l, b, H, rho, eirho, adensity, Nphi, Npsi)
-            form = form + Ldist[i] * Bdist[i] * fft/sumL/sumB
-            eiform = eiform + Ldist[i] * Bdist[i] * ffs/sumL/sumB
-            aform = aform + Ldist[i] * Bdist[i] * ffr/sumL/sumB
-            cform = cform + Ldist[i] * Bdist[i] * ffc/sumL/sumB
+            form += Ldist[i] * Bdist[i] * fft/sumL/sumB
+            eiform += Ldist[i] * Bdist[i] * ffs/sumL/sumB
+            aform +=Ldist[i] * Bdist[i] * ffr/sumL/sumB
+            cform += Ldist[i] * Bdist[i] * ffc/sumL/sumB
         return pfac * form, pfac * eiform, pfac * aform, np.abs(pfac * cform)  # in cm^2
 
     @lru_cache(maxsize=10)

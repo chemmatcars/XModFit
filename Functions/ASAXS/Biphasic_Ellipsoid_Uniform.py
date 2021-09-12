@@ -17,9 +17,9 @@ from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 from utils import find_minmax, calc_rho, create_steps
 from functools import lru_cache
 import time
-from numba import jit
+from numba import njit, prange
 
-@jit(nopython=True)
+@njit(parallel=True, cache=True)
 def ellipsoid_ml_asaxs(q,Rx,RzRatio,rho,eirho,adensity,Nalf):
     dalf = 3.14159 / Nalf
     NLayers=len(rho)
@@ -27,39 +27,39 @@ def ellipsoid_ml_asaxs(q,Rx,RzRatio,rho,eirho,adensity,Nalf):
     ffs = np.zeros_like(q)
     ffc = np.zeros_like(q)
     ffr = np.zeros_like(q)
-    for i,q1 in enumerate(q):
+    for i in prange(len(q)):
         tRx = 0.0
         tRz = 0.0
-        for j in range(Nalf):
+        for j in prange(Nalf):
             alf = j * dalf
             tRx = 0.0
             tRz = 0.0
             tft = 0.0
             tfs = 0.0
             tfr = 0.0
-            for k in range(NLayers-1):
+            for k in prange(NLayers-1):
                 tRx = tRx + Rx[k]
                 tRz = tRz + Rx[k] * RzRatio[k]
                 Rx2 = tRx * tRx
                 Rz2 = tRz * tRz
                 V = 4 * 3.14159 * tRz * tRx ** 2 / 3.0
                 rt = np.sqrt(Rx2 * np.sin(alf) ** 2 + Rz2 * np.cos(alf) ** 2)
-                fac = 3 * V * (np.sin(q1 * rt) - q1 * rt * np.cos(q1 * rt)) / (q1 * rt) ** 3
+                fac = 3 * V * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / (q[i] * rt) ** 3
                 ft = (rho[k] - rho[k + 1]) * fac
                 fs = (eirho[k] - eirho[k + 1]) * fac
                 fr = (adensity[k] - adensity[k + 1]) * fac
                 fc = fs * fr
-                tft = tft + ft
-                tfs = tfs + fs
-                tfr = tfr + fr
-            fft[i] = fft[i] + np.abs(tft) ** 2 * np.sin(alf)
-            ffs[i] = ffs[i] + tfs ** 2 * np.sin(alf)
-            ffc[i] = ffc[i] + tfs * tfr * np.sin(alf)
-            ffr[i] = ffr[i] + tfr ** 2 * np.sin(alf)
-        fft[i] = fft[i] * dalf
-        ffs[i] = ffs[i] * dalf
-        ffc[i] = ffc[i] * dalf
-        ffr[i] = ffr[i] * dalf
+                tft += ft
+                tfs += fs
+                tfr += fr
+            fft[i] += np.abs(tft) ** 2 * np.sin(alf)
+            ffs[i] += tfs ** 2 * np.sin(alf)
+            ffc[i] += tfs * tfr * np.sin(alf)
+            ffr[i] += tfr ** 2 * np.sin(alf)
+        fft[i] *= dalf
+        ffs[i] *= dalf
+        ffc[i] *= dalf
+        ffr[i] *= dalf
     return fft, ffs, ffc, ffr
 
 
@@ -387,6 +387,6 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
 
 
 if __name__=='__main__':
-    x=np.arange(0.001,1.0,0.1)
+    x=np.logspace(-3,0,200)
     fun=Biphasic_Ellipsoid_Uniform(x=x)
     print(fun.y())

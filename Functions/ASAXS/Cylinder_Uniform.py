@@ -16,11 +16,11 @@ from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 # from ff_cylinder import ff_cylinder_ml_asaxs
 from utils import find_minmax, calc_rho, create_steps
 
-from numba import jit
+from numba import njit, prange
 from scipy.special import j1
 import numba_scipy.special
 
-@jit(nopython=True)
+@njit(parallel=True,cache=True)
 def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
     #HvvgtR: H>>R means infinitely long cylinder
     dalf = np.pi/Nalf
@@ -34,29 +34,29 @@ def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
     drho=2.0*np.diff(np.array(rho))*V
     deirho=2.0*np.diff(np.array(eirho))*V
     dadensity=2.0*np.diff(np.array(adensity))*V
-    for i, q1 in enumerate(q):
-        for ialf in range(Nalf):
+    for i in prange(len(q)):
+        for ialf in prange(Nalf):
             alf = ialf*dalf + 1e-6
             tft = np.complex(0.0,0.0)
             tfs = 0.0
             tfr = 0.0
-            for k in range(Nlayers-1):
-                qh=np.abs(q1*H*np.cos(alf)/2)
+            for k in prange(Nlayers-1):
+                qh=np.abs(q[i]*H*np.cos(alf)/2)
                 fach=(1.0-HvvgtR)*np.sin(qh)/qh+HvvgtR*np.cos(qh-np.pi/4.0)*np.sqrt(2/np.pi/qh)
-                qr=q1*tR[k]*np.sin(alf)
+                qr=q[i]*tR[k]*np.sin(alf)
                 facR=j1(qr)/qr
                 fac =  fach*facR
-                tft = tft + drho[k] * fac
-                tfs = tfs + deirho[k] * fac
-                tfr = tfr + dadensity[k] * fac
-            fft[i] = fft[i] + np.abs(tft) ** 2 * np.sin(alf)
-            ffs[i] = ffs[i] + tfs ** 2 * np.sin(alf)
-            ffc[i] = ffc[i] + tfs * tfr * np.sin(alf)
-            ffr[i] = ffr[i] + tfr ** 2 * np.sin(alf)
-        fft[i] = fft[i] * dalf
-        ffs[i] = ffs[i] * dalf
-        ffc[i] = ffc[i] * dalf
-        ffr[i] = ffr[i] * dalf
+                tft += drho[k] * fac
+                tfs += deirho[k] * fac
+                tfr += dadensity[k] * fac
+            fft[i] += np.abs(tft) ** 2 * np.sin(alf)
+            ffs[i] += tfs ** 2 * np.sin(alf)
+            ffc[i] += tfs * tfr * np.sin(alf)
+            ffr[i] += tfr ** 2 * np.sin(alf)
+        fft[i] *= dalf
+        ffs[i] *= dalf
+        ffc[i] *= dalf
+        ffr[i] *= dalf
     return fft,ffs,ffc,ffr
 
 class Cylinder_Uniform: #Please put the class name same as the function name
