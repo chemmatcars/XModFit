@@ -33,6 +33,7 @@ def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi):
     drho=2.0*np.diff(np.array(rho))*V
     deirho=2.0*np.diff(np.array(eirho))*V
     dadensity=2.0*np.diff(np.array(adensity))*V
+    dphidpsi=dphi*dpsi
     for i in prange(len(q)):
         for iphi in prange(0, Nphi):
             phi = iphi*dphi
@@ -42,22 +43,28 @@ def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi):
                 tft = np.complex(0.0, 0.0)
                 tfs = 0.0
                 tfr = 0.0
+                sc=q[i]*np.sin(phi)*np.cos(psi)/2.0
+                ss=q[i]*np.sin(phi)*np.sin(psi)/2.0
                 for k in prange(Nlayers-1):
-                    ql=q[i]*L[k]*np.sin(phi)*np.cos(psi)/2.0
-                    qb=q[i]*B[k]*np.sin(phi)*np.sin(psi)/2.0
+                    ql=L[k]*sc
+                    qb=B[k]*ss
                     fac=np.sinc(ql)*np.sinc(qb)*np.sinc(qh)
                     tft += drho[k] * fac
                     tfs += deirho[k] * fac
                     tfr += dadensity[k] * fac
-                fft[i] += np.abs(tft) ** 2 * np.sin(phi)* dphi*dpsi
-                ffs[i] += tfs ** 2 * np.sin(phi)* dphi*dpsi
-                ffc[i] += tfs * tfr * np.sin(phi)* dphi*dpsi
-                ffr[i] += tfr ** 2 * np.sin(phi)* dphi*dpsi
+                fft[i] += np.abs(tft) ** 2 * np.sin(phi)
+                ffs[i] += tfs ** 2 * np.sin(phi)
+                ffc[i] += tfs * tfr * np.sin(phi)
+                ffr[i] += tfr ** 2 * np.sin(phi)
+    fft*=dphidpsi
+    ffs*=dphidpsi
+    ffc*=dphidpsi
+    ffr*=dphidpsi
     return fft,ffs,ffc,ffr
 
 class Parallelopiped_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, flux=1e13, dist='Gaussian', Energy=None, relement='Au', NrDep='False', L=1.0, B=1.0,
-                 H=1.0, sig=0.0, norm=1.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=200,Npsi=400, term='Total',
+                 H=1.0, sig=0.0, norm=1.0e-9, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=200,Npsi=400, term='Total',
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                   'Rmoles': [1.0, 0.0], 'Thickness': [0.0, 0.0]}}):
         """

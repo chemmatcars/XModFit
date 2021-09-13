@@ -61,7 +61,7 @@ def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
 
 class Cylinder_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, flux=1e13, dist='Gaussian', Energy=None, relement='Au', NrDep='False', H=1.0, HvvgtR=False,
-                 Rsig=0.0, norm=1.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nalf=200,term='Total',
+                 Rsig=0.0, norm=1.0e-9, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nalf=200,term='Total',
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                   'Rmoles': [1.0, 0.0], 'R': [1.0, 0.0]}}):
         """

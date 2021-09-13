@@ -38,7 +38,7 @@ def ff_sphere_ml(q,R,rho):
 
 
 class Sphere_Double_Layer: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=20, flux=1e13, dist='Gaussian', Energy=None, relement='Au', NrDep=False, norm=1.0e-4,
+    def __init__(self, x=0, Np=20, flux=1e13, dist='Gaussian', Energy=None, relement='Au', NrDep=False, norm=1.0e-9,
                  sbkg=0.0, cbkg=0.0, abkg=0.0, nearIon='Rb', farIon='Cl', ionDensity=0.0, stThickness=1.0,
                  stDensity=0.0, dbLength=1.0, dbDensity=0.0,Ndb=20,Rsig=0.0,D=0.0,phi=0.1,U=-1.0,SF=None,term='Total',
                  mpar={'Layers':{'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
