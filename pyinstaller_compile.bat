@@ -1,1 +1,1 @@
-pyinstaller --clean --distpath=..\XModFit_Compiled\dist --workpath=..\XModFit_Compiled\build --debug=imports --noconfirm xmodfit.spec
+pyinstaller --clean --distpath=..\..\XModFit_Compiled\dist --workpath=..\..\XModFit_Compiled\build --debug=imports --noconfirm xmodfit.spec

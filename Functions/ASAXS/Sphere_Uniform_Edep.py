@@ -15,26 +15,26 @@ from functools import lru_cache
 from PeakFunctions import LogNormal, Gaussian
 from utils import find_minmax, calc_rho
 
-from numba import jit
+from numba import njit, prange
 
-@jit(nopython=True)
+@njit(parallel=True,cache=True)
 def ff_sphere_ml(q,R,rho):
     Nlayers=len(R)
     aff=np.ones_like(q)*complex(0,0)
     ff=np.zeros_like(q)
-    for i,q1 in enumerate(q):
+    for i in range(len(q)):
         fact = 0.0
         rt = 0.0
-        for j in range(1,Nlayers):
-            rt = rt + R[j - 1]
-            fact = fact + (rho[j - 1] - rho[j]) * (np.sin(q1 * rt) - q1 * rt * np.cos(q1 * rt)) / q1 ** 3
+        for j in prange(1,Nlayers):
+            rt+= R[j - 1]
+            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
         aff[i] = fact
         ff[i] = abs(fact) ** 2
     return ff,aff
 
 
 class Sphere_Uniform_Edep: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=20, flux=1e13, bkg=0.0,dist='Gaussian', relement='Au', Energy=None, NrDep='False', norm=1.0,
+    def __init__(self, x=0, Np=20, flux=1e13, bkg=0.0,dist='Gaussian', relement='Au', Energy=None, NrDep='False', norm=1.0e-9,
                  D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,term='Total',
                  mpar={'Multilayers':{'Material':['Au','H2O'],'Density':[19.32,1.0],'SolDensity':[1.0,1.0],'Rmoles':[1.0,0.0],'R':[1.0,0.0]}}):
         """

@@ -18,26 +18,26 @@ from utils import find_minmax, calc_rho, create_steps
 from functools import lru_cache
 import time
 
-from numba import jit
+from numba import njit, prange
 
-@jit(nopython=True)
+@njit(parallel=True, cache=True)
 def ff_sphere_ml(q,R,rho):
     Nlayers=len(R)
     aff=np.ones_like(q)*complex(0,0)
     ff=np.zeros_like(q)
-    for i,q1 in enumerate(q):
+    for i in prange(len(q)):
         fact = 0.0
         rt = 0.0
-        for j in range(1,Nlayers):
-            rt = rt + R[j - 1]
-            fact = fact + (rho[j - 1] - rho[j]) * (np.sin(q1 * rt) - q1 * rt * np.cos(q1 * rt)) / q1 ** 3
+        for j in prange(1,Nlayers):
+            rt += R[j - 1]
+            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
         aff[i] = fact
         ff[i] = abs(fact) ** 2
     return ff,aff
 
 class Biphasic_Sphere_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=20, flux=1e13, term='Total',dist='Gaussian', Energy=None, relement='Au', NrDep='False',
-                 norm=1.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,
+                 norm=1.0e-9, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,
                  mpar={'Phase_1':{'Material':['Au','H2O'],
                                   'Density':[19.32,1.0],
                                   'VolFrac':[1.0,1.0],
@@ -325,6 +325,6 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
 
 
 if __name__=='__main__':
-    x=np.arange(0.001,1.0,0.001)
+    x=np.logspace(-3,0,200)
     fun=Biphasic_Sphere_Uniform(x=x)
     print(fun.y())

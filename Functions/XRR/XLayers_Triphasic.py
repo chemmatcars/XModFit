@@ -12,20 +12,22 @@ from functools import lru_cache
 
 ####Import your modules below if needed####
 # from xr_ref import parratt_numba
-from numba import jit
-@jit(nopython=True)
-def parratt_numba(q,lam,d,rho,mu):
+from numba import njit, prange
+@njit(parallel=True,cache=True)
+def parratt_numba(q,lam,d,rho,beta):
     ref=np.ones_like(q)
     refc=np.ones_like(q)*complex(1.0,0.0)
     f1=16.0*np.pi*2.818e-5
-    f2=-8*np.pi/lam/1e8
-    for j,q1 in enumerate(q):
+    f2=-32.0*np.pi**2/lam**2
+    Nl=len(d)
+    for j in prange(len(q)):
         r=complex(0.0,0.0)
-        for i in range(len(d)-1,0,-1):
+        for it in prange(1,Nl):
+            i=Nl-it
             qc1=f1*(rho[i-1]-rho[0])
             qc2=f1*(rho[i]-rho[0])
-            k1=np.sqrt(complex(q1**2-qc1,f2*mu[i-1]))
-            k2=np.sqrt(complex(q1**2-qc2,f2*mu[i]))
+            k1=np.sqrt(complex(q[j]**2-qc1,f2*beta[i-1]))
+            k2=np.sqrt(complex(q[j]**2-qc2,f2*beta[i]))
             X=(k1-k2)/(k1+k2)
             fact1=complex(np.cos(k2.real*d[i]),np.sin(k2.real*d[i]))
             fact2=np.exp(-k2.imag*d[i])

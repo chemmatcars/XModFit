@@ -2120,6 +2120,7 @@ class XModFit(QWidget):
         self.calcConfInterButton.setDisabled(True)
         
     def add_uncoupled_mpar(self):
+
         cur_index = self.mfitParamTabWidget.currentIndex()
         mkey=self.mfitParamTabWidget.tabText(self.mfitParamTabWidget.currentIndex())
         try:
@@ -2606,8 +2607,10 @@ class XModFit(QWidget):
                         lnum=i+1
                         break
                 if 'x' in lines[lnum]:
-                    xline=lines[lnum].split('=')[1].strip()
-                    self.xLineEdit.setText(xline)
+                    self.xline=lines[lnum].split('=')[1].strip()
+                else:
+                    self.xline='np.linspace(0.0,1.0,100)'
+                self.xLineEdit.setText(self.xline)
                 self.fixedParamTableWidget.clear()
                 self.sfitParamTableWidget.clear()
                 self.mfitParamTabWidget.clear()
@@ -2826,14 +2829,18 @@ class XModFit(QWidget):
 
 
     def fixedParamChanged(self,row,col):
+        self.fixedParamTableWidget.cellChanged.disconnect()
+
         txt=self.fixedParamTableWidget.item(row,0).text()
         if txt in self.fit.params['choices'].keys():
+            self.fixedParamTableWidget.cellWidget(row, 1).currentIndexChanged.disconnect()
             try: # if the parameter is a number
                 self.fit.params[txt]=eval(self.fixedParamTableWidget.cellWidget(row,1).currentText())
             except: # if the parameter is a string
                 self.fit.params[txt] = str(self.fixedParamTableWidget.cellWidget(row, 1).currentText())
             self.fchanged = False
             self.update_plot()
+            self.fixedParamTableWidget.cellWidget(row, 1).currentIndexChanged.connect(lambda x:self.fixedParamChanged(row,1))
         else:
             try: # if the parameter is a number
                 val=eval(self.fixedParamTableWidget.item(row,col).text())
@@ -2850,6 +2857,7 @@ class XModFit(QWidget):
         self.fixedParamTableWidget.resizeRowsToContents()
         self.fixedParamTableWidget.resizeColumnsToContents()
         self.update_fit_parameters()
+        self.fixedParamTableWidget.cellChanged.connect(self.fixedParamChanged)
 
 
         
@@ -3009,6 +3017,7 @@ class XModFit(QWidget):
         
             
     def xChanged(self):
+        self.xLineEdit.returnPressed.disconnect()
         try:
             x=eval(self.xLineEdit.text())
             #x=np.array(x)
@@ -3023,6 +3032,7 @@ class XModFit(QWidget):
             if len(self.funcListWidget.selectedItems())>0:
                 try:
                     stime = time.time()
+                    self.fit.func.__fit__=False
                     self.fit.evaluate()
                     exectime = time.time() - stime
                 except:
@@ -3076,7 +3086,8 @@ class XModFit(QWidget):
                 QApplication.processEvents()
         except:
             QMessageBox.warning(self,'Value Error','The value just entered is not seem to be right.\n'+traceback.format_exc(),QMessageBox.Ok)
-            self.xLineEdit.setText('np.linspace(0.001,0.1,100)')
+            self.xLineEdit.setText(self.xline)
+        self.xLineEdit.returnPressed.connect(self.xChanged)
 
         
     def update_plot(self):
@@ -3142,12 +3153,14 @@ class XModFit(QWidget):
         if len(self.funcListWidget.selectedItems())>0:
             try:
                 stime=time.perf_counter()
+                self.fit.func.__fit__=False
                 self.fit.evaluate()
                 ntime=time.perf_counter()
                 exectime=ntime-stime
             except:
                 QMessageBox.warning(self, 'Evaluation Error', traceback.format_exc(), QMessageBox.Ok)
                 self.fit.yfit = self.fit.func.x
+                exectime=np.nan
             if len(self.dataListWidget.selectedItems()) > 0:
                 self.fit.set_x(x, y=y, yerr=yerr)
                 try:
@@ -3296,11 +3309,11 @@ if __name__=='__main__':
     # QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     # app = QApplication(sys.argv)
-    try:
-        # app.setAttribute(Qt.AA_EnableHighDpiScaling)
-        app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    except:
-        pass
+    # try:
+    #     # app.setAttribute(Qt.AA_EnableHighDpiScaling)
+    #     app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    # except:
+    #     pass
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     app = QApplication(sys.argv)
