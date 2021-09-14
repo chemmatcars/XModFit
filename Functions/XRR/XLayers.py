@@ -21,9 +21,9 @@ def parratt_numba(q,lam,d,rho,beta):
     f1=16.0*np.pi*2.818e-5
     f2=-32.0*np.pi**2/lam**2
     Nl=len(d)
-    for j in prange(len(q)):
+    for j in range(len(q)):
         r=complex(0.0,0.0)
-        for it in prange(1,Nl):
+        for it in range(1,Nl):
             i=Nl-it
             qc1=f1*(rho[i-1]-rho[0])
             qc2=f1*(rho[i]-rho[0])
@@ -36,7 +36,7 @@ def parratt_numba(q,lam,d,rho,beta):
             r=(X+r*fact)/(1.0+X*r*fact)
         ref[j]=np.abs(r)**2
         refc[j]=r
-    return ref,r
+    return ref, r
 
 
 class XLayers: #Please put the class name same as the function name
