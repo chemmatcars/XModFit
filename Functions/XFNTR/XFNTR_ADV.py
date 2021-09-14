@@ -19,8 +19,8 @@ sys.path.append(os.path.abspath('./Fortran_rountines'))
 
 class XFNTR_ADV: #Please put the class name same as the function name
     def __init__(self,x=0.1,E=20.0, mpar={'Top':{'Components':['Sr'],'Concentration':[0.0],'Radius':[1.25]}, 'Bottom':{'Components':['SrCl2'],'Concentration':[50.0],'Radius':[2.388]}},
-                 topchem='C12H26', topden=0.75, botchem='H2O', botden=0.997, element='Sr', line='Ka1', beam_profile='Uniform',
-                 x_axis = 'Qz', beamwid = 0.02, detlen=12.7, gl2=1238.0, qz=0.01, samplesize=76, qoff=0.0, shoff=0.0, gl2off=0.0, detoff=0.0, yscale=1, int_bg=0, Rc=300, sur_cov=1):
+                 topchem='C12H26', topden=0.75, botchem='H2O', botden=0.997, element='Sr', line='Ka1', beam_profile='Gaussian',
+                 x_axis = 'Qz', beamwid = 0.006, detlen=12.7, gl2=1238.0, qz=0.01, samplesize=76, qoff=0.0, shoff=0.0, gl2off=0.0, detoff=0.0, yscale=1, int_bg=0, Rc=300, sur_cov=0):
         """
         Calculates X-ray reflectivity from a system of multiple layers using Parratt formalism
 
@@ -206,17 +206,21 @@ class XFNTR_ADV: #Please put the class name same as the function name
         bot_con = []
         sur_con = []
         for i in range(len(x)):
-            steps = int(fprint[i]/1e5)  # use 0.1 mm as the step size
+            steps = int(fprint[i]/1e6)  # use 0.1 mm as the step size
             stepsize = fprint[i]/steps
            # print(alpha[i], fprint[i], steps, stepsize)
             x0 = np.linspace(-fprint[i]/2 + delx[i] + stepsize/2, fprint[i]/2 + delx[i] - stepsize/2, steps)  # get the position of single ray hitting z=0 relative to the center of sample with the step size "steps"
+            #print(x0, steps)
             if self.beam_profile == 'Uniform':
-                weight = 1 / (self.beamwid * 1e7) * np.ones_like(x0)  # get the beam intensity weight at given x0 for the rectangular beam
+                weight = alpha[i] / (self.beamwid * 1e7) * np.ones_like(x0)  # get the beam intensity weight at given x0 for the rectangular beam
                 #weight = 1 * np.ones_like(x0)
             else:
-                weight = 1 / (self.beamwid * 1e7 * np.sqrt(2 * np.pi)) * np.exp(-(x0-delx[i])**2/(2*self.beamwid**2*1e14)) # get the beam intensity weight for the Gaussian beam
+                weight = alpha[i] / (self.beamwid * 1e7 * np.sqrt(2 * np.pi)) * np.exp(-(x0-delx[i])**2*alpha[i]**2/(2*self.beamwid**2*1e14)) # get the beam intensity weight for the Gaussian beam
+               # print(self.beamwid, x0[3650], weight[3650])
+               # print(weight[3600:3700])
 
             xprimetotal, zprimetotal = self.getxz(x0, self.Rc * 1e10, alpha[i])   # get x' and z', where the ray hits the interface from a given x0 and alpha, including the 'nan', where the ray misses the interface
+           # print(xprimetotal)
             xprime = xprimetotal[np.where(np.isnan(xprimetotal)==False)]    # get x' and z' for the ray hitting the interface
             zprime = zprimetotal[np.where(np.isnan(xprimetotal)==False)]
             x0hit = x0[np.where(np.isnan(xprimetotal)==False)]    #get x0 for the ray hitting the interface
@@ -269,8 +273,15 @@ class XFNTR_ADV: #Please put the class name same as the function name
             #print(np.exp(mu_r * z_r1) - np.exp(mu_r * z_rmed))
             #print(1.0 / mu_r * refl * (np.exp(mu_r * z_r1 - topmu * x1) - np.exp(mu_r * z_rmed - topmu * x1)))
             #int_top = 1.0 / mu_i * np.exp(-topmu * x0hit) * (np.exp(mu_i * z_i2) - np.exp(mu_i * z_imed)) + 1.0 / mu_r * refl * np.exp(-topmu * x1) * (np.exp(mu_r * z_r1) - np.exp(mu_r * z_rmed))
+            #print(-topmu * xprime)
+            #print(-alphaprime * zprime / alpha[i] / pend)
+            #print(np.max(mu_t*z_imed))
+            temp=mu_t*z_imed
+            print(temp[np.where(z_i1<=zprime)])
+
             int_top = 1.0 / mu_i * np.exp(-topmu * x0hit) * (np.exp(mu_i * z_i2) - np.exp(mu_i * z_imed)) + np.abs(1.0 / mu_r * refl * (np.exp(mu_r * z_r1 - topmu * x1) - np.exp(mu_r * z_rmed - topmu * x1)))
-            int_bot = 1.0 / mu_t * trans * np.exp(-topmu * xprime) * np.exp(-alphaprime * zprime / alpha[i] / pend) * (np.exp(mu_t * z_imed) - np.exp(mu_t * z_i1))
+            int_bot = np.where(z_i1 > zprime, 0, 1.0 / mu_t * trans * np.exp(-topmu * xprime) * np.exp(-alphaprime * zprime / alpha[i] / pend) * (np.exp(mu_t * z_imed) - np.exp(mu_t * z_i1)))
+            #int_bot = 1.0 / mu_t * trans * np.exp(-topmu * xprime) * np.exp(-alphaprime * zprime / alpha[i] / pend) * (np.exp(mu_t * z_imed - 500) - np.exp(mu_t * z_i1 - 500)) * np.exp(500)
             int_sur = np.where((xprime < self.detlen * 1e7 / 2 + self.detoff * 1e7) & (xprime > -self.detlen * 1e7 / 2 + self.detoff * 1e7), trans * np.exp(-topmu * xprime), 0)
 
             #print(int_bot)
@@ -284,7 +295,7 @@ class XFNTR_ADV: #Please put the class name same as the function name
                 #print('missing the interface at x = ', x[i])
                 z_i1miss = (x0miss - self.detlen * 1e7 / 2 - self.detoff * 1e7) * alpha[i]  # the position of the incident beam missing the interface hits the downstream edge of the detecting area
                 z_i2miss = (x0miss + self.detlen * 1e7 / 2 - self.detoff * 1e7) * alpha[i]  # the position of the incident beam missing the interface hits the upstream edge of the detecting area
-                int_topmiss = 1.0 / mu_i * np.exp(-topmu * x0miss) * (np.exp(mu_i * z_i2miss) - np.exp(mu_i * z_i1miss))
+                int_topmiss = 1.0 / mu_i * (np.exp(mu_i * z_i2miss - topmu * x0miss) - np.exp(mu_i * z_i1miss - topmu * x0miss))
                 tot_top = tot_top + self.yscale * stepsize * contop * np.sum(int_topmiss * weightmiss) * self.__avoganum__ / 1e27
             #print(np.where(xprime > -self.samplesize * 1e7 / 2, int_bot * weight, 0))
             #print(tot_bot)
@@ -346,7 +357,7 @@ class XFNTR_ADV: #Please put the class name same as the function name
 
         x = self.x
         flu, top, bot, sur = self.fluCalFun(x, topdel, topbet, botdel, botbet, flutopdel, flutopbet, flubotdel, flubotbet, flutopmu, flubotmu, topmu, k0, conbot, contop)
-        #print(flu)
+        print(flu)
         #print(bot)
         if not self.__fit__:
             #flu, top, bot, sur = self.fluCalFun(x)
@@ -359,6 +370,6 @@ class XFNTR_ADV: #Please put the class name same as the function name
 
 
 if __name__=='__main__':
-    x=np.linspace(0.006,0.015,100)
+    x=np.linspace(0.009,0.009,1)
     fun=XFNTR_ADV(x=x)
     print(fun.y())

@@ -61,8 +61,8 @@ def fluCalFun(x, topdel, topbet, botdel, botbet, flutopdel, flutopbet, flubotdel
         # print(x1)
         # print(xprime, zprime)
 
-        pend, trans, refl = frsnllCal(topdel, topbet, botdel, botbet, k0, alphaprime)  # get penetration depth, the frsnll transmissivity, and the reflectivity from given a'
-
+        #pend, trans, refl = frsnllCal(topdel, topbet, botdel, botbet, k0, alphaprime)  # get penetration depth, the frsnll transmissivity, and the reflectivity from given a'
+        pend, trans, refl = np.ones_like(alphaprime), np.ones_like(alphaprime), np.ones_like(alphaprime)
         # print(trans)
         mu_i = topmu / alpha[i] + flutopmu  # the effective absorption coefficient of the incident beam
         mu_r = -topmu / (2 * alphaprime - alpha[i]) + flutopmu  # the effective absorption coefficient of the reflected beam
