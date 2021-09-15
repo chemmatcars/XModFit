@@ -177,7 +177,6 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             else:
                 Lmin, Lmax= max(-3, np.log(totalL) - 5*sig), np.log(totalL) + 5*sig
                 Bmin, Bmax = max(-3, np.log(totalB) - 5 * sig), np.log(totalB) + 5 * sig
-                print(Lmin, Lmax)
                 dL = np.logspace(Lmin, Lmax, N, base=np.exp(1.0))
                 dB = np.logspace(Bmin, Bmax, N, base=np.exp(1.0))
             fdist.x = dL

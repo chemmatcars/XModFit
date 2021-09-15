@@ -2505,12 +2505,13 @@ class XModFit(QWidget):
                     for i in range(self.mfitParamTabWidget.count()):
                         mkey=self.mfitParamTabWidget.tabText(i)
                         self.mfitParamTableWidget[mkey].cellChanged.connect(self.mfitParamChanged_new)
-                    self.xminmaxChanged()
-                    self.xChanged()
+                    if len(self.dataListWidget.selectedItems())>0:
+                        self.xminmaxChanged()
+                    else:
+                        self.xChanged()
                     self.errorAvailable=False
                     self.reuse_sampler=False
                     self.calcConfInterButton.setDisabled(True)
-                    # self.update_plot()
                 else:
                     QMessageBox.warning(self, 'File error',
                                         'This parameter file does not belong to function: %s' % func, QMessageBox.Ok)
@@ -2863,14 +2864,13 @@ class XModFit(QWidget):
         
         
     def sfitParamChanged(self,row,col):
-        self.sfitParamTableWidget.cellChanged.disconnect()
         txt=self.sfitParamTableWidget.item(row,0).text()
         try:
             val=float(self.sfitParamTableWidget.item(row,col).text())
         except:
             val=self.sfitParamTableWidget.item(row,col).text()
         if col==1:
-            oldVal=self.fit.params[txt]
+            oldVal=self.fit.fit_params[txt].value
         elif col==2:
             oldVal=self.fit.fit_params[txt].min
         elif col==3:
@@ -2885,7 +2885,9 @@ class XModFit(QWidget):
                     self.fit.params[txt]=val
                     self.fit.fit_params[txt].set(value=val)
                     self.fchanged=False
+                    self.sfitParamTableWidget.cellChanged.disconnect()
                     self.sfitParamTableWidget.item(row,col).setText(self.format%val)
+                    self.sfitParamTableWidget.cellChanged.connect(self.sfitParamChanged)
                     self.update_plot()
             elif col==2:
                 self.fit.fit_params[txt].set(min=val)
@@ -2895,19 +2897,36 @@ class XModFit(QWidget):
                 self.fit.fit_params[txt].set(brute_step=val)
         elif isinstance(val,str):
             if col==4:
-                self.fit.fit_params[txt].expr = None if val == 'None' else val
-        else:
-            QMessageBox.warning(self,'Value Error','Please input numbers only',QMessageBox.Ok)
-            self.sfitParamTableWidget.item(row,col).setText(str(oldVal))
+                pval=self.fit.fit_params[txt].value
+                if val == 'None':
+                    self.fit.fit_params[txt].set(value=pval,expr = '')
+                else:
+                    self.fit.fit_params[txt].set(value=pval,expr = val)
+                try:
+                    self.fit.fit_params[txt].value
+                except:
+                    self.sfitParamTableWidget.cellChanged.disconnect()
+                    QMessageBox.warning(self, 'Expression Error', 'Please enter correct expression using only parameters and constants', QMessageBox.Ok)
+                    if oldVal is None:
+                        self.fit.fit_params[txt].set(value=pval,expr='')
+                    else:
+                        self.fit.fit_params[txt].set(value=pval,expr=oldVal)
+                    self.sfitParamTableWidget.item(row, col).setText(str(oldVal))
+                    self.sfitParamTableWidget.cellChanged.connect(self.sfitParamChanged)
+            else:
+                QMessageBox.warning(self,'Value Error','Please input numbers only',QMessageBox.Ok)
+                self.sfitParamTableWidget.cellChanged.disconnect()
+                self.sfitParamTableWidget.item(row,col).setText(str(oldVal))
+                self.sfitParamTableWidget.cellChanged.connect(self.sfitParamChanged)
         if self.sfitParamTableWidget.item(row,1).checkState()==Qt.Checked:
             self.fit.fit_params[txt].vary=1
         else:
             self.fit.fit_params[txt].vary=0
-        self.sfitParamTableWidget.item(row, 1).setToolTip((txt + ' = '+self.format+'\u00B1 '+self.format) % (self.fit.fit_params[txt].value, 0.0))
+        if col==1:
+            self.sfitParamTableWidget.item(row, 1).setToolTip((txt + ' = '+self.format+'\u00B1 '+self.format) % (self.fit.fit_params[txt].value, 0.0))
         self.sfitParamTableWidget.resizeRowsToContents()
         self.sfitParamTableWidget.resizeColumnsToContents()
         self.update_sfitSlider(row,col)
-        self.sfitParamTableWidget.cellChanged.connect(self.sfitParamChanged)
         self.update_sfit_parameters()
         self.update_mfit_parameters_new()
         self.sfitParamTableWidget.setCurrentCell(row,col)
@@ -3151,16 +3170,17 @@ class XModFit(QWidget):
                 x = x[np.argwhere(x>=self.xmin)[0][0]:np.argwhere(x<=self.xmax)[-1][0]+1]
 
         if len(self.funcListWidget.selectedItems())>0:
-            try:
-                stime=time.perf_counter()
-                self.fit.func.__fit__=False
-                self.fit.evaluate()
-                ntime=time.perf_counter()
-                exectime=ntime-stime
-            except:
-                QMessageBox.warning(self, 'Evaluation Error', traceback.format_exc(), QMessageBox.Ok)
-                self.fit.yfit = self.fit.func.x
-                exectime=np.nan
+            # try:
+            stime=time.perf_counter()
+            self.fit.func.__fit__=False
+            self.fit.evaluate()
+            ntime=time.perf_counter()
+            exectime=ntime-stime
+            # except:
+            #     print('I m here')
+            #     QMessageBox.warning(self, 'Evaluation Error', traceback.format_exc(), QMessageBox.Ok)
+            #     self.fit.yfit = self.fit.func.x
+            #     exectime=np.nan
             if len(self.dataListWidget.selectedItems()) > 0:
                 self.fit.set_x(x, y=y, yerr=yerr)
                 try:
