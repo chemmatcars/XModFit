@@ -273,7 +273,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             key1='Total'
             total= self.norm * 6.022e20 *sqft[key1] * struct + self.sbkg
             if not self.__fit__:
-                dL, Ldist, totalL, dB, Bdist, totalB = self.calc_LBdist(tuple(self.__L__), tuple(self.__B_), self.sig, self.dist, self.Np)
+                dL, Ldist, totalL, dB, Bdist, totalB = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
                 self.output_params['L_Distribution'] = {'x': dL, 'y': Ldist}
                 self.output_params['B_Distribution'] = {'x': dB, 'y': Bdist}
                 self.output_params['Total'] = {'x': self.x[key], 'y':total}
