@@ -180,37 +180,32 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
                 dL = np.logspace(Lmin, Lmax, N, base=np.exp(1.0))
                 dB = np.logspace(Bmin, Bmax, N, base=np.exp(1.0))
             fdist.x = dL
-            Ldist = fdist.y()
-            sumdist = np.sum(Ldist)
-            Ldist = Ldist / sumdist
-            fdist.x = dB
-            Bdist = fdist.y()
-            sumdist = np.sum(Bdist)
-            Bdist = Bdist / sumdist
-            return dL, Ldist, totalL, dB, Bdist, totalB
+            dist = fdist.y()
+            # sumdist = np.sum(Ldist)
+            # Ldist = Ldist / sumdist
+            return dL, totalL, dB, totalB, dist
         else:
-            return [totalL], [1.0], totalL, [totalB], [1.0], totalB
+            return [totalL], totalL, [totalB], totalB, [1.0]
 
     @lru_cache(maxsize=10)
     def parallelopiped(self, q, L, B, H, sig, rho, eirho, adensity, dist='Gaussian', Np=10, Nphi=200, Npsi=400):
         q = np.array(q)
-        dL, Ldist, totalL, dB, Bdist, totalB = self.calc_LBdist(L, B, sig, dist, Np)
+        dL, totalL, dB, totalB, dist = self.calc_LBdist(L, B, sig, dist, Np)
         form = np.zeros_like(q)
         eiform = np.zeros_like(q)
         aform = np.zeros_like(q)
         cform = np.zeros_like(q)
         pfac = (2.818e-5 * 1.0e-8) ** 2
-        sumL=np.sum(Ldist)
-        sumB=np.sum(Bdist)
+        sumL=np.sum(dist)
         for i in range(len(dL)):
             l = np.array(L) * (1 + (dL[i] - totalL) / totalL)
             b = np.array(B) * (1 + (dB[i] - totalB) / totalB)
             # fft, ffs, ffc, ffr = ff_cylinder_ml_asaxs(q, H, r, rho, eirho, adensity, Nalf)
             fft, ffs, ffc, ffr = parallelopiped_ml_asaxs(q, l, b, H, rho, eirho, adensity, Nphi, Npsi)
-            form += Ldist[i] * Bdist[i] * fft/sumL/sumB
-            eiform += Ldist[i] * Bdist[i] * ffs/sumL/sumB
-            aform +=Ldist[i] * Bdist[i] * ffr/sumL/sumB
-            cform += Ldist[i] * Bdist[i] * ffc/sumL/sumB
+            form += dist[i] * fft/sumL
+            eiform += dist[i] * ffs/sumL
+            aform += dist[i] * ffr/sumL
+            cform += dist[i] * ffc/sumL
         return pfac * form, pfac * eiform, pfac * aform, np.abs(pfac * cform)  # in cm^2
 
     @lru_cache(maxsize=10)
@@ -272,9 +267,9 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             key1='Total'
             total= self.norm * 6.022e20 *sqft[key1] * struct + self.sbkg
             if not self.__fit__:
-                dL, Ldist, totalL, dB, Bdist, totalB = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
-                self.output_params['L_Distribution'] = {'x': dL, 'y': Ldist}
-                self.output_params['B_Distribution'] = {'x': dB, 'y': Bdist}
+                dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
+                self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
+                self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
                 self.output_params['Total'] = {'x': self.x[key], 'y':total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
@@ -324,9 +319,9 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             sqf = self.output_params[self.term]['y']
             xtmp, ytmp = create_steps(x=self.__L__[:-1], y=self.__density__[:-1])
             self.output_params['Density_radial'] = {'x': xtmp, 'y': ytmp}
-            dL, Ldist, totalL, dB, Bdist, totalB = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
-            self.output_params['L_Distribution'] = {'x': dL, 'y': Ldist}
-            self.output_params['B_Distribution'] = {'x': dB, 'y': Bdist}
+            dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
+            self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
+            self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
         return sqf
 
 

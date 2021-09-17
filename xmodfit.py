@@ -2694,6 +2694,13 @@ class XModFit(QWidget):
         self.update_sfit_parameters()
         # self.update_mfit_parameters()
         self.update_mfit_parameters_new()
+        self.sfitParamTableWidget.resizeRowsToContents()
+        self.sfitParamTableWidget.resizeColumnsToContents()
+        mkeys = list(self.fit.params['__mpar__'].keys())
+        if '__mpar__' in self.fit.params.keys() and self.fit.params['__mpar__'] != {}:
+            for mkey in mkeys:
+                self.mfitParamTableWidget[mkey].resizeRowsToContents()
+                self.mfitParamTableWidget[mkey].resizeColumnsToContents()
 
 
     def update_sfit_parameters(self):
@@ -2924,12 +2931,12 @@ class XModFit(QWidget):
             self.fit.fit_params[txt].vary=0
         if col==1:
             self.sfitParamTableWidget.item(row, 1).setToolTip((txt + ' = '+self.format+'\u00B1 '+self.format) % (self.fit.fit_params[txt].value, 0.0))
-        self.sfitParamTableWidget.resizeRowsToContents()
-        self.sfitParamTableWidget.resizeColumnsToContents()
         self.update_sfitSlider(row,col)
         self.update_sfit_parameters()
         self.update_mfit_parameters_new()
         self.sfitParamTableWidget.setCurrentCell(row,col)
+        self.sfitParamTableWidget.resizeRowsToContents()
+        self.sfitParamTableWidget.resizeColumnsToContents()
 
     def mfitParamChanged_new(self,row,col):
         index=self.mfitParamTabWidget.currentIndex()
@@ -2975,8 +2982,6 @@ class XModFit(QWidget):
                     self.mfitParamTableWidget[mkey].item(row, col).setText(oldval)
                     self.fit.params['__mpar__'][mkey][pkey][row] = oldval
                     self.mfitParamData[mkey][row][col]=oldval
-            self.mfitParamTableWidget[mkey].resizeRowsToContents()
-            self.mfitParamTableWidget[mkey].resizeColumnsToContents()
             self.update_mfitSlider(row,col)
         except:
             QMessageBox.warning(self,'Value Error', 'Please input numbers only!', QMessageBox.Ok)
@@ -2988,6 +2993,8 @@ class XModFit(QWidget):
         item=self.mfitParamTableWidget[mkey].item(row,col)
         item.setSelected(True)
         self.mfitParamTableWidget[mkey].scrollToItem(item)
+        self.mfitParamTableWidget[mkey].resizeRowsToContents()
+        self.mfitParamTableWidget[mkey].resizeColumnsToContents()
 
 
         
