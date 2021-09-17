@@ -236,8 +236,11 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         scale = 1e27 / 6.022e23
         svol = 1.5*0.0172**2/370**2  # scattering volume in cm^3
         self.update_params()
-        self.__L__=self.L+np.array(self.__Thickness__)
-        self.__B__=self.B+np.array(self.__Thickness__)
+        self.__L__=np.array(self.__Thickness__)
+        self.__B__=np.array(self.__Thickness__)
+        self.__L__[0]=self.L
+        self.__B__[0]=self.B
+        print(self.__L__)
         rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(self.__L__), material=tuple(self.__material__),
                                                                  relement=self.relement,
                                                                  density=tuple(self.__density__),
@@ -267,9 +270,10 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             key1='Total'
             total= self.norm * 6.022e20 *sqft[key1] * struct + self.sbkg
             if not self.__fit__:
-                dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
-                self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
-                self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
+                if self.sig>1e-5:
+                    dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
+                    self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
+                    self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
                 self.output_params['Total'] = {'x': self.x[key], 'y':total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
@@ -319,9 +323,10 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             sqf = self.output_params[self.term]['y']
             xtmp, ytmp = create_steps(x=self.__L__[:-1], y=self.__density__[:-1])
             self.output_params['Density_radial'] = {'x': xtmp, 'y': ytmp}
-            dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
-            self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
-            self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
+            if self.sig>1e-5:
+                dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
+                self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
+                self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
         return sqf
 
 
