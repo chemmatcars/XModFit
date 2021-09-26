@@ -240,7 +240,6 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         self.__B__=np.array(self.__Thickness__)
         self.__L__[0]=self.L
         self.__B__[0]=self.B
-        print(self.__L__)
         rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(self.__L__), material=tuple(self.__material__),
                                                                  relement=self.relement,
                                                                  density=tuple(self.__density__),

@@ -128,12 +128,22 @@ class minMaxDialog(QDialog):
         
     def okandClose(self):
         # try:
-        self.value = float(self.valueLineEdit.text())
+        if type(eval(self.valueLineEdit.text())*1.0)==float:
+            self.value = float(self.valueLineEdit.text())
+        else:
+            QMessageBox.warning(self, 'Value Error',
+                                'Please enter floating point number for Value', QMessageBox.Ok)
+            self.minimumLineEdit.setText(str(self.minimum))
+            return
         if self.varyCheckBox.checkState() == Qt.Checked:
             self.vary = 1
         else:
             self.vary = 0
-        if self.minimumLineEdit.text().replace('.','',1).isdigit() or 'inf' in self.minimumLineEdit.text():
+
+        minimum=self.minimumLineEdit.text()
+        if '-inf' in minimum:
+            self.minimum=-np.inf
+        elif type(eval(self.minimumLineEdit.text())*1.0)==float:
             self.minimum=float(self.minimumLineEdit.text())
         else:
             QMessageBox.warning(self,'Value Error',
@@ -141,7 +151,10 @@ class minMaxDialog(QDialog):
             self.minimumLineEdit.setText(str(self.minimum))
             return
 
-        if self.maximumLineEdit.text().replace('.', '', 1).isdigit() or 'inf' in self.maximumLineEdit.text():
+        maximum = self.maximumLineEdit.text()
+        if 'inf' in maximum:
+            self.maximum=np.inf
+        elif type(eval(self.maximumLineEdit.text())*1.0)==float:
             self.maximum = float(self.maximumLineEdit.text())
         else:
             QMessageBox.warning(self, 'Value Error',
@@ -2458,23 +2471,40 @@ class XModFit(QWidget):
 
                     if mfline is not None:
                         self.mfitParamCoupledCheckBox.setEnabled(True)
+                        val={}
+                        expr={}
+                        pmin={}
+                        pmax={}
+                        pbrute={}
+                        pfit={}
                         for line in lines[mfline:]:
                             tlist=line.strip().split('\t')
                             if len(tlist)>2:
                                 parname,parval,parfit,parmin,parmax,parexpr,parbrute=tlist
+                                val[parname]=float(parval)
+                                pmin[parname]=float(parmin)
+                                pmax[parname]=float(parmax)
+                                pfit[parname]=int(parfit)
                                 try:
-                                    expr=eval(parexpr)
+                                    expr[parname]=eval(parexpr)
                                 except:
-                                    expr=str(parexpr)
+                                    expr[parname]=str(parexpr)
                                 try:
-                                    brute_step=eval(parbrute)
+                                    pbrute[parname]=eval(parbrute)
                                 except:
-                                    brute_step=str(parbrute)
-                                try:
-                                    self.fit.fit_params.set(value=float(parval),vary=int(parfit),min=float(parmin),max=float(parmax),expr=expr,brute_step=brute_step)
+                                    pbrute[parname]=str(parbrute)
+                                try: # Here the expr is set to None and will be taken care at the for loop just after this for loop
+                                    self.fit.fit_params[parname].set(val[parname], vary=pfit[parname],
+                                                                     min=pmin[parname],
+                                                                     max=pmax[parname], expr=None,
+                                                                     brute_step=pbrute[parname])
+                                    print('try', parname, val[parname])
                                 except:
-                                    self.fit.fit_params.add(parname,value=float(parval),vary=int(parfit),min=float(parmin),
-                                                            max=float(parmax),expr=expr,brute_step=brute_step)
+                                    print('except', parname, parval)
+                                    self.fit.fit_params.add(parname, value=val[parname], vary=pfit[parname],
+                                                            min=pmin[parname],
+                                                            max=pmax[parname], expr=None,
+                                                            brute_step=pbrute[parname])
                                 mkey, pkey, num = parname[2:].split('_')
                                 num = int(num)
                                 try:
@@ -2490,6 +2520,14 @@ class XModFit(QWidget):
                                     self.fit.params['__mpar__'][mkey][pkey][num]=parval
                                 except:
                                     self.fit.params['__mpar__'][mkey][pkey].insert(num,parval)
+
+                    for parname in val.keys(): #Here is the expr is put into the parameters
+                        try:
+                            self.fit.fit_params[parname].set(value=val[parname], vary=pfit[parname], min=pmin[parname],
+                                                             max=pmax[parname], expr=expr[parname], brute_step=pbrute[parname])
+                        except:
+                            self.fit.fit_params.add(parname, value=val[parname], vary=pfit[parname], min=pmin[parname],
+                                                    max=pmax[parname], expr=expr[parname], brute_step=pbrute[parname])
                     try:
                         self.fixedParamTableWidget.cellChanged.disconnect()
                         self.sfitParamTableWidget.cellChanged.disconnect()
