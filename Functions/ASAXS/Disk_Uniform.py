@@ -165,9 +165,10 @@ class Disk_Uniform: #Please put the class name same as the function name
             fdist = eval(dist + '.' + dist + '(x=0.001, pos=totalH, wid=Hsig)')
             if dist=='Gaussian':
                 hmin, hmax = max(0.001, totalH - 5 * Hsig), totalH + 5 * Hsig
+                dH = np.linspace(hmin, hmax, N)
             else:
                 hmin, hmax = max(0.001, np.exp(np.log(totalH) - 5*Hsig)), np.exp(np.log(totalH) + 5*Hsig)
-            dH = np.linspace(hmin, hmax, N)
+                dH = np.logspace(hmin, hmax, N, base=np.exp(1.0))
             fdist.x = dH
             hdist = fdist.y()
             sumdist = np.sum(hdist)

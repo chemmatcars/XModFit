@@ -195,9 +195,10 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
             fdist = eval(dist + '.' + dist + '(x=0.001, pos=totalR, wid=Rsig)')
             if dist == 'Gaussian':
                 rmin, rmax = max(0.001, totalR - 5 * Rsig), totalR + 5 * Rsig
+                dr = np.linspace(rmin, rmax, N)
             else:
                 rmin, rmax = max(0.001, np.exp(np.log(totalR) - 5 * Rsig)), np.exp(np.log(totalR) + 5 * Rsig)
-            dr = np.linspace(rmin, rmax, N)
+                dr = np.logspace(rmin, rmax, N, base=np.exp(1.0))
             fdist.x = dr
             rdist = fdist.y()
             sumdist = np.sum(rdist)
