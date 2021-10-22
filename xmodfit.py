@@ -2535,13 +2535,13 @@ class XModFit(QWidget):
                                 except:
                                     self.fit.params['__mpar__'][mkey][pkey].insert(num,parval)
 
-                    for parname in val.keys(): #Here is the expr is put into the parameters
-                        try:
-                            self.fit.fit_params[parname].set(value=val[parname], vary=pfit[parname], min=pmin[parname],
-                                                             max=pmax[parname], expr=expr[parname], brute_step=pbrute[parname])
-                        except:
-                            self.fit.fit_params.add(parname, value=val[parname], vary=pfit[parname], min=pmin[parname],
-                                                    max=pmax[parname], expr=expr[parname], brute_step=pbrute[parname])
+                        for parname in val.keys(): #Here is the expr is put into the parameters
+                            try:
+                                self.fit.fit_params[parname].set(value=val[parname], vary=pfit[parname], min=pmin[parname],
+                                                                 max=pmax[parname], expr=expr[parname], brute_step=pbrute[parname])
+                            except:
+                                self.fit.fit_params.add(parname, value=val[parname], vary=pfit[parname], min=pmin[parname],
+                                                        max=pmax[parname], expr=expr[parname], brute_step=pbrute[parname])
                     try:
                         self.fixedParamTableWidget.cellChanged.disconnect()
                         self.sfitParamTableWidget.cellChanged.disconnect()
