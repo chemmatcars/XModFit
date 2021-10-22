@@ -147,10 +147,12 @@ class XFNTR: #Please put the class name same as the function name
                 z1 = (fprint[i] - detlen) / 2 * alpha[i]
                 z2 = (fprint[i] + detlen) / 2 * alpha[i]
                 effd, trans = self.frsnllCal(topdel, topbet, botdel, botbet, flumu, k0, alpha[i])
-                effv = effd * topd * np.exp(-detlen / 2 / topd) * (detlen * effd * np.exp(z2 / alpha[i] / topd) * (
-                            np.exp(-z1 / effd) - np.exp(-z2 / effd)) + topd * (np.exp(detlen / topd) - 1) * (
-                                                                               z1 - z2)) / (
-                                   detlen * effd + topd * (z1 - z2))
+                effv = effd * topd * np.exp(-detlen / 2 / topd) * (detlen * effd * np.exp(z2 / alpha[i] / topd) * (np.exp(-z1 / effd) - np.exp(-z2 / effd)) + topd * (np.exp(detlen / topd) - 1) * (z1 - z2)) / (detlen * effd + topd * (z1 - z2))
+                #zz=z1+z2
+                #g=(effd*alpha[i]*topd)/(alpha[i]*topd-effd)
+                #effv = topd*g*((g*np.exp(-alpha[i]*detlen/(2*g) - zz/(2*g) - detlen/(2*topd))/(topd*alpha[i] + g) - g*np.exp(alpha[i]*detlen/(2*g) - zz/(2*g) + detlen/(2*topd))/(topd*alpha[i] + g) + np.exp(detlen/(2*topd)))*np.exp(detlen/(2*topd)) - 1)*np.exp(-detlen/(2*topd))
+
+
                 int_sur = self.sur_cov * topd * (np.exp(detlen / 2 / topd) - np.exp(-detlen / 2 / topd))  # surface intensity
                 int_bulk = effv * self.__avoganum__ * conbulk / 1e27  # bluk intensity
                 int_tot = self.yscale * trans * (int_sur + int_bulk) + self.int_bg
