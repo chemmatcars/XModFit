@@ -737,6 +737,10 @@ class XModFit(QWidget):
             self.fitButton.setEnabled(True)
         else:
             self.fitButton.setDisabled(True)
+            try:
+                self.update_plot()
+            except:
+                pass
         # self.update_plot()
         # self.xChanged()
         self.errorAvailable = False
@@ -2276,10 +2280,22 @@ class XModFit(QWidget):
             header='Generated output file on %s\n'%time.asctime()
             header += 'Category=%s\n' % self.curr_category
             header += 'Function=%s\n' % self.funcListWidget.currentItem().text()
+            added_par=[]
             for i in range(self.fixedParamTableWidget.rowCount()):
-                header+='%s=%s\n'%(self.fixedParamTableWidget.item(i,0).text(),self.fixedParamTableWidget.item(i,1).text())
+                par, val = self.fixedParamTableWidget.item(i, 0).text(), self.fixedParamTableWidget.item(i, 1).text()
+                if 'meta' in self.fit.params['output_params'][parname]:
+                    if par in self.fit.params['output_params'][parname]['meta']:
+                        header += '%s=%s\n' % (par, str(self.fit.params['output_params'][parname]['meta'][par]))
+                        added_par.append(par)
+                else:
+                    header+='%s=%s\n'%(par,val)
+            if 'meta' in self.fit.params['output_params'][parname]:
+                for metakey in self.fit.params['output_params'][parname]['meta'].keys():
+                    if metakey not in added_par:
+                        header+='%s=%s\n'%(metakey,str(self.fit.params['output_params'][parname]['meta'][metakey]))
             for i in range(self.sfitParamTableWidget.rowCount()):
-                header+='%s=%s\n'%(self.sfitParamTableWidget.item(i,0).text(),self.sfitParamTableWidget.item(i,1).text())
+                par,val=self.sfitParamTableWidget.item(i,0).text(),self.sfitParamTableWidget.item(i,1).text()
+                header+='%s=%s\n'%(par,val)
             for k in range(self.mfitParamTabWidget.count()):
                 mkey=self.mfitParamTabWidget.tabText(k)
                 for i in range(self.mfitParamTableWidget[mkey].rowCount()):
@@ -2295,15 +2311,15 @@ class XModFit(QWidget):
 
             header=header.encode("ascii","ignore")
             header=header.decode()
-            if var=="['x', 'y']":
+            if var=="['x', 'y', 'meta']" or var == "['x', 'y']":
                 header+='x\ty\n'
                 res=np.vstack((self.fit.params['output_params'][parname]['x'], self.fit.params['output_params'][parname]['y'])).T
                 np.savetxt(fname,res,header=header,comments='#')
-            elif var=="['x', 'y', 'yerr']":
+            elif var=="['x', 'y', 'yerr', 'meta']" or var=="['x', 'y', 'yerr']":
                 header+='x\ty\tyerr\n'
                 res=np.vstack((self.fit.params['output_params'][parname]['x'], self.fit.params['output_params'][parname]['y'],self.fit.params['output_params'][parname]['yerr'])).T
                 np.savetxt(fname,res,header=header,comments='#')
-            elif var=="['x', 'y', 'z']":
+            elif var=="['x', 'y', 'z', 'meta']" or var=="['x', 'y', 'z']":
                 res=[]
                 header+='x\ty\tz\n'
                 for i in range(self.fit.params['output_params'][parname]['x'].shape[1]):
@@ -2498,9 +2514,7 @@ class XModFit(QWidget):
                                                                      min=pmin[parname],
                                                                      max=pmax[parname], expr=None,
                                                                      brute_step=pbrute[parname])
-                                    print('try', parname, val[parname])
                                 except:
-                                    print('except', parname, parval)
                                     self.fit.fit_params.add(parname, value=val[parname], vary=pfit[parname],
                                                             min=pmin[parname],
                                                             max=pmax[parname], expr=None,
@@ -2875,8 +2889,10 @@ class XModFit(QWidget):
 
 
     def fixedParamChanged(self,row,col):
-        self.fixedParamTableWidget.cellChanged.disconnect()
-
+        try:
+            self.fixedParamTableWidget.cellChanged.disconnect()
+        except:
+            pass
         txt=self.fixedParamTableWidget.item(row,0).text()
         if txt in self.fit.params['choices'].keys():
             self.fixedParamTableWidget.cellWidget(row, 1).currentIndexChanged.disconnect()
@@ -3312,22 +3328,31 @@ class XModFit(QWidget):
             if 'x' in self.fit.params['output_params'][key].keys() and 'y' in self.fit.params['output_params'][key].keys():
                 x=self.fit.params['output_params'][key]['x']
                 y=self.fit.params['output_params'][key]['y']
+                if 'meta' in self.fit.params['output_params'][key].keys():
+                    meta = self.fit.params['output_params'][key]['meta']
+                else:
+                    meta = {}
                 if 'yerr' in self.fit.params['output_params'][key].keys():
                     yerr=self.fit.params['output_params'][key]['yerr']
+
                     if 'names' in self.fit.params['output_params'][key].keys():
+                        meta['col_names']=self.fit.params['output_params'][key]['names']
                         data = {'data': pd.DataFrame(list(zip(x, y, yerr)), columns=self.fit.params['output_params'][key]['names']),
-                            'meta': {'col_names': self.fit.params['output_params'][key]['names']}}
+                            'meta': meta}
                     else:
+                        meta['col_names']=['x', 'y', 'yerr']
                         data = {'data': pd.DataFrame(list(zip(x, y, yerr)), columns=['x', 'y', 'yerr']),
-                            'meta': {'col_names': ['x', 'y', 'yerr']}}
+                            'meta': meta}
 
                 else:
                     if 'names' in self.fit.params['output_params'][key].keys():
+                        meta['col_names'] = self.fit.params['output_params'][key]['names']
                         data = {'data': pd.DataFrame(list(zip(x, y)), columns=self.fit.params['output_params'][key]['names']),
-                                'meta': {'col_names': self.fit.params['output_params'][key]['names']}}
+                                'meta': meta}
                     else:
+                        meta['col_names'] = ['x', 'y', 'yerr']
                         data = {'data': pd.DataFrame(list(zip(x, y)), columns=['x', 'y']),
-                                'meta': {'col_names': ['x', 'y']}}
+                                'meta': meta}
                 data_dlg = Data_Dialog(data=data, parent=self, expressions={},
                                        plotIndex=None, colors=None)
                 data_dlg.setModal(True)

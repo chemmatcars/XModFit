@@ -36,7 +36,7 @@ def ff_sphere_ml(q,R,rho):
     return ff,aff
 
 class Biphasic_Sphere_Uniform: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=20, flux=1e13, term='Total',dist='Gaussian', Energy=None, relement='Au', NrDep='False',
+    def __init__(self, x=0, Np=20, error_factor=1.0, term='Total',dist='Gaussian', Energy=None, relement='Au', NrDep='False',
                  norm=1.0e-9, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,
                  mpar={'Phase_1':{'Material':['Au','H2O'],
                                   'Density':[19.32,1.0],
@@ -67,7 +67,7 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
-        flux        : Total X-ray flux to calculate the errorbar to simulate the errorbar for the fitted data
+        error_factor: Error-factor to simulate the error-bars
         term        : 'SAXS-term' or 'Cross-term' or 'Resonant-term' or 'Total'
         D           : Hard Sphere Diameter
         phi         : Volume fraction of particles
@@ -96,7 +96,7 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
         self.relement=relement
         self.NrDep=NrDep
         #self.rhosol=rhosol
-        self.flux=flux
+        self.error_factor=error_factor
         self.D=D
         self.phi=phi
         self.U=U
@@ -284,6 +284,17 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__[self.__mkeys__[0]]), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist}
+                signal = total
+                minsignal = np.min(signal)
+                normsignal = signal / minsignal
+                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                meta = {'Energy': self.Energy}
+                if self.Energy is not None:
+                    self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
+                                                                                   'y': sqerr * minsignal,
+                                                                                   'yerr': np.sqrt(
+                                                                                       normsignal) * minsignal * self.error_factor,
+                                                                                   'meta': meta}
                 self.output_params['Simulated_total_wo_err'] = {'x': self.x[key], 'y': total}
                 self.output_params['Total'] = {'x': self.x[key], 'y': total}
                 for key in self.x.keys():
@@ -304,23 +315,37 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
             tsqf, eisqf, asqf, csqf = self.new_sphere(tuple(self.x), tuple(self.__R__[self.__mkeys__[0]]), self.Rsig, tuple(rho),
                                                       tuple(eirho), tuple(adensity),dist=self.dist,Np=self.Np)
             sqf = self.norm * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-            # if not self.__fit__: #Generate all the quantities below while not fitting
-            asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
-            eisqf = self.norm * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-            csqf = self.norm * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
-            sqerr = np.sqrt(6.020e20*self.flux *self.norm*tsqf*struct*svol+self.sbkg)
-            sqwerr = (6.022e20*tsqf * svol * self.flux*self.norm*struct + self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
-            dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__[self.__mkeys__[0]]), self.Rsig, self.dist, self.Np)
-            self.output_params['Distribution'] = {'x': dr, 'y': rdist}
-            self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
-            self.output_params['Total'] = {'x': self.x, 'y': sqf}
-            self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
-            self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
-            self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
-            self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1]}
-            self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
-            self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
-            self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
+            if not self.__fit__: #Generate all the quantities below while not fitting
+                asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
+                eisqf = self.norm * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+                csqf = self.norm * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
+                # sqerr = np.sqrt(6.020e20*self.flux *self.norm*tsqf*struct*svol+self.sbkg)
+                # sqwerr = (6.022e20*tsqf * svol * self.flux*self.norm*struct + self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
+                signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.sbkg
+                minsignal = np.min(signal)
+                normsignal = signal / minsignal
+                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                meta = {'Energy': self.Energy}
+                if self.Energy is not None:
+                    self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
+                                                                                   'yerr': np.sqrt(
+                                                                                       normsignal) * minsignal * self.error_factor,
+                                                                                   'meta': meta}
+                else:
+                    self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
+                                                             'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
+                                                             'meta': meta}
+                dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__[self.__mkeys__[0]]), self.Rsig, self.dist, self.Np)
+                self.output_params['Distribution'] = {'x': dr, 'y': rdist}
+                self.output_params['Total'] = {'x': self.x, 'y': sqf}
+                self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
+                self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
+                self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
+                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1]}
+                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
+                self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
+                self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
+            sqf = self.output_params[self.term]['y']
         return sqf
 
 

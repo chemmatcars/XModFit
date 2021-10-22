@@ -63,7 +63,7 @@ def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi):
     return fft,ffs,ffc,ffr
 
 class Parallelopiped_Uniform: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=10, flux=1e13, dist='Gaussian', Energy=None, relement='Au', NrDep='False', L=1.0, B=1.0,
+    def __init__(self, x=0, Np=10, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep='False', L=1.0, B=1.0,
                  H=1.0, sig=0.0, norm=1.0e-9, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=200,Npsi=400, term='Total',
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                   'Rmoles': [1.0, 0.0], 'Thickness': [0.0, 0.0]}}):
@@ -87,7 +87,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
-        flux        : Total X-ray flux to calculate the errorbar to simulate the errorbar for the fitted data
+        error_factor: Error-factor to simulate the error-bars
         D           : Hard Sphere Diameter
         phi         : Volume fraction of particles
         U           : The sticky-sphere interaction energy
@@ -119,7 +119,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         self.Energy=Energy
         self.relement=relement
         self.NrDep=NrDep
-        self.flux=flux
+        self.error_factor=error_factor
         self.D=D
         self.phi=phi
         self.U=U
@@ -273,6 +273,20 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
                     dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
                     self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
                     self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
+                signal = total
+                minsignal = np.min(signal)
+                normsignal = signal / minsignal
+                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                meta = {'Energy': self.Energy}
+                if self.Energy is not None:
+                    self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
+                                                                                   'y': sqerr * minsignal,
+                                                                                   'yerr': np.sqrt(
+                                                                                       normsignal) * minsignal * self.error_factor,
+                                                                                   'meta': meta}
+                else:
+                    self.output_params['simulated_w_err'] = {'x': self.x[key], 'y': sqerr * minsignal,
+                                                             'yerr': np.sqrt(normsignal) * minsignal}
                 self.output_params['Total'] = {'x': self.x[key], 'y':total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
@@ -303,9 +317,23 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
             eisqf = self.norm * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
             csqf = self.norm * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
-            sqerr = np.sqrt(self.norm*6.022e20*self.flux * tsqf * svol*struct+self.sbkg)
-            sqwerr = (self.norm*6.022e20*tsqf * svol * struct*self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
-            self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
+            # sqerr = np.sqrt(self.norm*6.022e20*self.flux * tsqf * svol*struct+self.sbkg)
+            # sqwerr = (self.norm*6.022e20*tsqf * svol * struct*self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
+            # self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
+            signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.sbkg
+            minsignal = np.min(signal)
+            normsignal = signal / minsignal
+            sqerr = np.random.normal(normsignal, scale=self.error_factor)
+            meta = {'Energy': self.Energy}
+            if self.Energy is not None:
+                self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
+                                                                               'yerr': np.sqrt(
+                                                                                   normsignal) * minsignal * self.error_factor,
+                                                                               'meta': meta}
+            else:
+                self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
+                                                         'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
+                                                         'meta': meta}
             self.output_params['Total'] = {'x': self.x, 'y': sqf}
             self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
             self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}

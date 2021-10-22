@@ -64,7 +64,7 @@ def disk_ml_asaxs(q, H, R, RvvgtH, rho, eirho, adensity, Nalf):
 
 
 class Disk_Uniform: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=10, flux=1e13, dist='Gaussian', Energy=None, relement='Au', NrDep='False', R=1.0,RvvgtH=False,
+    def __init__(self, x=0, Np=10, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep='False', R=1.0,RvvgtH=False,
                  Hsig=0.0, norm=1.0e-9, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nalf=200,term='Total',
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                   'Rmoles': [1.0, 0.0], 'H': [1.0, 0.0]}}):
@@ -86,7 +86,7 @@ class Disk_Uniform: #Please put the class name same as the function name
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
-        flux        : Total X-ray flux to calculate the errorbar to simulate the errorbar for the fitted data
+        error_factor: Error-factor to simulate the error-bars
         D           : Hard Sphere Diameter
         phi         : Volume fraction of particles
         U           : The sticky-sphere interaction energy
@@ -117,7 +117,7 @@ class Disk_Uniform: #Please put the class name same as the function name
         self.relement=relement
         self.NrDep=NrDep
         #self.rhosol=rhosol
-        self.flux=flux
+        self.error_factor=error_factor
         self.D=D
         self.phi=phi
         self.U=U
@@ -258,6 +258,20 @@ class Disk_Uniform: #Please put the class name same as the function name
             if not self.__fit__:
                 dH, hdist, totalH = self.calc_Hdist(tuple(self.__H__), self.Hsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dH, 'y': hdist}
+                signal = total
+                minsignal = np.min(signal)
+                normsignal = signal / minsignal
+                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                meta = {'Energy': self.Energy}
+                if self.Energy is not None:
+                    self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
+                                                                                   'y': sqerr * minsignal,
+                                                                                   'yerr': np.sqrt(
+                                                                                       normsignal) * minsignal * self.error_factor,
+                                                                                   'meta': meta}
+                else:
+                    self.output_params['simulated_w_err'] = {'x': self.x[key], 'y': sqerr * minsignal,
+                                                             'yerr': np.sqrt(normsignal) * minsignal}
                 self.output_params['Total'] = {'x': self.x[key], 'y':total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
@@ -288,9 +302,21 @@ class Disk_Uniform: #Please put the class name same as the function name
                 asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
                 eisqf = self.norm * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
                 csqf = self.norm * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
-                sqerr = np.sqrt(self.norm*6.022e20*self.flux * tsqf * svol*struct+self.sbkg)
-                sqwerr = (self.norm*6.022e20*tsqf * svol * struct*self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
-                self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
+                # sqerr = np.sqrt(self.norm*6.022e20*self.flux * tsqf * svol*struct+self.sbkg)
+                # sqwerr = (self.norm*6.022e20*tsqf * svol * struct*self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
+                signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.sbkg
+                minsignal = np.min(signal)
+                normsignal = signal / minsignal
+                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                meta = {'Energy': self.Energy}
+                if self.Energy is not None:
+                    self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
+                                                                                   'yerr': np.sqrt(
+                                                                                       normsignal) * minsignal * self.error_factor,
+                                                                                   'meta': meta}
+                else:
+                    self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal, 'yerr': np.sqrt(
+                        normsignal) * minsignal * self.error_factor, 'meta': meta}
                 self.output_params['Total'] = {'x': self.x, 'y': sqf}
                 self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
                 self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
