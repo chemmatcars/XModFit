@@ -18,7 +18,7 @@ sys.path.append(os.path.abspath('./Fortran_rountines'))
 
 
 class XFNTR: #Please put the class name same as the function name
-    def __init__(self,x=0.1,E=20.0, mpar={}, topchem='C12H26', topden=0.75, botchem='Sr50Cl100H110493.721O55246.86', botden=1.0032, element='Sr', line='Ka1', vslit= 0.02, detlen=12.7, qoff=0.0, yscale=1,int_bg=0, Rc=0, sur_cov=0):
+    def __init__(self,x=0.1,E=20.0, mpar={}, topchem='C12H26', topden=0.75, botchem='Sr50Cl100H110493.721O55246.86', botden=1.0032, element='Sr', line='Ka1', vslit= 0.02, detlen=12.7, qoff=0.0, yscale=1,int_bg=0, Rc=0, sur_cov=0,ion_depth=0):
         """
         Calculates X-ray reflectivity from a system of multiple layers using Parratt formalism
 
@@ -57,6 +57,7 @@ class XFNTR: #Please put the class name same as the function name
         self.int_bg = int_bg
         self.Rc = Rc
         self.sur_cov = sur_cov
+        self.ion_depth = ion_depth
         elelist = xdb.atomic_symbols
         linelist = list(xdb.xray_lines(98).keys())
         self.choices={'element':elelist,'line': linelist} #If there are choices available for any fixed parameters
@@ -77,6 +78,7 @@ class XFNTR: #Please put the class name same as the function name
         self.params.add('int_bg', self.int_bg, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('Rc', self.Rc, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('sur_cov', self.sur_cov, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
+        self.params.add('ion_depth', self.ion_depth, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
 
     def parseFormula(self, chemfor):
         a = re.findall(r'[A-Z][a-z]?|[0-9]+[.][0-9]+|[0-9]+', chemfor)
@@ -147,15 +149,13 @@ class XFNTR: #Please put the class name same as the function name
                 z1 = (fprint[i] - detlen) / 2 * alpha[i]
                 z2 = (fprint[i] + detlen) / 2 * alpha[i]
                 effd, trans = self.frsnllCal(topdel, topbet, botdel, botbet, flumu, k0, alpha[i])
-                effv = effd * topd * np.exp(-detlen / 2 / topd) * (detlen * effd * np.exp(z2 / alpha[i] / topd) * (np.exp(-z1 / effd) - np.exp(-z2 / effd)) + topd * (np.exp(detlen / topd) - 1) * (z1 - z2)) / (detlen * effd + topd * (z1 - z2))
-                #zz=z1+z2
-                #g=(effd*alpha[i]*topd)/(alpha[i]*topd-effd)
-                #effv = topd*g*((g*np.exp(-alpha[i]*detlen/(2*g) - zz/(2*g) - detlen/(2*topd))/(topd*alpha[i] + g) - g*np.exp(alpha[i]*detlen/(2*g) - zz/(2*g) + detlen/(2*topd))/(topd*alpha[i] + g) + np.exp(detlen/(2*topd)))*np.exp(detlen/(2*topd)) - 1)*np.exp(-detlen/(2*topd))
-
-
+                effv = effd * topd * np.exp(-detlen / 2 / topd) * (detlen * effd * np.exp(z2 / alpha[i] / topd) * (
+                            np.exp(-z1 / effd) - np.exp(-z2 / effd)) + topd * (np.exp(detlen / topd) - 1) * (
+                                                                               z1 - z2)) / (
+                                   detlen * effd + topd * (z1 - z2))
                 int_sur = self.sur_cov * topd * (np.exp(detlen / 2 / topd) - np.exp(-detlen / 2 / topd))  # surface intensity
-                int_bulk = effv * self.__avoganum__ * conbulk / 1e27  # bluk intensity
-                int_tot = self.yscale * trans * (int_sur + int_bulk) + self.int_bg
+                int_bulk = np.exp(-self.ion_depth/effd) * effv * self.__avoganum__ * conbulk / 1e27  # bluk intensity
+                int_tot = np.exp(-self.ion_depth/effd) * self.yscale * 1e-3 * trans * (int_sur + int_bulk) + self.int_bg
                 flu.append(int_tot)
             #   p_d.append(effd)
         else:  # with surface curvature
@@ -165,21 +165,21 @@ class XFNTR: #Please put the class name same as the function name
                 ssum = 0
                 steps = int((detlen + fprint[i]) / 2 / 1e6)  # use 0.1 mm as the step size
                 stepsize = (detlen + fprint[i]) / 2 / steps
-                x = np.linspace(-fprint[i] / 2 + stepsize/2, detlen / 2 - stepsize/2, steps)  # get the position fo single ray hitting the surface relative to the center of detector area with the step size "steps"
+                x = np.linspace(-fprint[i] / 2, detlen / 2,steps)  # get the position fo single ray hitting the surface relative to the center of detector area with the step size "steps"
                 for j in range(len(x)):
                     alphanew = alpha[i] - x[j] / self.Rc/1e10  # the incident angle at position x[j]
                     y1 = -detlen / 2 - x[j]
                     y2 = detlen / 2 - x[j]
                     effd, trans = self.frsnllCal(topdel, topbet, botdel, botbet, flumu, k0, alphanew)
                     if x[j] > -detlen / 2:
-                        bsum = bsum + np.exp(-x[j] / topd) * trans * effd * (1.0 - np.exp(-y2 * alpha[i] / effd))
-                        ssum = ssum + np.exp(-x[j] / topd) * trans
+                        bsum = bsum + np.exp(-self.ion_depth/effd) * np.exp(-x[j] / topd) * trans * effd * (1.0 - np.exp(-y2 * alpha[i] / effd))
+                        ssum = ssum + np.exp(-self.ion_depth/effd) * np.exp(-x[j] / topd) * trans
                     else:
-                        bsum = bsum + np.exp(-x[j] / topd) * trans * effd * (np.exp(-y1 * alpha[i] / effd) - np.exp(
+                        bsum = bsum + np.exp(-self.ion_depth/effd) * np.exp(-x[j] / topd) * trans * effd * (np.exp(-y1 * alpha[i] / effd) - np.exp(
                             -y2 * alpha[i] / effd))  # surface has no contribution at this region
                 int_bulk = bsum * stepsize * self.__avoganum__ * conbulk / 1e27
                 int_sur = ssum * stepsize * self.sur_cov
-                int_tot = self.yscale * (int_bulk + int_sur) + self.int_bg
+                int_tot =  self.yscale * 1e-3 * (int_bulk + int_sur) + self.int_bg
                 flu.append(int_tot)
         return flu
 
@@ -209,6 +209,6 @@ class XFNTR: #Please put the class name same as the function name
 
 
 if __name__=='__main__':
-    x = np.linspace(0.006, 0.015, 200)
+    x = np.linspace(0.006, 0.03, 400)
     fun=XFNTR(x=x)
     print(fun.y())
