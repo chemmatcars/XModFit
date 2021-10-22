@@ -108,6 +108,9 @@ class Data_Dialog(QDialog):
         self.closePushButton.setDefault(False)
         self.openDataFilePushButton.setDefault(False)
         self.saveDataPushButton.setDefault(False)
+        self.plotSetupTableWidget.resizeRowsToContents()
+        self.plotSetupTableWidget.resizeColumnsToContents()
+
 
 
     def init_signals(self):
@@ -609,6 +612,8 @@ class Data_Dialog(QDialog):
             self.plotSetupTableWidget.cellWidget(row, 4).sigColorChanging.connect(self.updateCellData)
             self.plotSetupTableWidget.cellWidget(row, 4).sigColorChanged.connect(self.updateCellData)
             self.updatePlotData(row,i)
+        self.plotSetupTableWidget.resizeRowsToContents()
+        self.plotSetupTableWidget.resizeColumnsToContents()
         self.plotSetupTableWidget.cellChanged.connect(self.updatePlotData)         
                 
 
@@ -667,6 +672,8 @@ class Data_Dialog(QDialog):
             self.plotSetupTableWidget.setCurrentCell(row,3)
             self.updatePlotData(row,3)
             self.plotNum+=1
+            self.plotSetupTableWidget.resizeColumnsToContents()
+            self.plotSetupTableWidget.resizeRowsToContents()
         else:
             QMessageBox.warning(self,'Data file error','The data file do not have two or more columns to be plotted.',QMessageBox.Ok)
         self.plotSetupTableWidget.cellChanged.connect(self.updatePlotData)
@@ -699,6 +706,8 @@ class Data_Dialog(QDialog):
                 QMessageBox.warning(self, 'Warning', 'Cannot remove single plots from Data Dialog because the Data Dialog is used within another widget',
                                 QMessageBox.Ok)
         self.updatePlot()
+        self.plotSetupTableWidget.resizeRowsToContents()
+        self.plotSetupTableWidget.resizeColumnsToContents()
         self.plotSetupTableWidget.cellChanged.connect(self.updatePlotData)
             
         

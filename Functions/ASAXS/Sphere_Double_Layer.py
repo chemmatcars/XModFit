@@ -38,7 +38,7 @@ def ff_sphere_ml(q,R,rho):
 
 
 class Sphere_Double_Layer: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=20, flux=1e13, dist='Gaussian', Energy=None, relement='Au', NrDep=False, norm=1.0e-9,
+    def __init__(self, x=0, Np=20, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep=False, norm=1.0e-9,
                  sbkg=0.0, cbkg=0.0, abkg=0.0, nearIon='Rb', farIon='Cl', ionDensity=0.0, stThickness=1.0,
                  stDensity=0.0, dbLength=1.0, dbDensity=0.0,Ndb=20,Rsig=0.0,D=0.0,phi=0.1,U=-1.0,SF=None,term='Total',
                  mpar={'Layers':{'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
@@ -65,7 +65,7 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
         dbLength    : The ratio of decay length and the stern layer thickness
         dbDensity   : The ratio of maximum density of the debye layer w.r.t the stern layer density
         Ndb         : Number of layers used to represent the double layer region
-        flux        : Total X-ray flux to calculate the errorbar to simulate the errorbar for the fitted data
+        error_factor: Error-factor to simulate the error-bars
         Rsig        : Width of the overall particle size distribution
         D           : Hard Sphere Diameter
         phi         : Volume fraction of particles
@@ -107,7 +107,7 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
         self.phi=phi
         self.term=term
         # self.rhosol=rhosol
-        self.flux = flux
+        self.error_factor = error_factor
         self.__mpar__ = mpar  # If there is any multivalued parameter
         self.choices = {'dist': ['Gaussian', 'LogNormal'],'SF':['None','Hard-Sphere', 'Sticky-Sphere'],
                         'term':['SAXS-term','Cross-term','Resonant-term','Total'], 'NrDep': [True, False],'term':{'Total','SAXS-term','Cross-term','Resonant-term'}}  # If there are choices available for any fixed parameters
@@ -427,7 +427,20 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist}
-                self.output_params['Simulated_total_wo_err'] = {'x': self.x[key], 'y': total}
+                signal = total
+                minsignal = np.min(signal)
+                normsignal = signal / minsignal
+                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                meta = {'Energy': self.Energy}
+                if self.Energy is not None:
+                    self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
+                                                                                   'y': sqerr * minsignal,
+                                                                                   'yerr': np.sqrt(
+                                                                                       normsignal) * minsignal * self.error_factor,
+                                                                                   'meta': meta}
+                else:
+                    self.output_params['simulated_w_err'] = {'x': self.x[key], 'y': sqerr * minsignal,
+                                                             'yerr': np.sqrt(normsignal) * minsignal}
                 self.output_params['Total'] = {'x': self.x[key], 'y': total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
@@ -452,33 +465,44 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
             tsqf, eisqf, asqf, csqf = self.new_sphere(tuple(self.x), tuple(tR), self.Rsig, tuple(rho),
                                                       tuple(eirho), tuple(adensity), dist=self.dist, Np=self.Np)
             sqf = self.norm * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-            # if not self.__fit__:  # Generate all the quantities below while not fitting
-            dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
-            self.output_params['Distribution'] = {'x': dr, 'y': rdist}
-            asqf = self.norm * np.array(asqf) * 6.022e20 + self.abkg  # in cm^-1
-            eisqf = self.norm * np.array(eisqf) * 6.022e20 + self.sbkg  # in cm^-1
-            csqf = self.norm * np.array(csqf) * 6.022e20 + self.cbkg  # in cm^-1
-            svol = 0.2 ** 2 * 1.5 * 1e-3  # scattering volume in cm^3
-            sqerr = np.sqrt(self.flux * sqf * svol)
-            sqwerr = (sqf * svol * self.flux + 2 * (0.5 - np.random.rand(len(sqf))) * sqerr)
-            dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
-            self.output_params['Distribution'] = {'x': dr, 'y': rdist}
-            self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
-            self.output_params['simulated_total_wo_err'] = {'x': self.x, 'y': sqf * svol * self.flux}
-            self.output_params['Total'] = {'x': self.x, 'y': sqf}
-            self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
-            self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
-            self.output_params['Resontant-term'] = {'x': self.x, 'y': asqf}
-            self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-            self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-            self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]*scale, 'names':['r (Angs)','Density (Molar)']} # in Molar
-            self.output_params['rhon_r'] = {'x': rhorn[:, 0], 'y': rhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-            self.output_params['eirhon_r'] = {'x': eirhorn[:, 0], 'y': eirhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-            self.output_params['adensityn_r'] = {'x': adensityrn[:, 0], 'y': adensityrn[:, 1]*scale,'names':['r (Angs)','Density (Molar)']} # in Molar
-            self.output_params['rhof_r'] = {'x': rhorf[:, 0], 'y': rhorf[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-            self.output_params['eirhof_r'] = {'x': eirhorf[:, 0], 'y': eirhorf[:, 1],'names':['r(Angs)','Electron Density (el/Angs^3)']}
-            self.output_params['adensityf_r'] = {'x': adensityrf[:, 0], 'y': adensityrf[:, 1]*scale,'names':['r (Angs)','Density (Molar)']} # in Molar
-            self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
+            if not self.__fit__:  # Generate all the quantities below while not fitting
+                dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
+                self.output_params['Distribution'] = {'x': dr, 'y': rdist}
+                asqf = self.norm * np.array(asqf) * 6.022e20 + self.abkg  # in cm^-1
+                eisqf = self.norm * np.array(eisqf) * 6.022e20 + self.sbkg  # in cm^-1
+                csqf = self.norm * np.array(csqf) * 6.022e20 + self.cbkg  # in cm^-1
+                # svol = 0.2 ** 2 * 1.5 * 1e-3  # scattering volume in cm^3
+                # sqerr = np.sqrt(self.flux * sqf * svol)
+                # sqwerr = (sqf * svol * self.flux + 2 * (0.5 - np.random.rand(len(sqf))) * sqerr)
+                signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.sbkg
+                minsignal = np.min(signal)
+                normsignal = signal / minsignal
+                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                meta = {'Energy': self.Energy}
+                if self.Energy is not None:
+                    self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
+                                                                                   'yerr': np.sqrt(
+                                                                                       normsignal) * minsignal * self.error_factor,
+                                                                                   'meta': meta}
+                else:
+                    self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal, 'yerr': np.sqrt(
+                        normsignal) * minsignal * self.error_factor, 'meta': meta}
+                dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
+                self.output_params['Distribution'] = {'x': dr, 'y': rdist}
+                self.output_params['Total'] = {'x': self.x, 'y': sqf}
+                self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
+                self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
+                self.output_params['Resontant-term'] = {'x': self.x, 'y': asqf}
+                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
+                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
+                self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]*scale, 'names':['r (Angs)','Density (Molar)']} # in Molar
+                self.output_params['rhon_r'] = {'x': rhorn[:, 0], 'y': rhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
+                self.output_params['eirhon_r'] = {'x': eirhorn[:, 0], 'y': eirhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
+                self.output_params['adensityn_r'] = {'x': adensityrn[:, 0], 'y': adensityrn[:, 1]*scale,'names':['r (Angs)','Density (Molar)']} # in Molar
+                self.output_params['rhof_r'] = {'x': rhorf[:, 0], 'y': rhorf[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
+                self.output_params['eirhof_r'] = {'x': eirhorf[:, 0], 'y': eirhorf[:, 1],'names':['r(Angs)','Electron Density (el/Angs^3)']}
+                self.output_params['adensityf_r'] = {'x': adensityrf[:, 0], 'y': adensityrf[:, 1]*scale,'names':['r (Angs)','Density (Molar)']} # in Molar
+                self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
             sqf=self.output_params[self.term]['y']
         return sqf
 

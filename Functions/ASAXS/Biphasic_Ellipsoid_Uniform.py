@@ -64,7 +64,7 @@ def ellipsoid_ml_asaxs(q,Rx,RzRatio,rho,eirho,adensity,Nalf):
 
 
 class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=10, flux=1e13, term='Total', dist='Gaussian', Energy=None, relement='Au', Nalf=200,
+    def __init__(self, x=0, Np=10, error_factor=1.0, term='Total', dist='Gaussian', Energy=None, relement='Au', Nalf=200,
                  NrDep='False', norm=1.e-9, Rsig=0.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0,
                  SF='None', mpar={'Phase_1':{'Material': ['Au', 'H2O'],
                                              'Density': [19.32, 1.0],
@@ -100,7 +100,7 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
-        flux        : Total X-ray flux to calculate the errorbar to simulate the errorbar for the fitted data
+        error_factor: Error-factor to simulate the error-bars
         term        : 'SAXS-term' or 'Cross-term' or 'Resonant-term' or 'Total'
         D           : Hard Sphere Diameter
         phi         : Volume fraction of particles
@@ -130,7 +130,7 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
         self.relement = relement
         self.NrDep = NrDep
         # self.rhosol=rhosol
-        self.flux = flux
+        self.error_factor = error_factor
         self.D = D
         self.phi = phi
         self.U = U
@@ -195,9 +195,10 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
             fdist = eval(dist + '.' + dist + '(x=0.001, pos=totalR, wid=Rsig)')
             if dist == 'Gaussian':
                 rmin, rmax = max(0.001, totalR - 5 * Rsig), totalR + 5 * Rsig
+                dr = np.linspace(rmin, rmax, N)
             else:
                 rmin, rmax = max(0.001, np.exp(np.log(totalR) - 5 * Rsig)), np.exp(np.log(totalR) + 5 * Rsig)
-            dr = np.linspace(rmin, rmax, N)
+                dr = np.logspace(rmin, rmax, N, base=np.exp(1.0))
             fdist.x = dr
             rdist = fdist.y()
             sumdist = np.sum(rdist)
@@ -327,6 +328,20 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__[self.__mkeys__[0]]), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist}
+                signal = total
+                minsignal = np.min(signal)
+                normsignal = signal / minsignal
+                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                meta = {'Energy': self.Energy}
+                if self.Energy is not None:
+                    self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
+                                                                                   'y': sqerr * minsignal,
+                                                                                   'yerr': np.sqrt(
+                                                                                       normsignal) * minsignal * self.error_factor,
+                                                                                   'meta': meta}
+                else:
+                    self.output_params['simulated_w_err'] = {'x': self.x[key], 'y': sqerr * minsignal,
+                                                             'yerr': np.sqrt(normsignal) * minsignal}
                 self.output_params['Total'] = {'x': self.x[key], 'y': total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
@@ -356,33 +371,46 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
                                                      tuple(rho), tuple(eirho),
                                                       tuple(adensity), dist=self.dist, Np=self.Np, Nalf=self.Nalf)
             sqf = self.norm * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-            # if not self.__fit__: #Generate all the quantities below while not fitting
-            asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
-            eisqf = self.norm * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-            csqf = self.norm * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
-            sqerr = np.sqrt(6.022e20*self.norm*self.flux * tsqf * svol+self.sbkg)
-            sqwerr = (6.022e20*self.norm*tsqf * svol * self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
-            dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__[self.__mkeys__[0]]), self.Rsig, self.dist, self.Np)
-            self.output_params['Distribution'] = {'x': dr, 'y': rdist}
-            self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
-            self.output_params['Total'] = {'x': self.x, 'y': sqf}
-            self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
-            self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
-            self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
-            xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]], rho)
-            self.output_params['rho_r'] = {'x': xtmp, 'y': ytmp}
-            xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]], eirho)
-            self.output_params['eirho_r'] = {'x': xtmp, 'y': ytmp}
-            xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]], adensity)
-            self.output_params['adensity_r'] = {'x': xtmp, 'y': ytmp}
-            self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
-            # xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__Rmoles__[:-1])
-            # self.output_params['Rmoles_radial'] = {'x':xtmp , 'y': ytmp}
-            # sqf = self.output_params[self.term]['y']
-            # xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__RzRatio__[:-1])
-            # self.output_params['RzRatio_radial'] = {'x': xtmp, 'y': ytmp}
-            # xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__density__[:-1])
-            # self.output_params['Density_radial'] = {'x': xtmp, 'y': ytmp}
+            if not self.__fit__: #Generate all the quantities below while not fitting
+                asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
+                eisqf = self.norm * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+                csqf = self.norm * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
+                # sqerr = np.sqrt(6.022e20*self.norm*self.flux * tsqf * svol+self.sbkg)
+                # sqwerr = (6.022e20*self.norm*tsqf * svol * self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
+                signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.sbkg
+                minsignal = np.min(signal)
+                normsignal = signal / minsignal
+                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                meta = {'Energy': self.Energy}
+                if self.Energy is not None:
+                    self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
+                                                                                   'yerr': np.sqrt(
+                                                                                       normsignal) * minsignal * self.error_factor,
+                                                                                   'meta': meta}
+                else:
+                    self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal, 'yerr': np.sqrt(
+                        normsignal) * minsignal * self.error_factor, 'meta': meta}
+                dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__[self.__mkeys__[0]]), self.Rsig, self.dist, self.Np)
+                self.output_params['Distribution'] = {'x': dr, 'y': rdist}
+                self.output_params['Total'] = {'x': self.x, 'y': sqf}
+                self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
+                self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
+                self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
+                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]], rho)
+                self.output_params['rho_r'] = {'x': xtmp, 'y': ytmp}
+                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]], eirho)
+                self.output_params['eirho_r'] = {'x': xtmp, 'y': ytmp}
+                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]], adensity)
+                self.output_params['adensity_r'] = {'x': xtmp, 'y': ytmp}
+                self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
+                # xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__Rmoles__[:-1])
+                # self.output_params['Rmoles_radial'] = {'x':xtmp , 'y': ytmp}
+                # sqf = self.output_params[self.term]['y']
+                # xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__RzRatio__[:-1])
+                # self.output_params['RzRatio_radial'] = {'x': xtmp, 'y': ytmp}
+                # xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__density__[:-1])
+                # self.output_params['Density_radial'] = {'x': xtmp, 'y': ytmp}
+            sqf = self.output_params[self.term]['y']
         return sqf
 
 

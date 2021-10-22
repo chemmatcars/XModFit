@@ -63,7 +63,7 @@ def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi):
     return fft,ffs,ffc,ffr
 
 class Parallelopiped_Uniform: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=10, flux=1e13, dist='Gaussian', Energy=None, relement='Au', NrDep='False', L=1.0, B=1.0,
+    def __init__(self, x=0, Np=10, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep='False', L=1.0, B=1.0,
                  H=1.0, sig=0.0, norm=1.0e-9, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=200,Npsi=400, term='Total',
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                   'Rmoles': [1.0, 0.0], 'Thickness': [0.0, 0.0]}}):
@@ -87,7 +87,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
-        flux        : Total X-ray flux to calculate the errorbar to simulate the errorbar for the fitted data
+        error_factor: Error-factor to simulate the error-bars
         D           : Hard Sphere Diameter
         phi         : Volume fraction of particles
         U           : The sticky-sphere interaction energy
@@ -119,7 +119,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         self.Energy=Energy
         self.relement=relement
         self.NrDep=NrDep
-        self.flux=flux
+        self.error_factor=error_factor
         self.D=D
         self.phi=phi
         self.U=U
@@ -177,41 +177,35 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             else:
                 Lmin, Lmax= max(-3, np.log(totalL) - 5*sig), np.log(totalL) + 5*sig
                 Bmin, Bmax = max(-3, np.log(totalB) - 5 * sig), np.log(totalB) + 5 * sig
-                print(Lmin, Lmax)
                 dL = np.logspace(Lmin, Lmax, N, base=np.exp(1.0))
                 dB = np.logspace(Bmin, Bmax, N, base=np.exp(1.0))
             fdist.x = dL
-            Ldist = fdist.y()
-            sumdist = np.sum(Ldist)
-            Ldist = Ldist / sumdist
-            fdist.x = dB
-            Bdist = fdist.y()
-            sumdist = np.sum(Bdist)
-            Bdist = Bdist / sumdist
-            return dL, Ldist, totalL, dB, Bdist, totalB
+            dist = fdist.y()
+            # sumdist = np.sum(Ldist)
+            # Ldist = Ldist / sumdist
+            return dL, totalL, dB, totalB, dist
         else:
-            return [totalL], [1.0], totalL, [totalB], [1.0], totalB
+            return [totalL], totalL, [totalB], totalB, [1.0]
 
     @lru_cache(maxsize=10)
     def parallelopiped(self, q, L, B, H, sig, rho, eirho, adensity, dist='Gaussian', Np=10, Nphi=200, Npsi=400):
         q = np.array(q)
-        dL, Ldist, totalL, dB, Bdist, totalB = self.calc_LBdist(L, B, sig, dist, Np)
+        dL, totalL, dB, totalB, dist = self.calc_LBdist(L, B, sig, dist, Np)
         form = np.zeros_like(q)
         eiform = np.zeros_like(q)
         aform = np.zeros_like(q)
         cform = np.zeros_like(q)
         pfac = (2.818e-5 * 1.0e-8) ** 2
-        sumL=np.sum(Ldist)
-        sumB=np.sum(Bdist)
+        sumL=np.sum(dist)
         for i in range(len(dL)):
             l = np.array(L) * (1 + (dL[i] - totalL) / totalL)
             b = np.array(B) * (1 + (dB[i] - totalB) / totalB)
             # fft, ffs, ffc, ffr = ff_cylinder_ml_asaxs(q, H, r, rho, eirho, adensity, Nalf)
             fft, ffs, ffc, ffr = parallelopiped_ml_asaxs(q, l, b, H, rho, eirho, adensity, Nphi, Npsi)
-            form += Ldist[i] * Bdist[i] * fft/sumL/sumB
-            eiform += Ldist[i] * Bdist[i] * ffs/sumL/sumB
-            aform +=Ldist[i] * Bdist[i] * ffr/sumL/sumB
-            cform += Ldist[i] * Bdist[i] * ffc/sumL/sumB
+            form += dist[i] * fft/sumL
+            eiform += dist[i] * ffs/sumL
+            aform += dist[i] * ffr/sumL
+            cform += dist[i] * ffc/sumL
         return pfac * form, pfac * eiform, pfac * aform, np.abs(pfac * cform)  # in cm^2
 
     @lru_cache(maxsize=10)
@@ -242,8 +236,10 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         scale = 1e27 / 6.022e23
         svol = 1.5*0.0172**2/370**2  # scattering volume in cm^3
         self.update_params()
-        self.__L__=self.L+np.array(self.__Thickness__)
-        self.__B__=self.B+np.array(self.__Thickness__)
+        self.__L__=np.array(self.__Thickness__)
+        self.__B__=np.array(self.__Thickness__)
+        self.__L__[0]=self.L
+        self.__B__[0]=self.B
         rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(self.__L__), material=tuple(self.__material__),
                                                                  relement=self.relement,
                                                                  density=tuple(self.__density__),
@@ -273,9 +269,24 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             key1='Total'
             total= self.norm * 6.022e20 *sqft[key1] * struct + self.sbkg
             if not self.__fit__:
-                dL, Ldist, totalL, dB, Bdist, totalB = self.calc_LBdist(tuple(self.__L__), tuple(self.__B_), self.sig, self.dist, self.Np)
-                self.output_params['L_Distribution'] = {'x': dL, 'y': Ldist}
-                self.output_params['B_Distribution'] = {'x': dB, 'y': Bdist}
+                if self.sig>1e-5:
+                    dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
+                    self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
+                    self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
+                signal = total
+                minsignal = np.min(signal)
+                normsignal = signal / minsignal
+                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                meta = {'Energy': self.Energy}
+                if self.Energy is not None:
+                    self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
+                                                                                   'y': sqerr * minsignal,
+                                                                                   'yerr': np.sqrt(
+                                                                                       normsignal) * minsignal * self.error_factor,
+                                                                                   'meta': meta}
+                else:
+                    self.output_params['simulated_w_err'] = {'x': self.x[key], 'y': sqerr * minsignal,
+                                                             'yerr': np.sqrt(normsignal) * minsignal}
                 self.output_params['Total'] = {'x': self.x[key], 'y':total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
@@ -306,9 +317,23 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
             eisqf = self.norm * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
             csqf = self.norm * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
-            sqerr = np.sqrt(self.norm*6.022e20*self.flux * tsqf * svol*struct+self.sbkg)
-            sqwerr = (self.norm*6.022e20*tsqf * svol * struct*self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
-            self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
+            # sqerr = np.sqrt(self.norm*6.022e20*self.flux * tsqf * svol*struct+self.sbkg)
+            # sqwerr = (self.norm*6.022e20*tsqf * svol * struct*self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
+            # self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
+            signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.sbkg
+            minsignal = np.min(signal)
+            normsignal = signal / minsignal
+            sqerr = np.random.normal(normsignal, scale=self.error_factor)
+            meta = {'Energy': self.Energy}
+            if self.Energy is not None:
+                self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
+                                                                               'yerr': np.sqrt(
+                                                                                   normsignal) * minsignal * self.error_factor,
+                                                                               'meta': meta}
+            else:
+                self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
+                                                         'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
+                                                         'meta': meta}
             self.output_params['Total'] = {'x': self.x, 'y': sqf}
             self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
             self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
@@ -325,9 +350,10 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             sqf = self.output_params[self.term]['y']
             xtmp, ytmp = create_steps(x=self.__L__[:-1], y=self.__density__[:-1])
             self.output_params['Density_radial'] = {'x': xtmp, 'y': ytmp}
-            dL, Ldist, totalL, dB, Bdist, totalB = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
-            self.output_params['L_Distribution'] = {'x': dL, 'y': Ldist}
-            self.output_params['B_Distribution'] = {'x': dB, 'y': Bdist}
+            if self.sig>1e-5:
+                dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
+                self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
+                self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
         return sqf
 
 
