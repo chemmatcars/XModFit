@@ -37,6 +37,7 @@ class XFNTR: #Please put the class name same as the function name
         int_bg  : the background fluorescence intensity from the secondary scattering from the primary beam, should be zero for air/water interface
         Rc : the radius of the interfacial curvature in unit of meter; 0 means it's flat
         sur_cov : the surface coverage of target element in unit of per \AA^-2
+        ion_depth : the monolayer thickness in unit of \AA where doesn't have any ions
         """
         if type(x)==list:
             self.x=np.array(x)
