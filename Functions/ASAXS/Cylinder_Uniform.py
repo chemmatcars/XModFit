@@ -42,7 +42,7 @@ def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
             tfr = 0.0
             for k in prange(Nlayers-1):
                 qh=np.abs(q[i]*H*np.cos(alf)/2)
-                fach=(1.0-HvvgtR)*np.sin(qh)/qh+HvvgtR*np.cos(qh-np.pi/4.0)*np.sqrt(2/np.pi/qh)
+                fach=(1.0-HvvgtR)*np.sinc(qh)+HvvgtR*np.cos(qh-np.pi/4.0)*np.sqrt(2/np.pi/qh) #https://math.stackexchange.com/questions/177118/about-the-asymptotic-formula-of-bessel-function
                 qr=q[i]*tR[k]*np.sin(alf)
                 facR=j1(qr)/qr
                 fac =  fach*facR
