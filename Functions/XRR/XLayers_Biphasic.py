@@ -85,6 +85,7 @@ class XLayers_Biphasic: #Please put the class name same as the function name
         self.__mu__={}
         self.__sig__={}
         self.__fit__=False
+        self.__fix_sig_changed__=0
         self.__mkeys__ = list(self.__mpar__.keys())
         self.output_params = {'scaler_parameters': {}}
         self.init_params()
@@ -179,11 +180,14 @@ class XLayers_Biphasic: #Please put the class name same as the function name
         if not self.__fit__:
             for mkey in self.__mpar__.keys():
                 Nlayers = len(self.__mpar__[mkey]['sig'])
-                for i in range(2,Nlayers):
-                    if self.fix_sig:
+                if self.fix_sig:
+                    for i in range(2, Nlayers):
                         self.params['__%s_%s_%03d' % (mkey, 'sig', i)].expr = '__%s_%s_%03d' % (mkey, 'sig', 1)
-                    else:
+                    self.__fix_sig_changed__ = 1
+                if not self.fix_sig and self.__fix_sig_changed__ > 0:
+                    for i in range(2, Nlayers):
                         self.params['__%s_%s_%03d' % (mkey, 'sig', i)].expr = None
+                    self.__fix_sig_changed__ = 0
         self.update_parameters()
         refq={}
         r2={}
