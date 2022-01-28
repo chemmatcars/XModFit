@@ -9,7 +9,6 @@ import numpy as np
 import re
 import scipy.constants
 sys.path.append(os.path.abspath('.'))
-print(sys.path)
 from xraydb import XrayDB
 xdb = XrayDB()
 
