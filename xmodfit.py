@@ -2293,6 +2293,9 @@ class XModFit(QWidget):
                 for metakey in self.fit.params['output_params'][parname]['meta'].keys():
                     if metakey not in added_par:
                         header+='%s=%s\n'%(metakey,str(self.fit.params['output_params'][parname]['meta'][metakey]))
+            for fi in range(self.fixedParamTableWidget.rowCount()):
+                par,val=self.fixedParamTableWidget.item(fi,0).text(),self.fixedParamTableWidget.item(fi,1).text()
+                header+='%s=%s\n'%(par,val)
             for i in range(self.sfitParamTableWidget.rowCount()):
                 par,val=self.sfitParamTableWidget.item(i,0).text(),self.sfitParamTableWidget.item(i,1).text()
                 header+='%s=%s\n'%(par,val)
