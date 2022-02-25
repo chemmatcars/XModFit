@@ -2310,7 +2310,10 @@ class XModFit(QWidget):
             if 'names' in self.fit.params['output_params'][parname]:
                 header += "col_names=%s\n" % str(self.fit.params['output_params'][parname]['names'])
             else:
-                header += "col_names=%s\n" % var
+                lvar=eval(var)
+                if 'meta' in lvar:
+                    lvar.remove('meta')
+                header += "col_names=%s\n" % str(lvar)
 
             header=header.encode("ascii","ignore")
             header=header.decode()
