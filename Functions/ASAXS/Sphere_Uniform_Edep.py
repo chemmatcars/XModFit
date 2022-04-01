@@ -14,6 +14,7 @@ from functools import lru_cache
 # from ff_sphere import ff_sphere_ml
 from PeakFunctions import LogNormal, Gaussian
 from utils import find_minmax, calc_rho
+from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 
 from numba import njit, prange
 
@@ -35,7 +36,7 @@ def ff_sphere_ml(q,R,rho):
 
 class Sphere_Uniform_Edep: #Please put the class name same as the function name
     def __init__(self, x=0, Np=20, error_factor=1, bkg=0.0,dist='Gaussian', relement='Au', Energy=None, NrDep='False', norm=1.0e-9,
-                 D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,term='Total',
+                 D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,
                  mpar={'Multilayers':{'Material':['Au','H2O'],'Density':[19.32,1.0],'SolDensity':[1.0,1.0],'Rmoles':[1.0,0.0],'R':[1.0,0.0]}}):
         """
         Documentation
@@ -56,7 +57,6 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
         phi         : Volume fraction of particles
         U           : The sticky-sphere interaction energy
         SF          : Type of structure factor. Default: 'None'
-        term        : 'SAXS-term' or 'Cross-term' or 'Resonant-term' or 'Total'
         mpar        : Multi-parameter which defines the following including the solvent/bulk medium which is the last one. Default: 'H2O'
                         Material ('Materials' using chemical formula),
                         Density ('Density' in gm/cubic-cms),
@@ -82,10 +82,8 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
         self.error_factor=error_factor
         self.Rsig=Rsig
         self.bkg=bkg
-        self.term=term
         self.__mpar__=mpar #If there is any multivalued parameter
         self.choices={'dist':['Gaussian','LogNormal'],'NrDep':['True','False'],
-                      'term':['Total','SAXS-term','Cross-term','Resonant-term'],
                       'SF':['None','Hard-Sphere','Sticky-Sphere']} #If there are choices available for any fixed parameters
         self.__fit__=False
         self.output_params={'scaler_parameters':{}}
@@ -136,33 +134,20 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
         q = np.array(q)
         dr, rdist, totalR = self.calc_Rdist(R, Rsig, dist, Np)
         form = np.zeros_like(q)
-        eiform = np.zeros_like(q)
-        aform = np.zeros_like(q)
-        cform = np.zeros_like(q)
+        # eiform = np.zeros_like(q)
+        # aform = np.zeros_like(q)
+        # cform = np.zeros_like(q)
         pfac = (4 * np.pi * 2.818e-5 * 1.0e-8) ** 2
         for i in range(len(dr)):
             r = np.array(R) * (1 + (dr[i] - totalR) / totalR)
             ff, mff = ff_sphere_ml(q, r, rho)
             form = form + rdist[i] * ff
-            eiff, meiff = ff_sphere_ml(q, r, eirho)
-            eiform = eiform + rdist[i] * eiff
-            aff, maff = ff_sphere_ml(q, r, adensity)
-            aform = aform + rdist[i] * aff
-            cform = cform + rdist[i] * (meiff * maff.conjugate()+meiff.conjugate()*maff)
-        return pfac * form, pfac * eiform, pfac * aform, pfac * np.abs(cform)/2.0  # in cm^2
-
-    @lru_cache(maxsize=10)
-    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, key='SAXS-term'):
-        form, eiform, aform, cform = self.new_sphere(q, R, Rsig, rho, eirho, adensity, dist=dist, Np=Np)
-        if key == 'SAXS-term':
-            return eiform
-        elif key == 'Resonant-term':
-            return aform
-        elif key == 'Cross-term':
-            return cform
-        elif key == 'Total':
-            return form
-
+            # eiff, meiff = ff_sphere_ml(q, r, eirho)
+            # eiform = eiform + rdist[i] * eiff
+            # aff, maff = ff_sphere_ml(q, r, adensity)
+            # aform = aform + rdist[i] * aff
+            # cform = cform + rdist[i] * (meiff * maff.conjugate()+meiff.conjugate()*maff)
+        return pfac * form#, pfac * eiform, pfac * aform, pfac * np.abs(cform)/2.0  # in cm^2
 
     def update_params(self):
         mkey=self.__mkeys__[0]
@@ -188,14 +173,13 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
             sqf={}
             for key in self.x.keys():
                 sq=[]
-                term=key.split('_')[0]
-                Energy=float(key.split('_')[1].split(':')[1])
+                Energy=float(key.split('_')[1].split('@')[1])
                 rho,eirho,adensity,rhor,eirhor,adensityr=calc_rho(R=self.__R__,material=self.__material__,
                                                                        density=self.__density__, sol_density=self.__solDensity__,
                                                                        Energy=Energy, Rmoles= self.__Rmoles__, NrDep=self.NrDep)
-                sqf[key] = self.norm * 6.022e20 * self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__),
+                sqf[key] = self.norm * 6.022e20 * self.new_sphere(tuple(self.x[key]), tuple(self.__R__),
                                                                        self.Rsig, tuple(rho), tuple(eirho),
-                                                                       tuple(adensity), key=term, dist=self.dist,
+                                                                       tuple(adensity), dist=self.dist,
                                                                        Np=self.Np)  # in cm^-1
                 if self.SF is None:
                     struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
@@ -214,8 +198,7 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
                 self.output_params['Structure_Factor']={'x':self.x[key],'y':struct}
                 for key in self.x.keys():
-                    term = key.split('_')[0]
-                    Energy = key.split('_')[1].split(':')[1]
+                    Energy = key.split('_')[1].split('@')[1]
                     # sqerr = np.sqrt(self.flux * sqf[key] * svol)
                     # sqwerr = sqf[key] * svol * self.flux + 2 * (0.5 - np.random.rand(len(sqerr))) * sqerr
                     signal = sqf[key]
@@ -238,16 +221,11 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
             else:
                 struct = sticky_sphere_sf(self.x, D=self.D, phi=self.phi, U=self.U, delta=0.01)
 
-            tsqf, eisqf, asqf, csqf = self.new_sphere(tuple(self.x), tuple(self.__R__), self.Rsig, tuple(rho),
+            tsqf = self.new_sphere(tuple(self.x), tuple(self.__R__), self.Rsig, tuple(rho),
                                                       tuple(eirho), tuple(adensity), dist=self.dist, Np=self.Np)
 
             self.output_params['Total'] = {'x': self.x, 'y': self.norm * np.array(tsqf) * 6.022e20 * struct + self.bkg}
-            self.output_params['SAXS-term'] = {'x': self.x,
-                                               'y': self.norm * np.array(eisqf) * 6.022e20 * struct + self.bkg}
-            self.output_params['Resonant-term'] = {'x': self.x,
-                                                   'y': self.norm * np.array(asqf) * 6.022e20 * struct + self.bkg}
-            self.output_params['Cross-term'] = {'x': self.x,
-                                                'y': self.norm * np.array(csqf) * 6.022e20 * struct + self.bkg}
+
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist}
@@ -266,13 +244,13 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
                 self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1]}
                 self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
-            sqf = self.output_params[self.term]['y']
+            sqf = tsqf
         return sqf
 
 
 
 if __name__=='__main__':
-    x = {'Total_E:11.9126': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.9098': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.9072': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.9037': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.8984': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.8914': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.8830': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.8714': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.8564': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.8364': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.8098': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.7748': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.7288': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.6673': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.5860': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.4796': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.3396': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:11.1567': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E:10.9190': np.logspace(np.log10(0.003), np.log10(0.15), 500)}
+    x = {'Total_E@11.9126': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.9098': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.9072': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.9037': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8984': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8914': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8830': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8714': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8564': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8364': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8098': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.7748': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.7288': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.6673': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.5860': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.4796': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.3396': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.1567': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@10.9190': np.logspace(np.log10(0.003), np.log10(0.15), 500)}
     # x = np.linspace(0.003, 0.15, 500)
     fun=Sphere_Uniform_Edep(x=x)
     print(fun.y())
