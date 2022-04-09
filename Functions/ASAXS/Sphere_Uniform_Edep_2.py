@@ -35,10 +35,10 @@ def ff_sphere_ml(q,R,rho):
     return ff,aff
 
 
-class Sphere_Uniform_Edep: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=20, error_factor=1, bkg=0.0,dist='Gaussian', relement='Au', Energy=None, NrDep='False', norm=1.0e-9,
+class Sphere_Uniform_Edep_2: #Please put the class name same as the function name
+    def __init__(self, x=0, Np=20, error_factor=1, bkg=0.0,dist='Gaussian', relement='Au', Energy=None, NrDep='True', norm=1.0e-9,
                  D=1.0, phi=0.1, U=-1.0, SF='None',
-                 mpar={'Multilayers':{'Material':['Au','H2O'],'Density':[19.32,1.0],'SolDensity':[1.0,1.0],'Rmoles':[1.0,0.0],'R':[1.0,0.0]},'Rsig':[0.0,0.0]}):
+                 mpar={'Multilayers':{'Material':['Au','H2O'],'Density':[19.32,1.0],'SolDensity':[1.0,1.0],'Rmoles':[1.0,0.0],'R':[1.0,0.0],'Rsig':[1.0,1.0]}}):
         """
         Documentation
         Calculates the Energy dependent form factor of multilayered nanoparticles with different materials
@@ -82,7 +82,6 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
         self.Energy=Energy
         #self.rhosol=rhosol
         self.error_factor=error_factor
-        self.Rsig=Rsig
         self.bkg=bkg
         self.__mpar__=mpar #If there is any multivalued parameter
         self.choices={'dist':['Gaussian','LogNormal'],'NrDep':['True','False'],
@@ -99,7 +98,6 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
         """
         self.params=Parameters()
         self.params.add('norm',value=self.norm,vary=0, min = -np.inf, max = np.inf, expr = None, brute_step = 0.1)
-        self.params.add('Rsig',value=self.Rsig,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('D',value=self.D,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('U',value=self.U,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('phi',value=self.phi,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
@@ -113,45 +111,51 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
 
     @lru_cache(maxsize=10)
     def calc_Rdist(self, R, Rsig, dist, N):
-        cov=np.diag(Rsig)
-        mv=multivariate_normal(R,cov)
-        Rl = []
-        totalR = np.sum(R[:-1])
-        if Rsig > 0.001:
-            fdist = eval(dist + '.' + dist + '(x=0.001, pos=totalR, wid=Rsig)')
-            if dist == 'Gaussian':
-                rmin, rmax = max(0.001, totalR - 5 * Rsig), totalR + 5 * Rsig
-                dr = np.linspace(rmin, rmax, N)
-            else:
-                rmin, rmax = max(-3, np.log(totalR) - 5 * Rsig), np.log(totalR) + 5 * Rsig
-                dr = np.logspace(rmin, rmax, N,base=np.exp(1.0))
-            fdist.x = dr
-            rdist = fdist.y()
-            sumdist = np.sum(rdist)
-            rdist = rdist / sumdist
-            return dr, rdist, totalR
+        R=np.array(R)
+        Rsig=np.array(Rsig)
+        cov=np.diag(Rsig[:-1]**2)
+        if dist=='Gaussian':
+            mnorm = multivariate_normal(R[:-1], cov)
+            cmd = 'np.mgrid['
+            for i, r in enumerate(R[:-1]):
+                Rmin = max(r - 5 * Rsig[i],0.0)
+                Rmax = r + 5 * Rsig[i]
+                cmd += '%.3f:%.3f:%dj,'%(Rmin,Rmax,N)
+            cmd=cmd[:-1]+'].reshape(%d,-1).T'%len(R[:-1])
+            Rl=eval(cmd)
+            rdist = mnorm.pdf(Rl)
         else:
-            return [totalR], [1.0], totalR
+            mnorm=multivariate_normal(np.log(R[:-1]),cov)
+            cmd = 'np.mgrid['
+            for i, r in enumerate(R[:-1]):
+                Rmin =  max(-3, np.log(r) - 5 * Rsig[i])
+                Rmax = np.log(r) + 5 * Rsig[i]
+                cmd += '%.3f:%.3f:%dj,' % (Rmin, Rmax, N)
+            cmd= cmd[:-1]+'].reshape(%d,-1).T' %len(R[:-1])
+            Rl=np.exp(eval(cmd))
+            rdist = mnorm.pdf(np.log(Rl))
+        Rl = np.vstack((Rl.T, np.zeros(Rl.shape[0]))).T
+        if not self.__fit__:
+            Rt = np.sqrt(np.sum(Rl ** 2, axis=1))
+            self.output_params['Distribution'] = {'x': np.sort(Rt), 'y': rdist[np.argsort(Rt)]}
+        return Rl, rdist
+
+
+
 
     @lru_cache(maxsize=10)
     def new_sphere(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10):
         q = np.array(q)
-        dr, rdist, totalR = self.calc_Rdist(R, Rsig, dist, Np)
+        Rl, rdist = self.calc_Rdist(R, Rsig, dist, Np)
         form = np.zeros_like(q)
         # eiform = np.zeros_like(q)
         # aform = np.zeros_like(q)
         # cform = np.zeros_like(q)
         pfac = (4 * np.pi * 2.818e-5 * 1.0e-8) ** 2
-        for i in range(len(dr)):
-            r = np.array(R) * (1 + (dr[i] - totalR) / totalR)
-            ff, mff = ff_sphere_ml(q, r, rho)
+        for i in range(Np):
+            ff, mff = ff_sphere_ml(q, Rl[i], rho)
             form = form + rdist[i] * ff
-            # eiff, meiff = ff_sphere_ml(q, r, eirho)
-            # eiform = eiform + rdist[i] * eiff
-            # aff, maff = ff_sphere_ml(q, r, adensity)
-            # aform = aform + rdist[i] * aff
-            # cform = cform + rdist[i] * (meiff * maff.conjugate()+meiff.conjugate()*maff)
-        return pfac * form#, pfac * eiform, pfac * aform, pfac * np.abs(cform)/2.0  # in cm^2
+        return pfac * form/np.sum(rdist)
 
     def update_params(self):
         mkey=self.__mkeys__[0]
@@ -164,6 +168,8 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
         self.__Rmoles__=tuple([self.params['__%s_%s_%03d'%(mkey,key,i)].value for i in range(Nmpar)])
         key='R'
         self.__R__=tuple([self.params['__%s_%s_%03d'%(mkey,key,i)].value for i in range(Nmpar)])
+        key = 'Rsig'
+        self.__Rsig__ = tuple([self.params['__%s_%s_%03d' % (mkey, key, i)].value for i in range(Nmpar)])
         key='Material'
         self.__material__=tuple([self.__mpar__[mkey][key][i] for i in range(Nmpar)])
 
@@ -182,7 +188,7 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
                                                                        density=self.__density__, sol_density=self.__solDensity__,
                                                                        Energy=Energy, Rmoles= self.__Rmoles__, NrDep=self.NrDep)
                 sqf[key] = self.norm * 6.022e20 * self.new_sphere(tuple(self.x[key]), tuple(self.__R__),
-                                                                       self.Rsig, tuple(rho), tuple(eirho),
+                                                                       tuple(self.__Rsig__), tuple(rho), tuple(eirho),
                                                                        tuple(adensity), dist=self.dist,
                                                                        Np=self.Np)  # in cm^-1
                 if self.SF is None:
@@ -195,8 +201,7 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
 
 
             if not self.__fit__:
-                dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
-                self.output_params['Distribution'] = {'x': dr, 'y': rdist}
+
                 self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1]}
                 self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
@@ -225,13 +230,13 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
             else:
                 struct = sticky_sphere_sf(self.x, D=self.D, phi=self.phi, U=self.U, delta=0.01)
 
-            tsqf = self.new_sphere(tuple(self.x), tuple(self.__R__), self.Rsig, tuple(rho),
+            tsqf = self.new_sphere(tuple(self.x), tuple(self.__R__), tuple(self.__Rsig__), tuple(rho),
                                                       tuple(eirho), tuple(adensity), dist=self.dist, Np=self.Np)
 
             self.output_params['Total'] = {'x': self.x, 'y': self.norm * np.array(tsqf) * 6.022e20 * struct + self.bkg}
 
             if not self.__fit__:
-                dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
+                dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), tuple(self.__Rsig__), self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist}
                 signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.bkg
                 minsignal = np.min(signal)
