@@ -42,7 +42,7 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
                  mpar={'Multilayers':{'Material':['Au','H2O'],'Density':[19.32,1.0],'SolDensity':[1.0,1.0],'Rmoles':[1.0,0.0],'R':[1.0,0.0],'Rsig':[1.0,1.0]}}):
         """
         Documentation
-        Calculates the Energy dependent form factor of multilayered nanoparticles with different materials
+        Calculates the Energy dependent form factor of multilayered nanoparticles with size distribution over all the layers done usine Monte-Carlo Method
 
         x           : Reciprocal wave-vector 'Q' inv-Angs in the form of a scalar or an array. For energy dependence you need to
         provide a dictionary like {'E_11.919':linspace(0.001,1.0,1000)}
@@ -51,7 +51,7 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
         Energy      : Energy of the X-rays
         NrDep       : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy dependent)
         dist        : The probablity distribution fucntion for the radii of different interfaces in the nanoparticles. Default: Gaussian
-        norm        : The density of the nanoparticles in Molar (Moles/Liter)
+        norm        : The density of the nanoparticles in Molar (NanoMoles/Liter)
         error_factor : Error-factor to simulate the error-bars
         Rsig        : Widths of the distributions ('Rsig' in Angs) of radii of all the interfaces present in the nanoparticle system.
         bkg         : In-coherrent scattering background
@@ -59,6 +59,7 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
         phi         : Volume fraction of particles
         U           : The sticky-sphere interaction energy
         SF          : Type of structure factor. Default: 'None'
+        tol         : Tolerence for the Monte-Carlo Integration
         mpar        : Multi-parameter which defines the following including the solvent/bulk medium which is the last one. Default: 'H2O'
                         Material ('Materials' using chemical formula),
                         Density ('Density' in gm/cubic-cms),
@@ -160,7 +161,7 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
     #     return Rl, rdist
 
     @lru_cache(maxsize=10)
-    def new_sphere(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10):
+    def new_sphere(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, tol=1e-3):
         q = np.array(q)
         Rl, rdist = self.calc_Rdist(R, Rsig, dist, Np, seed=1)
         form = np.zeros_like(q)
@@ -175,7 +176,7 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
             if i>10 and np.mod(i,10)==0:
                 chisq=np.sum(((form-last)/form)**2)/len(q)
                 last=1.0*form
-                if chisq<self.tol:
+                if chisq<tol:
                     break
         return pfac * form/np.sum(rdist[:i]), Rl[:i], rdist[:i]
 
@@ -212,8 +213,8 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
                 sphere, Rl, rdist = self.new_sphere(tuple(self.x[key]), tuple(self.__R__),
                                                                        tuple(self.__Rsig__), tuple(rho), tuple(eirho),
                                                                        tuple(adensity), dist=self.dist,
-                                                                       Np=self.Np)  # in cm^-1
-                sqf[key] = self.norm * 6.022e20 * sphere
+                                                                       Np=self.Np,tol=self.tol)  # in cm^-1
+                sqf[key] = self.norm * 1e-9 * 6.022e20 * sphere
                 if self.SF is None:
                     struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
                 elif self.SF == 'Hard-Sphere':
@@ -260,14 +261,14 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
                 struct = sticky_sphere_sf(self.x, D=self.D, phi=self.phi, U=self.U, delta=0.01)
 
             tsqf, Rl, rdist = self.new_sphere(tuple(self.x), tuple(self.__R__), tuple(self.__Rsig__), tuple(rho),
-                                                      tuple(eirho), tuple(adensity), dist=self.dist, Np=self.Np)
+                                                      tuple(eirho), tuple(adensity), dist=self.dist, Np=self.Np,tol=self.tol)
 
-            self.output_params['Total'] = {'x': self.x, 'y': self.norm * np.array(tsqf) * 6.022e20 * struct + self.bkg}
+            self.output_params['Total'] = {'x': self.x, 'y': self.norm * 1e-9 * np.array(tsqf) * 6.022e20 * struct + self.bkg}
 
             if not self.__fit__:
                 for i, j in combinations(range(len(self.__R__[:-1])),2):
                     self.output_params['R_%d_%d' % (i+1,j+1)] = {'x': Rl[:, i], 'y': Rl[:,j]}
-                signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.bkg
+                signal = 6.022e20 * self.norm * 1e-9 * np.array(tsqf) * struct + self.bkg
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
                 sqerr = np.random.normal(normsignal,scale=self.error_factor)
