@@ -37,7 +37,7 @@ def ff_sphere_ml(q,R,rho):
 
 
 class Sphere_Uniform_Edep_2: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=20, error_factor=1, bkg=0.0,dist='Gaussian', relement='Au', Energy=None, NrDep='True', norm=1.0e-9,
+    def __init__(self, x=0, Np=20, error_factor=1, bkg=0.0,dist='Gaussian', relement='Au', Energy=None, NrDep='True', norm=1.0,
                  D=1.0, phi=0.1, U=-1.0, SF='None',tol=1e-3,
                  mpar={'Multilayers':{'Material':['Au','H2O'],'Density':[19.32,1.0],'SolDensity':[1.0,1.0],'Rmoles':[1.0,0.0],'R':[1.0,0.0],'Rsig':[1.0,1.0]}}):
         """
@@ -172,7 +172,7 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
         last=np.zeros_like(q)
         for i in range(Np):
             ff, mff = ff_sphere_ml(q, Rl[i], rho)
-            form = form + rdist[i] * ff
+            form += rdist[i] * ff
             if i>10 and np.mod(i,10)==0:
                 chisq=np.sum(((form-last)/form)**2)/len(q)
                 last=1.0*form
@@ -260,10 +260,8 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
             else:
                 struct = sticky_sphere_sf(self.x, D=self.D, phi=self.phi, U=self.U, delta=0.01)
 
-            tsqf, Rl, rdist = self.new_sphere(tuple(self.x), tuple(self.__R__), tuple(self.__Rsig__), tuple(rho),
+            tsqf, Rl, rdist = self.new_sphere(tuple(self.x), self.__R__, self.__Rsig__, tuple(rho),
                                                       tuple(eirho), tuple(adensity), dist=self.dist, Np=self.Np,tol=self.tol)
-
-            self.output_params['Total'] = {'x': self.x, 'y': self.norm * 1e-9 * np.array(tsqf) * 6.022e20 * struct + self.bkg}
 
             if not self.__fit__:
                 for i, j in combinations(range(len(self.__R__[:-1])),2):
