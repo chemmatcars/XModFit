@@ -268,7 +268,7 @@ class XModFit(QWidget):
         self.emcee_cores = 1
         self.emcee_frac = self.emcee_burn/self.emcee_steps
         self.reuse_sampler = False
-
+        self.autoCalculate = True
         self.funcDock=Dock('Functions',size=(1,6),closable=False,hideTitle=False)
         self.fitDock=Dock('Fit options',size=(1,2),closable=False,hideTitle=False)
         self.dataDock=Dock('Data',size=(1,8),closable=False,hideTitle=False)
@@ -1782,7 +1782,11 @@ class XModFit(QWidget):
         
         self.fixedparamLayoutWidget.nextRow()
         fixedParamLabel=QLabel('Fixed Parameters')
-        self.fixedparamLayoutWidget.addWidget(fixedParamLabel, colspan=3)
+        self.fixedparamLayoutWidget.addWidget(fixedParamLabel, colspan=2)
+        self.autoCalcCheckBox=QCheckBox('Auto Calculate')
+        self.fixedparamLayoutWidget.addWidget(self.autoCalcCheckBox)
+        self.autoCalcCheckBox.setChecked(True)
+        self.autoCalcCheckBox.stateChanged.connect(self.changeAutoCalc)
 
         self.fixedparamLayoutWidget.nextRow()
         self.fixedParamTableWidget=pg.TableWidget()
@@ -1886,6 +1890,14 @@ class XModFit(QWidget):
         self.parSplitter.addWidget(self.genparamLayoutWidget)
         
         self.paramDock.addWidget(self.parSplitter)
+
+
+    def changeAutoCalc(self):
+        if self.autoCalcCheckBox.isChecked():
+            self.autoCalculate=True
+            self.update_plot()
+        else:
+            self.autoCalculate=False
 
     def mfitParamTabChanged(self,index):
         self.mkey=self.mfitParamTabWidget.tabText(index)
@@ -3238,11 +3250,14 @@ class XModFit(QWidget):
 
         if len(self.funcListWidget.selectedItems())>0:
             # try:
-            stime=time.perf_counter()
-            self.fit.func.__fit__=False
-            self.fit.evaluate()
-            ntime=time.perf_counter()
-            exectime=ntime-stime
+            if self.autoCalculate:
+                stime=time.perf_counter()
+                self.fit.func.__fit__=False
+                self.fit.evaluate()
+                ntime=time.perf_counter()
+                exectime=ntime-stime
+            else:
+                exectime=0.0
             # except:
             #     print('I m here')
             #     QMessageBox.warning(self, 'Evaluation Error', traceback.format_exc(), QMessageBox.Ok)

@@ -21,7 +21,16 @@ from scipy.special import j1
 import numba_scipy.special
 
 @njit(parallel=True,cache=True, fastmath=True)
-def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi):
+def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi, HggtLB):
+    if HggtLB:
+        tfac=2*np.pi/q/H
+        Nphi=1
+        dphi=1.0
+        Nqt=-1.0
+    else:
+        tfac=np.ones_like(q)
+        dphi=np.pi/Nphi
+        Nqt=1.0
     dphi=np.pi/Nphi
     dpsi=2.0*np.pi/Npsi
     fft = np.zeros_like(q)
@@ -35,36 +44,39 @@ def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi):
     dadensity=2.0*np.diff(np.array(adensity))*V
     dphidpsi=dphi*dpsi
     for i in prange(len(q)):
-        for iphi in prange(0, Nphi):
+        for iphi in prange(0, Nphi+1):
             phi = iphi*dphi
-            qh = q[i]*H*np.cos(phi) / 2.0
-            for ipsi in prange(0, Npsi):
+            qh = q[i]*H*np.cos(phi)/2.0
+            shfac = ((1.0 - Nqt) + (1.0 + Nqt) * np.sinc(qh / np.pi)) / 2.0
+            sphi=((1.0-Nqt)+(1.0+Nqt)*np.sin(phi))/2.0
+            qsphi=q[i]*sphi/2.0
+            for ipsi in prange(0, Npsi+1):
                 psi = ipsi*dpsi
                 tft = np.complex(0.0, 0.0)
                 tfs = 0.0
                 tfr = 0.0
-                sc=q[i]*np.sin(phi)*np.cos(psi)/2.0
-                ss=q[i]*np.sin(phi)*np.sin(psi)/2.0
+                sc=qsphi*np.cos(psi)
+                ss=qsphi*np.sin(psi)
                 for k in prange(Nlayers-1):
                     ql=L[k]*sc
                     qb=B[k]*ss
-                    fac=np.sinc(ql)*np.sinc(qb)*np.sinc(qh)
+                    fac=np.sinc(ql/np.pi)*np.sinc(qb/np.pi)*shfac
                     tft += drho[k] * fac
                     tfs += deirho[k] * fac
                     tfr += dadensity[k] * fac
-                fft[i] += np.abs(tft) ** 2 * np.sin(phi)
-                ffs[i] += tfs ** 2 * np.sin(phi)
-                ffc[i] += tfs * tfr * np.sin(phi)
-                ffr[i] += tfr ** 2 * np.sin(phi)
+                fft[i] +=  np.abs(tft)**2* sphi
+                ffs[i] +=  tfs**2* sphi
+                ffc[i] +=  tfs*tfr*sphi
+                ffr[i] +=  tfr**2*sphi
     fft*=dphidpsi
     ffs*=dphidpsi
     ffc*=dphidpsi
     ffr*=dphidpsi
-    return fft,ffs,ffc,ffr
+    return fft*tfac,ffs*tfac,ffc*tfac,ffr*tfac
 
 class Parallelopiped_Uniform: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=10, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep='False', L=1.0, B=1.0,
-                 H=1.0, sig=0.0, norm=1.0e-9, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=200,Npsi=400, term='Total',
+    def __init__(self, x=0, Np=10, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep='False', L=1.0, B=1.0, H=1.0,
+                 HggtLB=True, sig=0.0, norm=1.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=180,Npsi=360, term='Total',
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                   'Rmoles': [1.0, 0.0], 'Thickness': [0.0, 0.0]}}):
         """
@@ -78,6 +90,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         L           : Length of the parallelelopiped in Angs
         B           : Breadth of the parallelopiped in Angs
         H           : Height of the parallelopiped in Angs
+        HggtLB      : True if H>>L or B to use parallelopiped with infinite height
         NrDep       : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy independent)
         dist        : The probablity distribution fucntion for the radii of different interfaces in the nanoparticles. Default: Gaussian
         sig         : Width of distribution or thicknesses of the layers of the cylinder
@@ -114,6 +127,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         self.L=L
         self.B=B
         self.H=H
+        self.HggtLB=HggtLB
         self.Nphi=Nphi
         self.Npsi=Npsi
         self.Energy=Energy
@@ -129,7 +143,8 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         self.choices={'dist':['Gaussian','LogNormal'],'NrDep':['True','False'],
                       'SF':['None','Hard-Sphere', 'Sticky-Sphere'],
                       'term': ['SAXS-term', 'Cross-term', 'Resonant-term',
-                               'Total']
+                               'Total'],
+                      'HggtLB':['True','False']
                       } #If there are choices available for any fixed parameters
         self.__cf__=Chemical_Formula()
         self.__fit__=False
@@ -188,7 +203,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             return [totalL], totalL, [totalB], totalB, [1.0]
 
     @lru_cache(maxsize=10)
-    def parallelopiped(self, q, L, B, H, sig, rho, eirho, adensity, dist='Gaussian', Np=10, Nphi=200, Npsi=400):
+    def parallelopiped(self, q, L, B, H, sig, rho, eirho, adensity, dist='Gaussian', Np=10, Nphi=200, Npsi=400, HggtLB=True):
         q = np.array(q)
         dL, totalL, dB, totalB, dist = self.calc_LBdist(L, B, sig, dist, Np)
         form = np.zeros_like(q)
@@ -201,7 +216,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             l = np.array(L) * (1 + (dL[i] - totalL) / totalL)
             b = np.array(B) * (1 + (dB[i] - totalB) / totalB)
             # fft, ffs, ffc, ffr = ff_cylinder_ml_asaxs(q, H, r, rho, eirho, adensity, Nalf)
-            fft, ffs, ffc, ffr = parallelopiped_ml_asaxs(q, l, b, H, rho, eirho, adensity, Nphi, Npsi)
+            fft, ffs, ffc, ffr = parallelopiped_ml_asaxs(q, l, b, H, rho, eirho, adensity, Nphi, Npsi,HggtLB=HggtLB)
             form += dist[i] * fft/sumL
             eiform += dist[i] * ffs/sumL
             aform += dist[i] * ffr/sumL
@@ -209,9 +224,9 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         return pfac * form, pfac * eiform, pfac * aform, np.abs(pfac * cform)  # in cm^2
 
     @lru_cache(maxsize=10)
-    def parallelopiped_dict(self, q, L, B, H, sig, rho, eirho, adensity, dist='Gaussian', Np=10, Nphi=200, Npsi=400):
+    def parallelopiped_dict(self, q, L, B, H, sig, rho, eirho, adensity, dist='Gaussian', Np=10, Nphi=200, Npsi=400, HggtLB=True):
         form, eiform, aform, cform = self.parallelopiped(q, L, B, H, sig, rho, eirho, adensity, dist=dist, Np=Np,
-                                                    Nphi=Nphi, Npsi=Npsi)
+                                                    Nphi=Nphi, Npsi=Npsi,HggtLB=HggtLB)
         sqf = {'Total': form, 'SAXS-term': eiform, 'Resonant-term': aform, 'Cross-term': cform}
         return sqf
 
@@ -250,9 +265,10 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             sqf = {}
             key='SAXS-term'
             sqft=self.parallelopiped_dict(tuple(self.x[key]), tuple(self.__L__), tuple(self.__B__),
-                                                                       self.H, self.sig,
-                                                                       tuple(rho), tuple(eirho), tuple(adensity),
-                                                                       dist = self.dist, Np = self.Np, Nphi = self.Nphi, Npsi = self.Npsi)
+                                          self.H, self.sig,
+                                          tuple(rho), tuple(eirho), tuple(adensity),
+                                          dist = self.dist, Np = self.Np, Nphi = self.Nphi,
+                                          Npsi = self.Npsi,HggtLB=self.HggtLB)
             if self.SF is None:
                 struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
             elif self.SF == 'Hard-Sphere':
@@ -261,13 +277,13 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
                 struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
             for key in self.x.keys():
                 if key == 'SAXS-term':
-                    sqf[key] = self.norm * 6.022e20 *sqft[key] * struct + self.sbkg # in cm^-1
+                    sqf[key] = self.norm * 1e-9 * 6.022e20 *sqft[key] * struct + self.sbkg # in cm^-1
                 if key == 'Cross-term':
-                    sqf[key] = self.norm * 6.022e20 *sqft[key] * struct + self.cbkg # in cm^-1
+                    sqf[key] = self.norm * 1e-9 * 6.022e20 *sqft[key] * struct + self.cbkg # in cm^-1
                 if key == 'Resonant-term':
-                    sqf[key] = self.norm * 6.022e20 *sqft[key] * struct + self.abkg # in cm^-1
+                    sqf[key] = self.norm * 1e-9 * 6.022e20 *sqft[key] * struct + self.abkg # in cm^-1
             key1='Total'
-            total= self.norm * 6.022e20 *sqft[key1] * struct + self.sbkg
+            total= self.norm * 1e-9 * 6.022e20 *sqft[key1] * struct + self.sbkg
             if not self.__fit__:
                 if self.sig>1e-5:
                     dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
@@ -310,17 +326,17 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
                 struct = sticky_sphere_sf(self.x, D=self.D, phi=self.phi, U=self.U, delta=0.01)
 
             tsqf, eisqf, asqf, csqf = self.parallelopiped(tuple(self.x), tuple(self.__L__), tuple(self.__B__), self.H, self.sig,
-                                                     tuple(rho), tuple(eirho),
-                                                      tuple(adensity), dist=self.dist, Np=self.Np, Nphi=self.Nphi, Npsi=self.Npsi)
-            sqf = self.norm * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+                                                          tuple(rho), tuple(eirho),tuple(adensity), dist=self.dist,
+                                                          Np=self.Np, Nphi=self.Nphi, Npsi=self.Npsi,HggtLB=self.HggtLB)
+            sqf = self.norm * 1e-9 * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
             # if not self.__fit__: #Generate all the quantities below while not fitting
-            asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
-            eisqf = self.norm * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-            csqf = self.norm * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
+            asqf = self.norm * 1e-9 * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
+            eisqf = self.norm * 1e-9 * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+            csqf = self.norm * 1e-9 * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
             # sqerr = np.sqrt(self.norm*6.022e20*self.flux * tsqf * svol*struct+self.sbkg)
             # sqwerr = (self.norm*6.022e20*tsqf * svol * struct*self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
             # self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
-            signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.sbkg
+            signal = 6.022e20 * 1e-9 * self.norm * np.array(tsqf) * struct + self.sbkg
             minsignal = np.min(signal)
             normsignal = signal / minsignal
             sqerr = np.random.normal(normsignal, scale=self.error_factor)

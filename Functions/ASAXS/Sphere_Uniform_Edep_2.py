@@ -51,7 +51,7 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
         Energy      : Energy of the X-rays
         NrDep       : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy dependent)
         dist        : The probablity distribution fucntion for the radii of different interfaces in the nanoparticles. Default: Gaussian
-        norm        : The density of the nanoparticles in Molar (NanoMoles/Liter)
+        norm        : The density of the nanoparticles in NanoMolar (NanoMoles/Liter)
         error_factor : Error-factor to simulate the error-bars
         Rsig        : Widths of the distributions ('Rsig' in Angs) of radii of all the interfaces present in the nanoparticle system.
         bkg         : In-coherrent scattering background
