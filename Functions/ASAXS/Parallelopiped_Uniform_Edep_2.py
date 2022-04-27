@@ -289,6 +289,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                                                                                'meta': meta}
         else:
             rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(self.__L__), material=self.__material__,
+                                                                     relement=self.relement,
                                                                      density=self.__density__,
                                                                      sol_density=self.__solDensity__,
                                                                      Energy=self.Energy, Rmoles=self.__Rmoles__,
