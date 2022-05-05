@@ -146,33 +146,40 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                 if key != 'Material':
                     for i in range(len(self.__mpar__[mkey][key])):
                         self.params.add('__%s_%s_%03d' % (mkey, key, i), value=self.__mpar__[mkey][key][i], vary=0,
-                                        min=0.0,
-                                        max=np.inf, expr=None, brute_step=0.1)
+                                        min=0.0,max=np.inf, expr=None, brute_step=0.1)
+                if key == 'L':
+                    for i in range(len(self.__mpar__[mkey][key])):
+                        self.params.add('__%s_%s_%03d' % (mkey, key, i), value=self.__mpar__[mkey][key][i], vary=0,
+                                        min=0.01,max=np.inf, expr=None, brute_step=0.1)
+                if key == 'B':
+                    for i in range(len(self.__mpar__[mkey][key])):
+                        self.params.add('__%s_%s_%03d' % (mkey, key, i), value=self.__mpar__[mkey][key][i], vary=0,
+                                        min=0.01,max=np.inf, expr=None, brute_step=0.1)
 
     @lru_cache(maxsize=10)
     def calc_LBdist(self, L, Lsig, B, Bsig, dist, N, seed=1):
-        L = np.cumsum(L)
+        L = np.array(L)
         Lsig = np.array(Lsig)
         covL = np.diag(Lsig[:-1] ** 2)
-        B = np.cumsum(B)
+        B = np.array(B)
         Bsig = np.array(Bsig)
         covB = np.diag(Bsig[:-1] ** 2)
         if dist == 'Gaussian':
-            mnormL = multivariate_normal(L[:-1], covL)
+            mnormL = multivariate_normal(L[:-1], covL,allow_singular=True)
             Lt = mnormL.rvs(N, random_state=seed)
             Ldist = mnormL.pdf(Lt)
-            mnormB = multivariate_normal(B[:-1], covB)
+            mnormB = multivariate_normal(B[:-1], covB,allow_singular=True)
             Bt = mnormB.rvs(N, random_state=seed)
             Bdist = mnormB.pdf(Bt)
         else:
-            mnormL = multivariate_normal(np.log(L[:-1]), covL)
+            mnormL = multivariate_normal(np.log(L[:-1]), covL,allow_singular=True)
             Lt = np.exp(mnormL.rvs(N, random_state=seed))
             Ldist = mnormL.pdf(np.log(Lt))
-            mnormB = multivariate_normal(np.log(B[:-1]), covB)
+            mnormB = multivariate_normal(np.log(B[:-1]), covB,allow_singular=True)
             Bt = np.exp(mnormB.rvs(N, random_state=seed))
             Bdist = mnormB.pdf(np.log(Bt))
-        Lt = np.vstack((Lt.T, np.zeros(Lt.shape[0]))).T
-        Bt = np.vstack((Bt.T, np.zeros(Bt.shape[0]))).T
+        Lt = np.cumsum(np.vstack((Lt.T, np.zeros(Lt.shape[0]))).T,axis=1)
+        Bt = np.cumsum(np.vstack((Bt.T, np.zeros(Bt.shape[0]))).T,axis=1)
         return Lt, Bt, Ldist, Bdist
 
     @lru_cache(maxsize=10)
@@ -256,8 +263,8 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                 for key in keys:
                     if key.startswith('simulated_w_err') or key.startswith('L_') or key.startswith('B_'):
                         self.output_params.pop(key, None)
-                L = np.diff(L, axis=1,append=L[:,-1])
-                B = np.diff(L, axis=1,append=B[:,-1])
+                # L = np.diff(L, axis=1,append=L[:,-1])
+                # B = np.diff(L, axis=1,append=B[:,-1])
                 if len(self.__L__) > 2:
                     for i, j in combinations(range(len(self.__L__[:-1])), 2):
                         self.output_params['L_%d_%d' % (i + 1, j + 1)] = {'x': L[:, i], 'y': L[:, j],
@@ -312,8 +319,8 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                 for key in keys:
                     if key.startswith('simulated_w_err') or key.startswith('L_') or key.startswith('B_'):
                         self.output_params.pop(key, None)
-                L = np.absolute(np.diff(L, axis=1))
-                B = np.absolute(np.diff(B, axis=1))
+                # L = np.absolute(np.diff(L, axis=1))
+                # B = np.absolute(np.diff(B, axis=1))
                 if len(self.__L__)>2:
                     for i, j in combinations(range(len(self.__L__[:-1])), 2):
                         self.output_params['L_%d_%d' % (i + 1, j + 1)] = {'x': L[:, i], 'y': L[:, j],
