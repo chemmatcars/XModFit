@@ -237,7 +237,6 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
             sqf = {}
             for key in self.x.keys():
                 sq = []
-                key='SAXS-term'
                 Energy = float(key.split('_')[1].split('@')[1])
                 rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(self.__L__),
                                                                          material=self.__material__,
@@ -260,9 +259,9 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
             sqf[key] = sqf[key] * struct + self.bkg
             if not self.__fit__:
                 keys = list(self.output_params.keys())
-                for key in keys:
-                    if key.startswith('simulated_w_err') or key.startswith('L_') or key.startswith('B_'):
-                        self.output_params.pop(key, None)
+                for key1 in keys:
+                    if key1.startswith('simulated_w_err') or key1.startswith('L_') or key.startswith('B_'):
+                        self.output_params.pop(key1, None)
                 # L = np.diff(L, axis=1,append=L[:,-1])
                 # B = np.diff(L, axis=1,append=B[:,-1])
                 if len(self.__L__) > 2:
@@ -359,6 +358,6 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
 
 
 if __name__=='__main__':
-    x=np.logspace(-3,0,200)
+    x = {'Total_E@11.919': np.logspace(np.log10(0.003), np.log10(0.15), 500),}
     fun=Parallelopiped_Uniform_Edep_2(x=x)
     print(fun.y())
