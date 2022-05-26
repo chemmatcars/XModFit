@@ -249,7 +249,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                                        tuple(self.__B__), tuple(self.__Bsig__),
                                        self.H, tuple(rho),
                                        dist = self.dist, Np = self.Np, Nphi = self.Nphi, Npsi = self.Npsi, tol=self.tol, HggtLB=self.HggtLB)
-            sqf[key] = self.norm * 1e-9 * 6.022e20 * sq
+                sqf[key] = self.norm * 1e-9 * 6.022e20 * sq
             if self.SF is None:
                 struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
             elif self.SF == 'Hard-Sphere':
