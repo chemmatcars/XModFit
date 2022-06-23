@@ -308,17 +308,17 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
                 self.output_params['Total'] = {'x': self.x[key], 'y':total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
-                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],
-                                               'names': ['r (Angs)', 'Electron Density (el/Angs^3)']}
-                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1],
-                                                 'names': ['r (Angs)', 'Electron Density (el/Angs^3)']}
-                self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1] * scale,
-                                                    'names': ['r (Angs)', 'Density (Molar)']}
+                self.output_params['rho_r'] = {'x': rhor[:, 0]/2, 'y': rhor[:, 1],
+                                               'names': ['L/2 (Angs)', 'Electron Density (el/Angs^3)']}
+                self.output_params['eirho_r'] = {'x': eirhor[:, 0]/2, 'y': eirhor[:, 1],
+                                                 'names': ['L/2 (Angs)', 'Electron Density (el/Angs^3)']}
+                self.output_params['adensity_r'] = {'x': adensityr[:, 0]/2, 'y': adensityr[:, 1] * scale,
+                                                    'names': ['L/2 (Angs)', 'Density (Molar)']}
                 self.output_params['Structure_Factor'] = {'x': self.x[key], 'y': struct}
                 xtmp,ytmp=create_steps(x=self.__L__[:-1],y=self.__Rmoles__[:-1])
-                self.output_params['Rmoles_radial']={'x':xtmp,'y':ytmp}
+                self.output_params['Rmoles_radial']={'x':xtmp/2,'y':ytmp}
                 xtmp, ytmp = create_steps(x=self.__L__[:-1], y=self.__density__[:-1])
-                self.output_params['Density_radial'] = {'x': xtmp, 'y': ytmp}
+                self.output_params['Density_radial'] = {'x': xtmp/2, 'y': ytmp}
         else:
             if self.SF is None:
                 struct = np.ones_like(self.x)
@@ -356,18 +356,18 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
             self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
             self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
-            self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],
-                                           'names': ['r (Angs)', 'Electron Density (el/Angs^3)']}
-            self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1],
-                                             'names': ['r (Angs)', 'Electron Density (el/Angs^3)']}
-            self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1] * scale,
-                                                'names': ['r (Angs)', 'Density (Molar)']}  # in Molar
+            self.output_params['rho_r'] = {'x': rhor[:, 0]/2, 'y': rhor[:, 1],
+                                           'names': ['L/2 (Angs)', 'Electron Density (el/Angs^3)']}
+            self.output_params['eirho_r'] = {'x': eirhor[:, 0]/2, 'y': eirhor[:, 1],
+                                             'names': ['L/2 (Angs)', 'Electron Density (el/Angs^3)']}
+            self.output_params['adensity_r'] = {'x': adensityr[:, 0]/2, 'y': adensityr[:, 1] * scale,
+                                                'names': ['L/2 (Angs)', 'Density (Molar)']}  # in Molar
             self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
             xtmp, ytmp = create_steps(x=self.__L__[:-1], y=self.__Rmoles__[:-1])
-            self.output_params['Rmoles_radial'] = {'x':xtmp , 'y': ytmp}
+            self.output_params['Rmoles_radial'] = {'x':xtmp/2 , 'y': ytmp}
             sqf = self.output_params[self.term]['y']
             xtmp, ytmp = create_steps(x=self.__L__[:-1], y=self.__density__[:-1])
-            self.output_params['Density_radial'] = {'x': xtmp, 'y': ytmp}
+            self.output_params['Density_radial'] = {'x': xtmp/2, 'y': ytmp}
             if self.sig>1e-5:
                 dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
                 self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
