@@ -36,6 +36,8 @@ def parallelopiped_ml(q, L, B, H, rho, Nphi, Npsi, HggtLB=True):
         Nqt=1.0
     dpsi=2.0*np.pi/Npsi
     fft = np.zeros_like(q)
+    L=np.cumsum(L)
+    B=np.cumsum(B)
     Nlayers=len(L)
     V = L[:-1]*B[:-1]*H
     drho=2.0*np.diff(np.array(rho))*V
@@ -65,7 +67,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
     def __init__(self, x=0, Np=10, error_factor=1.0, dist='LogNormal', Energy=None, relement='Au', NrDep='True',# L=1.0, B=1.0,
                  H=1.0, norm=1.0, bkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=200,Npsi=400, tol=1e-3,HggtLB=True,
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
-                                  'Rmoles': [1.0, 0.0], 'L': [1.0, 0.0],'Lsig':[1.0,0.0],'B':[1.0,0.0],'Bsig':[1.0,0.0]}}):
+                                  'Rmoles': [1.0, 1.0], 'L': [1.0, 0.0],'Lsig':[1.0,0.0],'B':[1.0,0.0],'Bsig':[1.0,0.0]}}):
         """
         Documentation
         Calculates the Energy dependent form factor of multilayered Parallelopiped with fixed height with different materials

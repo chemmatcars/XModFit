@@ -797,12 +797,12 @@ class XModFit(QWidget):
             self.update_plot()
         except:
             QMessageBox.warning(self,"Value Error", "Please supply the Xrange in this format:\n xmin:xmax",QMessageBox.Ok)
-
     
 
 
     def doFit(self, fit_method=None, emcee_walker=100, emcee_steps=100,
                        emcee_cores=1, reuse_sampler=False, emcee_burn=30):
+        self.fchanged=False
         self.tchisqr=1e30
         self.xminmaxChanged()
         if self.sfnames is None or self.sfnames==[]:
@@ -846,7 +846,6 @@ class XModFit(QWidget):
             self.fit.functionCalled.connect(self.fitCallback)
         else:
             self.fit.functionCalled.connect(self.fitErrorCallback)
-
         for fname in self.sfnames:
             if len(self.data[fname].keys())>1:
                 x={}
@@ -966,6 +965,9 @@ class XModFit(QWidget):
                             np.savetxt(ofname + '_fit.txt', fitdata, header=header, comments='#')
                         self.calcConfInterButton.setEnabled(True)
                         self.update_plot()
+                        if self.autoSaveGenParamCheckBox.isChecked():
+                            self.saveGenParameters(
+                                bfname=os.path.join(os.path.dirname(ofname), 'genParam_' + os.path.basename(ofname)))
                         # self.xChanged()
                     else:
                         self.undoFit()
@@ -1874,7 +1876,9 @@ class XModFit(QWidget):
 
         self.genparamLayoutWidget=pg.LayoutWidget()
         genParameters=QLabel('Generated Parameters')
-        self.genparamLayoutWidget.addWidget(genParameters,colspan=2)
+        self.autoSaveGenParamCheckBox=QCheckBox('Auto Save Selected')
+        self.genparamLayoutWidget.addWidget(genParameters,col=0,colspan=2)
+        self.genparamLayoutWidget.addWidget(self.autoSaveGenParamCheckBox,col=1)
         self.genparamLayoutWidget.nextRow()
         self.genParamListWidget=QListWidget()
         self.genParamListWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -3187,7 +3191,7 @@ class XModFit(QWidget):
             self.xLineEdit.setText(self.xline)
         self.xLineEdit.returnPressed.connect(self.xChanged)
 
-        
+
     def update_plot(self):
         for row in range(self.fixedParamTableWidget.rowCount()):
             txt=self.fixedParamTableWidget.item(row,0).text()
@@ -3249,20 +3253,19 @@ class XModFit(QWidget):
                 x = x[np.argwhere(x>=self.xmin)[0][0]:np.argwhere(x<=self.xmax)[-1][0]+1]
 
         if len(self.funcListWidget.selectedItems())>0:
-            # try:
-            if self.autoCalculate:
-                stime=time.perf_counter()
-                self.fit.func.__fit__=False
-                self.fit.evaluate()
-                ntime=time.perf_counter()
-                exectime=ntime-stime
-            else:
-                exectime=0.0
-            # except:
-            #     print('I m here')
-            #     QMessageBox.warning(self, 'Evaluation Error', traceback.format_exc(), QMessageBox.Ok)
-            #     self.fit.yfit = self.fit.func.x
-            #     exectime=np.nan
+            try:
+                if self.autoCalculate:
+                    stime=time.perf_counter()
+                    self.fit.func.__fit__=False
+                    self.fit.evaluate()
+                    ntime=time.perf_counter()
+                    exectime=ntime-stime
+                else:
+                    exectime=0.0
+            except:
+                QMessageBox.warning(self, 'Evaluation Error', traceback.format_exc(), QMessageBox.Ok)
+                self.fit.yfit = self.fit.func.x
+                exectime=np.nan
             if len(self.dataListWidget.selectedItems()) > 0:
                 self.fit.set_x(x, y=y, yerr=yerr)
                 try:
@@ -3308,7 +3311,7 @@ class XModFit(QWidget):
                         row+=1
                 if not self.fchanged:
                     for i in range(self.genParamListWidget.count()):
-                        item=self.genParamListWidget.item(i)
+                        item = self.genParamListWidget.item(i)
                         if item.text() in self.gen_param_items:
                             item.setSelected(True)
             self.plot_extra_param()
