@@ -83,7 +83,6 @@ def find_minmax(fun,pos=1.0,wid=1.0,accuracy=1e-6):
     return fun.x[frange[0]],fun.x[frange[-1]]
 
 
-@lru_cache(maxsize=10)
 def calc_rho(R=(1.0, 0.0), material=('Au', 'H2O'), relement='Au', density=(19.3, 1.0), sol_density=(1.0, 1.0),
              Rmoles=(1.0, 0.0), Energy=None, NrDep='True'):
     """

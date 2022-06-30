@@ -263,6 +263,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
                                                                  sol_density=tuple(self.__solDensity__),
                                                                  Energy=self.Energy, Rmoles=tuple(self.__Rmoles__),
                                                                  NrDep=self.NrDep)
+        rhor[1:, 0] = rhor[1:, 0] - self.L / 2
         if type(self.x) == dict:
             sqf = {}
             key='SAXS-term'
@@ -308,7 +309,6 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
                 self.output_params['Total'] = {'x': self.x[key], 'y':total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
-                rhor[1:,0]=rhor[1:,0]-self.L/2
                 self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],
                                                'names': ['r<sub>L</sub> (Angs)', 'Electron Density (el/Angs^3)']}
                 self.output_params['eirho_r'] = {'x': rhor[:, 0], 'y': eirhor[:, 1],
@@ -360,7 +360,6 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
             self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
             self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
-            rhor[1:,0]=rhor[1:,0]-self.L/2
             self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],
                                            'names': ['r<sub>L</sub> (Angs)', 'Electron Density (el/Angs^3)']}
             self.output_params['eirho_r'] = {'x': rhor[:, 0], 'y': eirhor[:, 1],
