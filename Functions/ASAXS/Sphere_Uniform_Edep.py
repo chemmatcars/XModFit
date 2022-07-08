@@ -174,7 +174,7 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
             for key in self.x.keys():
                 sq=[]
                 Energy=float(key.split('_')[1].split('@')[1])
-                rho,eirho,adensity,rhor,eirhor,adensityr=calc_rho(R=self.__R__,material=self.__material__,
+                rho,eirho,adensity,rhor,eirhor,adensityr=calc_rho(R=self.__R__,material=self.__material__,relement=self.relement,
                                                                        density=self.__density__, sol_density=self.__solDensity__,
                                                                        Energy=Energy, Rmoles= self.__Rmoles__, NrDep=self.NrDep)
                 sqf[key] = self.norm * 6.022e20 * self.new_sphere(tuple(self.x[key]), tuple(self.__R__),
@@ -197,6 +197,10 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
                 self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
                 self.output_params['Structure_Factor']={'x':self.x[key],'y':struct}
+                tkeys=list(self.output_params.keys())
+                for key in tkeys:
+                    if 'simulated_w_err' in key:
+                        del self.output_params[key]
                 for key in self.x.keys():
                     Energy = key.split('_')[1].split('@')[1]
                     # sqerr = np.sqrt(self.flux * sqf[key] * svol)
@@ -211,7 +215,7 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
 
 
         else:
-            rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=self.__R__,material=self.__material__,
+            rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=self.__R__,material=self.__material__,relement=self.relement,
                                                                        density=self.__density__, sol_density=self.__solDensity__,
                                                                        Energy=self.Energy, Rmoles= self.__Rmoles__, NrDep=self.NrDep)
             if self.SF is None:
@@ -234,6 +238,10 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
                 normsignal = signal / minsignal
                 sqerr = np.random.normal(normsignal,scale=self.error_factor)
                 meta={'Energy':self.Energy}
+                tkeys=list(self.output_params.keys())
+                for key in tkeys:
+                    if 'simulated_w_err' in key:
+                        del self.output_params[key]
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.3fkeV'%self.Energy] = {'x': self.x, 'y': sqerr * minsignal,'yerr': np.sqrt(normsignal) * minsignal*self.error_factor,'meta':meta}
                 else:
@@ -250,7 +258,8 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
 
 
 if __name__=='__main__':
-    x = {'Total_E@11.9126': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.9098': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.9072': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.9037': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8984': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8914': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8830': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8714': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8564': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8364': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8098': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.7748': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.7288': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.6673': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.5860': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.4796': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.3396': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.1567': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@10.9190': np.logspace(np.log10(0.003), np.log10(0.15), 500)}
+    x = {'Total_E@25.514': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.5043': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.5001': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.4963': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.4914': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.4848': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.4767': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.4664': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.4534': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.4368': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.4147': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.3865': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.3507': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.3041': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.2453': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.1682': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@25.0625': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@24.7508': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@24.5140': np.logspace(np.log10(0.003), np.log10(0.15), 500)}
+    #x = {'Total_E@11.9126': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.9098': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.9072': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.9037': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8984': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8914': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8830': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8714': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8564': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8364': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.8098': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.7748': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.7288': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.6673': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.5860': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.4796': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.3396': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@11.1567': np.logspace(np.log10(0.003), np.log10(0.15), 500),'Total_E@10.9190': np.logspace(np.log10(0.003), np.log10(0.15), 500)}
     # x = np.linspace(0.003, 0.15, 500)
     fun=Sphere_Uniform_Edep(x=x)
     print(fun.y())

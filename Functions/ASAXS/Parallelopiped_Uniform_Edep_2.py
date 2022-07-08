@@ -282,6 +282,11 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
                 self.output_params['Structure_Factor'] = {'x': self.x[key], 'y': struct}
 
+                tkeys = list(self.output_params.keys())
+                for key in tkeys:
+                    if 'simulated_w_err' in key:
+                        del self.output_params[key]
+
                 for key in self.x.keys():
                     Energy = key.split('_')[1].split('@')[1]
                     # sqerr = np.sqrt(self.flux * sqf[key] * svol)
@@ -340,6 +345,10 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                 normsignal = signal / minsignal
                 sqerr = np.random.normal(normsignal, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
+                tkeys = list(self.output_params.keys())
+                for key in tkeys:
+                    if 'simulated_w_err' in key:
+                        del self.output_params[key]
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.3fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
                                                                                    'yerr': np.sqrt(

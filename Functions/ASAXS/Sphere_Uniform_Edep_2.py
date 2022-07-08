@@ -207,7 +207,7 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
             for key in self.x.keys():
                 sq=[]
                 Energy=float(key.split('_')[1].split('@')[1])
-                rho,eirho,adensity,rhor,eirhor,adensityr=calc_rho(R=self.__R__,material=self.__material__,
+                rho,eirho,adensity,rhor,eirhor,adensityr=calc_rho(R=self.__R__,material=self.__material__,relement=self.relement,
                                                                        density=self.__density__, sol_density=self.__solDensity__,
                                                                        Energy=Energy, Rmoles= self.__Rmoles__, NrDep=self.NrDep)
                 sphere, Rl, rdist = self.new_sphere(tuple(self.x[key]), tuple(self.__R__),
@@ -231,10 +231,10 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
                 self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
                 self.output_params['Structure_Factor']={'x':self.x[key],'y':struct}
-                keys=list(self.output_params.keys())
-                for key in keys :
-                    if key.startswith('simulated_w_err'):
-                        self.output_params.pop(key,None)
+                tkeys = list(self.output_params.keys())
+                for key in tkeys:
+                    if 'simulated_w_err' in key:
+                        del self.output_params[key]
 
                 for key in self.x.keys():
                     Energy = key.split('_')[1].split('@')[1]
@@ -250,7 +250,7 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
 
 
         else:
-            rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=self.__R__,material=self.__material__,
+            rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=self.__R__,material=self.__material__,relement=self.relement,
                                                                        density=self.__density__, sol_density=self.__solDensity__,
                                                                      Energy=self.Energy, Rmoles= self.__Rmoles__, NrDep=self.NrDep)
             if self.SF is None:
@@ -271,10 +271,10 @@ class Sphere_Uniform_Edep_2: #Please put the class name same as the function nam
                 normsignal = signal / minsignal
                 sqerr = np.random.normal(normsignal,scale=self.error_factor)
                 meta={'Energy':self.Energy}
-                keys = list(self.output_params.keys())
-                for key in keys:
-                    if key.startswith('simulated_w_err'):
-                        self.output_params.pop(key, None)
+                tkeys = list(self.output_params.keys())
+                for key in tkeys:
+                    if 'simulated_w_err' in key:
+                        del self.output_params[key]
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.3fkeV'%self.Energy] = {'x': self.x, 'y': sqerr * minsignal,'yerr': np.sqrt(normsignal) * minsignal*self.error_factor,'meta':meta}
                 else:

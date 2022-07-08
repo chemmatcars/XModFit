@@ -7,9 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
 
     <title>Installation &#8212; XModFit 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
@@ -37,30 +37,21 @@
 <span id="id1"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
 <p>Follow the following instructions for installation:</p>
 <ol class="arabic">
-<li><p>Install Anaconda python (Python 3.8 and higher) for your operating system from <a class="reference external" href="https://www.anaconda.com/products/individual">Anaconda website</a></p></li>
-<li><p><strong>(Optional)</strong> This step and step 3 and for creating and activating a virtual environment which will not effect the existing python installation. If you are completely new python user you may not need to do this step and step 3. Open a terminal (Anaconda prompt for Win 10) and create a virtual environment by running this commands:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="n">cmcars</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.8</span>
+<li><p>Install Anaconda python (Python 3.8 and higher) for your operating system from <a class="reference external" href="https://www.anaconda.com/products/individual">Anaconda website</a>.</p></li>
+<li><p>If <a class="reference external" href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">GIT</a> is not installed aleady in the system. Install GIT using conda in the terminal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">git</span>
 </pre></div>
 </div>
 </li>
-<li><p><strong>(Optional)</strong> Once the virtual environment is installed, activate the environment by running this in the same terminal:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">cmcars</span>
-</pre></div>
-</div>
-</li>
+</ol>
+<ol class="arabic" start="2">
 <li><p>In the terminal run the following to install all the dependency packages:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">PyQt5</span> <span class="n">sqlalchemy</span> <span class="n">scipy</span> <span class="n">six</span> <span class="n">matplotlib</span> <span class="n">pandas</span> <span class="n">lmfit</span> <span class="n">pylint</span> <span class="n">periodictable</span> <span class="n">corner</span> <span class="n">emcee</span> <span class="n">tabulate</span> <span class="n">python</span><span class="o">-</span><span class="n">docx</span> <span class="n">numba</span> <span class="n">numba</span><span class="o">-</span><span class="n">scipy</span> <span class="n">statsmodels</span> <span class="n">sympy</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">pyqtgraph</span><span class="o">==</span><span class="mf">0.12</span><span class="o">.</span><span class="mi">1</span>
 </pre></div>
 </div>
 </li>
-<li><p>The installation can be done in two different ways:</p>
-<ol class="loweralpha">
-<li><p><strong>Easier and preferred way</strong> is through <a class="reference external" href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">GIT</a>. If git is not already installed in your computer you can install it through Anaconda by running this command in the terminal (Anaconda prompt for Win 10):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">git</span>
-</pre></div>
-</div>
-<p>After GIT installation go to the folder (for example: /home/mrinal/Download) you wish to download XModFit run the following in the terminal:</p>
+<li><p>After GIT installation go to the folder (for example: /home/mrinal/Download) you wish to download XModFit run the following in the terminal:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">chemmatcars</span><span class="o">/</span><span class="n">XModFit</span>
 </pre></div>
 </div>
@@ -69,31 +60,10 @@
 </pre></div>
 </div>
 </li>
-<li><dl>
-<dt>Universal way which does not need GIT installation:</dt><dd><ol class="lowerroman">
-<li><p>Open a web browser and go to the webpage : <a class="reference external" href="https://github.com/chemmatcars/XModFit">https://github.com/chemmatcars/XModFit</a></p></li>
-<li><p>Click the green button named “Clone or download”</p></li>
-<li><p>Download the zip file</p></li>
-<li><p>Extract the zip file into a folder</p></li>
-<li><p>In the Anaconda terminal go the the extracted folder:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">mrinal</span><span class="o">/</span><span class="n">Download</span><span class="o">/</span><span class="n">XModFit</span><span class="o">-</span><span class="n">master</span>
-</pre></div>
-</div>
-</li>
 </ol>
-</dd>
-</dl>
-</li>
-</ol>
-</li>
-<li><p>Run the command to run <strong>XModFit</strong>:</p>
+<ol class="arabic" start="6">
+<li><p>Go into the folder XModFit and run the command to run <strong>XModFit</strong>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">xmodfit</span><span class="o">.</span><span class="n">py</span>
-</pre></div>
-</div>
-</li>
-<li><p>Once the installation is completed and for running the software at any later time you need to open a terminal (Anaconda prompt for Win 10) and activate to the ‘xmodfit’ virtual environment first before running the software:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">xmodfit</span>
-<span class="n">python</span> <span class="n">xmodfit</span><span class="o">.</span><span class="n">py</span>
 </pre></div>
 </div>
 </li>
@@ -117,7 +87,7 @@
 
 
 <h3>Navigation</h3>
-<p><span class="caption-text">Contents:</span></p>
+<p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
@@ -160,7 +130,7 @@
       &copy;2021, Mrinal Bera, Wei Bu.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
