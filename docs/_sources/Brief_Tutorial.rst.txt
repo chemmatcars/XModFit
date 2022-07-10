@@ -167,22 +167,22 @@ In the :ref:`Data_Dialog` both the meta-data and data can be added/removed and e
 4. When the :ref:`Data_Dialog` is used within any other widgets, one can delete all the columns except the remaining two.
 
 Add New Data Column
-+++++++++++++++++++
+*******************
 You can add new columns by clicking **Add Column** which will open up a :ref:`Data_Column_Dialog_i`. Then the column values can be either:
 
 1. An expression of **i** which can take integer values from a minimum value (default=0) to a maximum value (default=100). The expression can be any numpy expression like::
 
     i**2
-    np.sin(i)+np.cos(i)
-    np.exp(i*2)
+    sin(i)+cos(i)
+    exp(i*2)
 
  Here **np** is the imported **numpy** module. Please see :ref:`Data_Column_Dialog_i`.
 
 2. A numpy expression involving the data columns (col_A and col_B in this case) like::
 
     col['col_A']+col['col_B']
-    np.sin(col['col_A'])+np.cos(col['col_B'])
-    np.exp(col['col_A'])
+    sin(col['col_A'])+cos(col['col_B'])
+    exp(col['col_A'])
 
  Here a particular column is used as **col.Column_Name**. Please see Data_Column_Dialog_Columns_.
 
@@ -201,7 +201,7 @@ You can add new columns by clicking **Add Column** which will open up a :ref:`Da
     Data Column Dialog with numpy expression involving columns
 
 Remove Data Columns
-+++++++++++++++++++
+*******************
 The columns can be removed by:
 
 1. Selecting the entire column either by:
@@ -213,15 +213,15 @@ The columns can be removed by:
 2. Click the **Remove Column** button.
 
 Add New Data Rows
-+++++++++++++++++
+*****************
 A new row can be added by selecting a row where you want to add a row and click **Add Row**
 
 Remove Data Rows
-++++++++++++++++
+****************
 Multiple rows can be removed by selecting multiple rows and click **Remove Rows**
 
 Change Data Column Names
-++++++++++++++++++++++++
+************************
 The column names of the Data can be changed by changing the meta-data **col_names**.
 
 

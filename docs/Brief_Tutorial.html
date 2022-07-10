@@ -6,9 +6,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
 
-    <title>Brief Tutorial &#8212; XModFit 0.0.1 documentation</title>
+    <title>Brief Tutorial &#8212; XAnoS 0.11 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
@@ -17,21 +17,28 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Acknowledgements" href="Acknowledgement.html" />
-    <link rel="prev" title="Installation" href="Installation.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="Installation" href="Installation.html" /> 
   </head><body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="Acknowledgement.html" title="Acknowledgements"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Installation.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">XAnoS 0.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Brief Tutorial</a></li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
-
           <div class="body" role="main">
             
   <section id="brief-tutorial">
@@ -193,12 +200,14 @@ follow the syntax as shown above as ‘#parameter1_name=parameter1_value’. Whe
 <li><p>When the <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a> is not used within any other widgets, all the data columns can be removed.</p></li>
 <li><p>When the <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a> is used within any other widgets, one can delete all the columns except the remaining two.</p></li>
 </ol>
+<section id="add-new-data-column">
+<h3>Add New Data Column<a class="headerlink" href="#add-new-data-column" title="Permalink to this headline">¶</a></h3>
 <p>You can add new columns by clicking <strong>Add Column</strong> which will open up a <a class="reference internal" href="#data-column-dialog-i"><span class="std std-ref">Data Column Dialog with numpy expression involving i</span></a>. Then the column values can be either:</p>
 <ol class="arabic">
 <li><p>An expression of <strong>i</strong> which can take integer values from a minimum value (default=0) to a maximum value (default=100). The expression can be any numpy expression like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">i</span><span class="o">**</span><span class="mi">2</span>
-<span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-<span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">sin</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="n">cos</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<span class="n">exp</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
 </pre></div>
 </div>
 </li>
@@ -209,8 +218,8 @@ follow the syntax as shown above as ‘#parameter1_name=parameter1_value’. Whe
 <ol class="arabic" start="2">
 <li><p>A numpy expression involving the data columns (col_A and col_B in this case) like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_A&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_B&#39;</span><span class="p">]</span>
-<span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_A&#39;</span><span class="p">])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_B&#39;</span><span class="p">])</span>
-<span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_A&#39;</span><span class="p">])</span>
+<span class="n">sin</span><span class="p">(</span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_A&#39;</span><span class="p">])</span><span class="o">+</span><span class="n">cos</span><span class="p">(</span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_B&#39;</span><span class="p">])</span>
+<span class="n">exp</span><span class="p">(</span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_A&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
 </li>
@@ -230,6 +239,9 @@ follow the syntax as shown above as ‘#parameter1_name=parameter1_value’. Whe
 <p><span class="caption-text">Data Column Dialog with numpy expression involving columns</span><a class="headerlink" href="#id12" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
+</section>
+<section id="remove-data-columns">
+<h3>Remove Data Columns<a class="headerlink" href="#remove-data-columns" title="Permalink to this headline">¶</a></h3>
 <p>The columns can be removed by:</p>
 <ol class="arabic simple">
 <li><p>Selecting the entire column either by:</p>
@@ -241,9 +253,19 @@ follow the syntax as shown above as ‘#parameter1_name=parameter1_value’. Whe
 </li>
 <li><p>Click the <strong>Remove Column</strong> button.</p></li>
 </ol>
+</section>
+<section id="add-new-data-rows">
+<h3>Add New Data Rows<a class="headerlink" href="#add-new-data-rows" title="Permalink to this headline">¶</a></h3>
 <p>A new row can be added by selecting a row where you want to add a row and click <strong>Add Row</strong></p>
+</section>
+<section id="remove-data-rows">
+<h3>Remove Data Rows<a class="headerlink" href="#remove-data-rows" title="Permalink to this headline">¶</a></h3>
 <p>Multiple rows can be removed by selecting multiple rows and click <strong>Remove Rows</strong></p>
+</section>
+<section id="change-data-column-names">
+<h3>Change Data Column Names<a class="headerlink" href="#change-data-column-names" title="Permalink to this headline">¶</a></h3>
 <p>The column names of the Data can be changed by changing the meta-data <strong>col_names</strong>.</p>
+</section>
 </section>
 <section id="plotting-with-data-dialog">
 <span id="id5"></span><h2>Plotting with Data Dialog<a class="headerlink" href="#plotting-with-data-dialog" title="Permalink to this headline">¶</a></h2>
@@ -355,46 +377,18 @@ in the <strong>XModFit</strong>. The editor is enabled with python syntax highli
 </section>
 
 
+            <div class="clearer"></div>
           </div>
-          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">XModFit</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Brief Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#simulate-an-already-available-function">Simulate an already available function</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#data-importing-and-fitting">Data importing and fitting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#data-file-format">Data File Format</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#data-manipulation">Data Manipulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#plotting-with-data-dialog">Plotting with Data Dialog</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="Acknowledgement.html">Acknowledgements</a></li>
-</ul>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="Installation.html" title="previous chapter">Installation</a></li>
-      <li>Next: <a href="Acknowledgement.html" title="next chapter">Acknowledgements</a></li>
-  </ul></li>
-</ul>
-</div>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Installation.html"
+                        title="previous chapter">Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Acknowledgement.html"
+                        title="next chapter">Acknowledgements</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
@@ -405,32 +399,29 @@ in the <strong>XModFit</strong>. The editor is enabled with python syntax highli
     </div>
 </div>
 <script>$('#searchbox').show(0);</script>
-
-
-
-
-
-
-
-
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2021, Mrinal Bera, Wei Bu.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.1</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
-      
-      |
-      <a href="_sources/Brief_Tutorial.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="Acknowledgement.html" title="Acknowledgements"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Installation.html" title="Installation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">XAnoS 0.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Brief Tutorial</a></li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Mrinal Kanti Bera and Wei Bu@NSF&#39;s ChemMatCARS.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+    </div>
   </body>
 </html>
