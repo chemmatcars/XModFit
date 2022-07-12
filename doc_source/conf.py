@@ -52,7 +52,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'XAnoS'
+project = 'XModFit'
 copyright = '2022, Mrinal Kanti Bera and Wei Bu@NSF\'s ChemMatCARS'
 author = 'Mrinal Kanti Bera and Wei Bu'
 email = 'mrinalkb@uchicago.edu and weibu@uchicago.edu'
