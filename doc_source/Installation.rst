@@ -6,16 +6,21 @@ Follow the following instructions for installation:
 
 1) Install Anaconda python (Python 3.8 and higher) for your operating system from `Anaconda website <https://www.anaconda.com/products/individual>`_.
 
-2) If `GIT <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_ is not installed aleady in the system. Install GIT using conda in the terminal::
+2) (**Optional**) If you would like create an anaconda environment 'cmcars' to install XModFit run the following in the terminal (MacOS/linux) or Anaconda terminal (Windows)::
+
+    conda create -n cmcars python=3.9
+
+3) (**Optional**) If you have created or using an anaconda environment the switch to the existing environment (cmcars) by running the following command::
+
+    conda activate cmcars
+
+5) In the terminal run the following to install all the dependency packages::
 
     conda install git
-
-2) In the terminal run the following to install all the dependency packages::
-
     pip install --upgrade PyQt5 sqlalchemy scipy six matplotlib pandas lmfit pylint periodictable corner emcee tabulate python-docx numba numba-scipy statsmodels sympy
     pip install pyqtgraph==0.12.1
 
-3) After GIT installation go to the folder (for example: /home/mrinal/Download) you wish to download XModFit run the following in the terminal::
+6) In order to install in a particluar folder (for example: /home/mrinal/Download) run the following in the terminal::
 
         git clone https://github.com/chemmatcars/XModFit
 
@@ -23,7 +28,11 @@ Follow the following instructions for installation:
 
             git pull
 
-6) Go into the folder XModFit and run the command to run **XModFit**::
+7) Change to the anaconda environment you used for installing XModFit first (if you are not already in that environment) by running::
+
+     conda activate cmcars
+
+8) Go into the folder XModFit and run the command to run **XModFit**::
 
             python xmodfit.py
 

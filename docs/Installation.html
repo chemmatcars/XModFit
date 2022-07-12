@@ -6,9 +6,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
 
-    <title>Installation &#8212; XModFit 0.0.1 documentation</title>
+    <title>Installation &#8212; XAnoS 0.11 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
@@ -16,21 +16,28 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Brief Tutorial" href="Brief_Tutorial.html" />
-    <link rel="prev" title="Introduction" href="Introduction.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="Introduction" href="Introduction.html" /> 
   </head><body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="Brief_Tutorial.html" title="Brief Tutorial"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Introduction.html" title="Introduction"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">XAnoS 0.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Installation</a></li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
-
           <div class="body" role="main">
             
   <section id="installation">
@@ -38,20 +45,26 @@
 <p>Follow the following instructions for installation:</p>
 <ol class="arabic">
 <li><p>Install Anaconda python (Python 3.8 and higher) for your operating system from <a class="reference external" href="https://www.anaconda.com/products/individual">Anaconda website</a>.</p></li>
-<li><p>If <a class="reference external" href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">GIT</a> is not installed aleady in the system. Install GIT using conda in the terminal:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">git</span>
+<li><p>(<strong>Optional</strong>) If you would like create an anaconda environment ‘cmcars’ to install XModFit run the following in the terminal (MacOS/linux) or Anaconda terminal (Windows):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">cmcars</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span>
+</pre></div>
+</div>
+</li>
+<li><p>(<strong>Optional</strong>) If you have created or using an anaconda environment the switch to the existing environment (cmcars) by running the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">cmcars</span>
 </pre></div>
 </div>
 </li>
 </ol>
-<ol class="arabic" start="2">
+<ol class="arabic" start="5">
 <li><p>In the terminal run the following to install all the dependency packages:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">PyQt5</span> <span class="n">sqlalchemy</span> <span class="n">scipy</span> <span class="n">six</span> <span class="n">matplotlib</span> <span class="n">pandas</span> <span class="n">lmfit</span> <span class="n">pylint</span> <span class="n">periodictable</span> <span class="n">corner</span> <span class="n">emcee</span> <span class="n">tabulate</span> <span class="n">python</span><span class="o">-</span><span class="n">docx</span> <span class="n">numba</span> <span class="n">numba</span><span class="o">-</span><span class="n">scipy</span> <span class="n">statsmodels</span> <span class="n">sympy</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">git</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">PyQt5</span> <span class="n">sqlalchemy</span> <span class="n">scipy</span> <span class="n">six</span> <span class="n">matplotlib</span> <span class="n">pandas</span> <span class="n">lmfit</span> <span class="n">pylint</span> <span class="n">periodictable</span> <span class="n">corner</span> <span class="n">emcee</span> <span class="n">tabulate</span> <span class="n">python</span><span class="o">-</span><span class="n">docx</span> <span class="n">numba</span> <span class="n">numba</span><span class="o">-</span><span class="n">scipy</span> <span class="n">statsmodels</span> <span class="n">sympy</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">pyqtgraph</span><span class="o">==</span><span class="mf">0.12</span><span class="o">.</span><span class="mi">1</span>
 </pre></div>
 </div>
 </li>
-<li><p>After GIT installation go to the folder (for example: /home/mrinal/Download) you wish to download XModFit run the following in the terminal:</p>
+<li><p>In order to install in a particluar folder (for example: /home/mrinal/Download) run the following in the terminal:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">chemmatcars</span><span class="o">/</span><span class="n">XModFit</span>
 </pre></div>
 </div>
@@ -60,8 +73,11 @@
 </pre></div>
 </div>
 </li>
-</ol>
-<ol class="arabic" start="6">
+<li><p>Change to the anaconda environment you used for installing XModFit first (if you are not already in that environment) by running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">cmcars</span>
+</pre></div>
+</div>
+</li>
 <li><p>Go into the folder XModFit and run the command to run <strong>XModFit</strong>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">xmodfit</span><span class="o">.</span><span class="n">py</span>
 </pre></div>
@@ -71,39 +87,18 @@
 </section>
 
 
+            <div class="clearer"></div>
           </div>
-          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">XModFit</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Brief_Tutorial.html">Brief Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Acknowledgement.html">Acknowledgements</a></li>
-</ul>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="Introduction.html" title="previous chapter">Introduction</a></li>
-      <li>Next: <a href="Brief_Tutorial.html" title="next chapter">Brief Tutorial</a></li>
-  </ul></li>
-</ul>
-</div>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Introduction.html"
+                        title="previous chapter">Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Brief_Tutorial.html"
+                        title="next chapter">Brief Tutorial</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
@@ -114,32 +109,29 @@
     </div>
 </div>
 <script>$('#searchbox').show(0);</script>
-
-
-
-
-
-
-
-
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2021, Mrinal Bera, Wei Bu.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.1</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
-      
-      |
-      <a href="_sources/Installation.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="Brief_Tutorial.html" title="Brief Tutorial"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Introduction.html" title="Introduction"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">XAnoS 0.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Installation</a></li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Mrinal Kanti Bera and Wei Bu@NSF&#39;s ChemMatCARS.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+    </div>
   </body>
 </html>
