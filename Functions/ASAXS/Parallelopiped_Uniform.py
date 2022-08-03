@@ -94,11 +94,11 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         H           : Height of the parallelopiped in Angs
         HggtLB      : True if H>>L or B to use parallelopiped with infinite height
         NrDep       : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy independent)
-        dist        : The probablity distribution fucntion for the radii of different interfaces in the nanoparticles. Default: Gaussian
+        dist        : The probability distribution function for the radii of different interfaces in the nanoparticles. Default: Gaussian
         sig         : Width of distribution or thicknesses of the layers of the cylinder
         Nphi        : Number of polar angle points for angular averaging
         Npsi        : Number of azimuthal angle for angular averaging
-        norm        : The density of the nanoparticles in Molar (Moles/Liter)
+        norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term

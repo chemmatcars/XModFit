@@ -1578,7 +1578,7 @@ class XModFit(QWidget):
     def cornerPlot(self):
         percentile = self.emceeConfIntervalWidget.percentileDoubleSpinBox.value()
         self.emceeConfIntervalWidget.cornerPlotMPLWidget.clear()
-        names = [name for name in self.fit.result.var_names if name != '__lnsigma']
+        names = self.fit.result.var_names#[name for name in self.fit.result.var_names if name != '__lnsigma']
         values = [self.fit.result.params[name].value for name in names]
         ndim = len(names)
         quantiles=[1.0-percentile/100,0.5,percentile/100]

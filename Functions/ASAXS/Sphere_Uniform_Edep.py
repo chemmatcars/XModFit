@@ -37,7 +37,7 @@ def ff_sphere_ml(q,R,rho):
 class Sphere_Uniform_Edep: #Please put the class name same as the function name
     def __init__(self, x=0, Np=20, error_factor=1, bkg=0.0,dist='Gaussian', relement='Au', Energy=None, NrDep='False', norm=1.0e-9,
                  D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,
-                 mpar={'Multilayers':{'Material':['Au','H2O'],'Density':[19.32,1.0],'SolDensity':[1.0,1.0],'Rmoles':[1.0,0.0],'R':[1.0,0.0]}}):
+                 mpar={'Multilayers':{'Material':['Au','H2O'],'Density':[19.32,1.0],'SolDensity':[1.0,1.0],'Rmoles':[1.0,1.0],'R':[1.0,0.0]}}):
         """
         Documentation
         Calculates the Energy dependent form factor of multilayered nanoparticles with different materials
@@ -48,7 +48,7 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
         Np          : No. of points with which the size distribution will be computed. Default: 10
         Energy      : Energy of the X-rays
         NrDep       : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy dependent)
-        dist        : The probablity distribution fucntion for the radii of different interfaces in the nanoparticles. Default: Gaussian
+        dist        : The probability distribution function for the radii of different interfaces in the nanoparticles. Default: Gaussian
         norm        : The density of the nanoparticles in Molar (Moles/Liter)
         error_factor : Error-factor to simulate the error-bars
         Rsig        : Widths of the distributions ('Rsig' in Angs) of radii of all the interfaces present in the nanoparticle system.
@@ -177,7 +177,7 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
                 rho,eirho,adensity,rhor,eirhor,adensityr=calc_rho(R=self.__R__,material=self.__material__,relement=self.relement,
                                                                        density=self.__density__, sol_density=self.__solDensity__,
                                                                        Energy=Energy, Rmoles= self.__Rmoles__, NrDep=self.NrDep)
-                sqf[key] = self.norm * 6.022e20 * self.new_sphere(tuple(self.x[key]), tuple(self.__R__),
+                sqf[key] = self.norm*1e-9 * 6.022e20 * self.new_sphere(tuple(self.x[key]), tuple(self.__R__),
                                                                        self.Rsig, tuple(rho), tuple(eirho),
                                                                        tuple(adensity), dist=self.dist,
                                                                        Np=self.Np)  # in cm^-1
@@ -228,12 +228,12 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
             tsqf = self.new_sphere(tuple(self.x), tuple(self.__R__), self.Rsig, tuple(rho),
                                                       tuple(eirho), tuple(adensity), dist=self.dist, Np=self.Np)
 
-            self.output_params['Total'] = {'x': self.x, 'y': self.norm * np.array(tsqf) * 6.022e20 * struct + self.bkg}
+            self.output_params['Total'] = {'x': self.x, 'y': self.norm*1e-9 * np.array(tsqf) * 6.022e20 * struct + self.bkg}
 
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist}
-                signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.bkg
+                signal = 6.022e20 * self.norm*1e-9 * np.array(tsqf) * struct + self.bkg
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
                 sqerr = np.random.normal(normsignal,scale=self.error_factor)

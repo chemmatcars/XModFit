@@ -79,10 +79,10 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
         Np          : No. of points with which the size distribution will be computed. Default: 10
         H           : Height of the parallelopiped in Angs
         NrDep       : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy independent)
-        dist        : The probablity distribution fucntion for the radii of different interfaces in the nanoparticles. Default: Gaussian
+        dist        : The probability distribution function for the radii of different interfaces in the nanoparticles. Default: Gaussian
         Nphi        : Number of polar angle points for angular averaging
         Npsi        : Number of azimuthal angle for angular averaging
-        norm        : The density of the nanoparticles in Nano Molar (NanoMoles/Liter)
+        norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
         bkg         : Constant incoherent background
         tol         : Tolerence for Monte-Carlo Integration
         error_factor: Error-factor to simulate the error-bars

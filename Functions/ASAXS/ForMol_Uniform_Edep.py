@@ -32,7 +32,7 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
         rmin 	Minimum radial distance for calculating electron density
         rmax 	Maximum radial distance for calculating electron density
         Nr    	Number of points at which electron density will be calculated
-        qoff 	Q-offset may be required due to uncertainity in Q-calibration
+        qoff 	Q-offset may be required due to uncertainty in Q-calibration
         sol	 	No of electrons in solvent molecule (Ex: H2O has 18 electrons)
         sig  	Debye-waller factor
         norm 	Normalization constant which can be the molar concentration of the particles
