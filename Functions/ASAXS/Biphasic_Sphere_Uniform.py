@@ -37,7 +37,7 @@ def ff_sphere_ml(q,R,rho):
 
 class Biphasic_Sphere_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=20, error_factor=1.0, term='Total',dist='Gaussian', Energy=None, relement='Au', NrDep='False',
-                 norm=1.0e-9, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,
+                 norm=1.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,
                  mpar={'Phase_1':{'Material':['Au','H2O'],
                                   'Density':[19.32,1.0],
                                   'VolFrac':[1.0,1.0],

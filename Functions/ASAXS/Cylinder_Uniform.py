@@ -23,14 +23,15 @@ import numba_scipy.special
 @njit(parallel=True,cache=True)
 def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
     #HvvgtR: H>>R means infinitely long cylinder
-    dalf = np.pi/Nalf
+    pi=3.14159
+    dalf = pi/Nalf
     fft = np.zeros_like(q)
     ffs = np.zeros_like(q)
     ffc = np.zeros_like(q)
     ffr = np.zeros_like(q)
     Nlayers=len(R)
     tR=np.cumsum(R)
-    V = np.pi*tR[:-1]**2*H
+    V = pi*tR[:-1]**2*H
     drho=2.0*np.diff(np.array(rho))*V
     deirho=2.0*np.diff(np.array(eirho))*V
     dadensity=2.0*np.diff(np.array(adensity))*V
@@ -42,7 +43,7 @@ def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
             tfr = 0.0
             for k in prange(Nlayers-1):
                 qh=np.abs(q[i]*H*np.cos(alf)/2)
-                fach=(1.0-HvvgtR)*np.sin(qh)/qh+HvvgtR*np.cos(qh-np.pi/4.0)*np.sqrt(2/np.pi/qh)
+                fach=(1.0-HvvgtR)*np.sin(qh)/qh+HvvgtR*np.cos(qh-pi/4.0)*np.sqrt(2/pi/qh)
                 qr=q[i]*tR[k]*np.sin(alf)
                 facR=j1(qr)/qr
                 fac =  fach*facR

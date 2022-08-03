@@ -38,7 +38,7 @@ def ff_sphere_ml(q,R,rho):
 
 
 class Sphere_Double_Layer: #Please put the class name same as the function name
-    def __init__(self, x=0, Np=20, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep=False, norm=1.0e-9,
+    def __init__(self, x=0, Np=20, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep=False, norm=1.0,
                  sbkg=0.0, cbkg=0.0, abkg=0.0, nearIon='Rb', farIon='Cl', ionDensity=0.0, stThickness=1.0,
                  stDensity=0.0, dbLength=1.0, dbDensity=0.0,Ndb=20,Rsig=0.0,D=0.0,phi=0.1,U=-1.0,SF=None,term='Total',
                  mpar={'Layers':{'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
@@ -83,7 +83,7 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
             self.x = np.array(x)
         else:
             self.x = x
-        self.norm*1e-9 = norm
+        self.norm = norm
         self.sbkg = sbkg
         self.cbkg = cbkg
         self.abkg = abkg
@@ -123,7 +123,7 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
         self.params.add('sig',value = 0, vary = 0, min = -np.inf, max = np.inf, expr = None, brute_step = None)
         """
         self.params = Parameters()
-        self.params.add('norm', value=self.norm*1e-9, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
+        self.params.add('norm', value=self.norm, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('stThickness', value=self.stThickness, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('stDensity',value=self.stDensity, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('dbLength', value=self.dbLength, vary=0, min=1.0, max=np.inf, expr=None, brute_step=0.1)
