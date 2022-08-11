@@ -1537,7 +1537,14 @@ class XModFit(QWidget):
                 self.emceeConfIntervalWidget.userDefinedParamTreeWidget.itemSelectionChanged.disconnect()
             except:
                 pass
+            #Removing the existing User-Defined parameters, if present
+            root = self.emceeConfIntervalWidget.userDefinedParamTreeWidget.invisibleRootItem()
+            child_count = root.childCount()
+            for i in range(child_count):
+                parname, expression = root.child(i).text(0).split('=')
+                del self.param_chain['parname']
             self.emceeConfIntervalWidget.userDefinedParamTreeWidget.clear()
+
             fh=open(fname,'r')
             lines=fh.readlines()
             for line in lines:
@@ -1585,7 +1592,6 @@ class XModFit(QWidget):
         except:
             pass
         self.emceeConfIntervalWidget.parameterTreeWidget.clear()
-        self.emceeConfIntervalWidget.userDefinedParamTreeWidget.clear()
         self.emceeConfIntervalWidget.chainMPLWidget.clear()
         self.emceeConfIntervalWidget.correlationMPLWidget.clear()
         self.emceeConfIntervalWidget.cornerPlotMPLWidget.clear()
@@ -1729,28 +1735,42 @@ class XModFit(QWidget):
 
         self.emceeConfIntervalWidget.calcConfIntervPushButton.clicked.connect(self.cornerPlot)
         self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(2)
+        self.reset_cornerplot=True
 
-
+        #Calculating User-Defined parameters
+        root = self.emceeConfIntervalWidget.userDefinedParamTreeWidget.invisibleRootItem()
+        child_count = root.childCount()
+        if child_count>0:
+            for i in range(child_count):
+                parname, expression = root.child(i).text(0).split('=')
+                self.param_chain[parname]={}
+                for j in range(self.chain_shape[1]):
+                    ttxt = expression[0:]
+                    for name in self.fit.result.var_names:
+                        ttxt = ttxt.replace(name, "self.param_chain['%s'][%d]" % (name, j))
+                    self.param_chain[parname][j] = eval(ttxt)
 
     def cornerPlot(self):
         percentile = self.emceeConfIntervalWidget.percentileDoubleSpinBox.value()
-        self.emceeConfIntervalWidget.cornerPlotMPLWidget.clear()
-        names = self.fit.result.var_names#[name for name in self.fit.result.var_names if name != '__lnsigma']
-        values = [self.fit.result.params[name].value for name in names]
-        ndim = len(names)
-        quantiles=[1.0-percentile/100,0.5,percentile/100]
-        first=int(self.emceeConfIntervalWidget.MCMCBurnLineEdit.text())
-        corner.corner(self.fit.result.flatchain[names][first:], labels=names, bins=50, levels=(percentile/100,),
-                      truths=values, quantiles=quantiles, show_titles=True, title_fmt='.6f',
-                      use_math_text=True, title_kwargs={'fontsize': 3 * 12 / ndim},
-                      label_kwargs={'fontsize': 3 * 12 / ndim}, fig=self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig)
-        for ax3 in self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig.get_axes():
-            ax3.set_xlabel('')
-            ax3.set_ylabel('')
-            ax3.tick_params(axis='y', labelsize=3 * 12 / ndim, rotation=0)
-            ax3.tick_params(axis='x', labelsize=3 * 12 / ndim)
-        self.emceeConfIntervalWidget.cornerPlotMPLWidget.draw()
-        self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(4)
+        first = int(self.emceeConfIntervalWidget.MCMCBurnLineEdit.text())
+        if self.reset_cornerplot:
+            self.emceeConfIntervalWidget.cornerPlotMPLWidget.clear()
+            names = self.fit.result.var_names#[name for name in self.fit.result.var_names if name != '__lnsigma']
+            values = [self.fit.result.params[name].value for name in names]
+            ndim = len(names)
+            quantiles=[1.0-percentile/100,0.5,percentile/100]
+            corner.corner(self.fit.result.flatchain[names][first:], labels=names, bins=50, levels=(percentile/100,),
+                          truths=values, quantiles=quantiles, show_titles=True, title_fmt='.6f',
+                          use_math_text=True, title_kwargs={'fontsize': 3 * 12 / ndim},
+                          label_kwargs={'fontsize': 3 * 12 / ndim}, fig=self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig)
+            for ax3 in self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig.get_axes():
+                ax3.set_xlabel('')
+                ax3.set_ylabel('')
+                ax3.tick_params(axis='y', labelsize=3 * 12 / ndim, rotation=0)
+                ax3.tick_params(axis='x', labelsize=3 * 12 / ndim)
+            self.emceeConfIntervalWidget.cornerPlotMPLWidget.draw()
+            self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(4)
+            self.reset_cornerplot=False
         self.calcMCMCerrorbars(burn=first,percentile=percentile)
         # err_quantiles={}
         # mesg = [['Parameters', 'Value(50%)', 'Left-error(%.3f)'%(100-percentile), 'Right-error(%.3f)'%percentile]]
