@@ -1453,7 +1453,7 @@ class XModFit(QWidget):
         if parname=='':
             QMessageBox.warning(self, 'Name Error', 'Please provide a parameter name.',QMessageBox.Ok)
             return
-        elif parname in self.param_chain.keys():
+        elif parname in self.param_chain.keys() and new:
             QMessageBox.warning(self, 'Name Error', 'Please provide a parameter name which is not already used.', QMessageBox.Ok)
             return
         else:
