@@ -1408,12 +1408,21 @@ class XModFit(QWidget):
         self.emceeConfIntervalWidget.loadUserDefinedParamPushButton.clicked.connect(self.loadMCMCUserDefinedParam)
         self.emceeConfIntervalWidget.userDefinedParamTreeWidget.itemDoubleClicked.connect(self.openMCMCUserDefinedParam)
         self.emceeConfIntervalWidget.progressBar.setValue(0)
+        self.EnableUserDefinedParameterButtons(enable=False)
         self.emceeConfIntervalWidget.showMaximized()
         if self.errorAvailable:
             self.update_emcee_parameters()
             self.perform_post_sampling_tasks()
             self.cornerPlot()
             self.emceeConfIntervalWidget.tabWidget.setCurrentIndex=(4)
+
+    def EnableUserDefinedParameterButtons(self,enable=False):
+        self.emceeConfIntervalWidget.addUserDefinedParamPushButton.setEnabled(enable)
+        self.emceeConfIntervalWidget.removeUserDefinedParamPushButton.setEnabled(enable)
+        self.emceeConfIntervalWidget.saveUserDefinedParamPushButton.setEnabled(enable)
+        self.emceeConfIntervalWidget.loadUserDefinedParamPushButton.setEnabled(enable)
+
+
 
     def openMCMCUserDefinedParam(self,item,column):
         txt=item.text(0)
@@ -1542,7 +1551,7 @@ class XModFit(QWidget):
             child_count = root.childCount()
             for i in range(child_count):
                 parname, expression = root.child(i).text(0).split('=')
-                del self.param_chain['parname']
+                del self.param_chain[parname]
             self.emceeConfIntervalWidget.userDefinedParamTreeWidget.clear()
 
             fh=open(fname,'r')
@@ -1738,6 +1747,7 @@ class XModFit(QWidget):
         self.reset_cornerplot=True
 
         #Calculating User-Defined parameters
+        self.EnableUserDefinedParameterButtons(enable=True)
         root = self.emceeConfIntervalWidget.userDefinedParamTreeWidget.invisibleRootItem()
         child_count = root.childCount()
         if child_count>0:
@@ -1786,7 +1796,7 @@ class XModFit(QWidget):
 
 
     def calcMCMCerrorbars(self,burn=0,percentile=85):
-        mesg = [['Parameters', 'Value(50%)', 'Left-error(%.3f%s)' % (100 - percentile,''), 'Right-error(%.3f%s)' % (percentile,'')]]
+        mesg = [['Parameters', 'Value(50%)', 'Left-error(%.3f%s)' % (100 - percentile,'%'), 'Right-error(%.3f%s)' % (percentile,'%')]]
         for key in self.param_chain.keys():
             for chain in self.param_chain[key].keys():
                 try:
