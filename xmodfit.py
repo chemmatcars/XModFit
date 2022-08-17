@@ -43,6 +43,7 @@ import Chemical_Formula
 import Structure_Factors
 import utils
 import xraydb
+from collections import OrderedDict
 
 
 
@@ -1696,10 +1697,10 @@ class XModFit(QWidget):
         self.emceeConfIntervalWidget.fitIterLabel.setText('Time left (hh:mm:ss): 00:00:00' )
         self.chain=self.fit.result.chain
         self.chain_shape=self.chain.shape
-        self.param_chain={}
+        self.param_chain=OrderedDict()
         for i,key in enumerate(self.fit.result.flatchain.keys()):
             l1=QTreeWidgetItem([key])
-            self.param_chain[key]={}
+            self.param_chain[key]=OrderedDict()
             for j in range(self.chain_shape[1]):
                 self.param_chain[key][j]=self.chain[:,j,i]
                 l1_child=QTreeWidgetItem(['%s:chain:%d'%(key,j)])
@@ -1708,11 +1709,12 @@ class XModFit(QWidget):
         self.emceeConfIntervalWidget.parameterTreeWidget.itemSelectionChanged.connect(self.parameterTreeSelectionChanged)
 
         #Calculating autocorrelation
-        acor={}
+        acor=OrderedDict()
         Nrows=len(self.param_chain.keys())
         self.emceeConfIntervalWidget.correlationMPLWidget.clear()
         ax1 = self.emceeConfIntervalWidget.correlationMPLWidget.fig.add_subplot(1, 1, 1)
         corr_time=[]
+        acor_mcmc=self.fit.fitter.sampler.get_autocorr_time(quiet=True)
         for i,key in enumerate(self.param_chain.keys()):
             tcor=[]
             for ikey in self.param_chain[key].keys():
@@ -1722,7 +1724,7 @@ class XModFit(QWidget):
             tcor=np.array(tcor)
             acor[key]=np.mean(tcor,axis=0)
             ax1.plot(acor[key],'-',label='para=%s'%key)
-            corr_time.append([key,np.sum(np.where(acor[key]>0,acor[key],0))])
+            corr_time.append([key,acor_mcmc[i]])#np.sum(np.where(acor[key]>0,acor[key],0))])
         ax1.set_xlabel('Steps')
         ax1.set_ylabel('Autocorrelation')
         l=ax1.legend(loc='best')
