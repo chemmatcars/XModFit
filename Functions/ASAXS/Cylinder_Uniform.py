@@ -62,7 +62,7 @@ def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
 
 class Cylinder_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep='False', H=1.0, HvvgtR=False,
-                 Rsig=0.0, norm=1.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nalf=200,term='Total',
+                 Rsig=0.0, norm=1.0, norm_err=0.01, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nalf=200,term='Total',
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                   'Rmoles': [1.0, 1.0], 'R': [1.0, 0.0]}}):
         """
@@ -80,6 +80,7 @@ class Cylinder_Uniform: #Please put the class name same as the function name
         Rdist       : Width of distribution or radius and shells of the cylinder
         Nalf        : Number of azimuthal angle points for angular averaging
         norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
+        norm_err    : Percentage of error on normalization to simulated energy dependent SAXS data
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
@@ -101,6 +102,7 @@ class Cylinder_Uniform: #Please put the class name same as the function name
         else:
             self.x=x
         self.norm=norm
+        self.norm_err = norm_err
         self.sbkg=sbkg
         self.cbkg=cbkg
         self.abkg=abkg
@@ -259,7 +261,8 @@ class Cylinder_Uniform: #Please put the class name same as the function name
                 signal = total
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
@@ -306,7 +309,8 @@ class Cylinder_Uniform: #Please put the class name same as the function name
                 signal = 6.022e20 * self.norm*1e-9 * np.array(tsqf) * struct + self.sbkg
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,

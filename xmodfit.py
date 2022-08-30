@@ -406,7 +406,7 @@ class XModFit(QWidget):
 
 
     def aboutDialog(self):
-        QMessageBox.information(self,'About','Copyright (c) 2021 NSF\'s ChemMAtCARS, University of Chicago.\n\n'
+        QMessageBox.information(self,'About','Copyright (c) 2022 NSF\'s ChemMAtCARS, University of Chicago.\n\n'
                                              'Developers:\n'
                                              'Mrinal K. Bera (mrinalkb@cars.uchicago.edu \n'
                                              'Wei Bu (bu@cars.uchicago.edu)'

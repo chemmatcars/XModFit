@@ -19,24 +19,22 @@ import os
 class ForMol_Uniform_Edep: #Please put the class name same as the function name
     re=2.818e-5 #Classical electron radius in Angstroms
     No=6.023e23 #Avagadro's number
-    def __init__(self,x=0,E=12.0,fname1='./Data/Pr4.xyz',eta1=1.0,fname2='./Data/Nd9.xyz',eta2=0.0,rmin=0.0,rmax=10.0,Nr=100, qoff=0.0,sol=18.0,sig=0.0,norm=1,bkg=0.0,mpar={}):
+    def __init__(self,x=0,Energy=12.0,fname1='./Data/Pr4.xyz',eta1=1.0,fname2='./Data/Nd9.xyz',eta2=0.0,sol=18.0,sig=0.0,
+                 norm=1, norm_err=0.01, bkg=0.0,mpar={},error_factor=1.0):
         """
         Calculates the form factor for two different kinds of  molecules in cm^-1 for which the XYZ coordinates of the all the atoms composing the molecules are known
 
-        x    	scalar or array of reciprocal wave vectors
-        E    	Energy of the X-rays at which the scattering pattern is measured
-        fname1	Name with path of the .xyz file containing X, Y, Z coordinates of all the atoms of the molecule of type 1
-        eta1 	Fraction of molecule type 1
-        fname2	Name with path of the .xyz file containing X, Y, Z coordinates of all the atoms of the moleucule of type 2
-        eta2 	Fraction of molecule type 2
-        rmin 	Minimum radial distance for calculating electron density
-        rmax 	Maximum radial distance for calculating electron density
-        Nr    	Number of points at which electron density will be calculated
-        qoff 	Q-offset may be required due to uncertainty in Q-calibration
-        sol	 	No of electrons in solvent molecule (Ex: H2O has 18 electrons)
-        sig  	Debye-waller factor
-        norm 	Normalization constant which can be the molar concentration of the particles
-        bkg 	Background
+        x    	    : Scalar or array of reciprocal wave vectors
+        Energy    	: Energy of the X-rays at which the scattering pattern is measured
+        fname1	    : Name with path of the .xyz file containing X, Y, Z coordinates of all the atoms of the molecule of type 1
+        eta1 	    : Fraction of molecule type 1
+        fname2	    : Name with path of the .xyz file containing X, Y, Z coordinates of all the atoms of the moleucule of type 2
+        eta2 	    : Fraction of molecule type 2
+        sig  	    : Debye-waller factor
+        norm 	    : Normalization constant which can be the molar concentration of the particles
+        norm_err    : Percentage of error on normalization to simulated energy dependent SAXS data
+        bkg 	    : Background
+        error_factor: Error-factor to simulate the error-bars
         """
         if type(x)==list:
             self.x=np.array(x)
@@ -52,29 +50,21 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
         else:
             self.fname2=None
         self.eta2=eta2
-        self.rmin=rmin
-        self.__rmin__=rmin
-        self.rmax=rmax
-        self.__rmax__=rmax
-        self.Nr=Nr
-        self.__Nr__=Nr
         self.norm=norm
+        self.norm_err = norm_err
+        self.error_factor = error_factor
         self.bkg=bkg
-        self.E=E
+        self.Energy=Energy
         self.sol=sol
-        self.qoff=qoff
         self.sig=sig
         self.__mpar__=mpar #If there is any multivalued parameter
         self.choices={} #If there are choices available for any fixed parameters
         self.__fnames__=[self.fname1,self.fname2]
-        self.__E__=E
         self.__xdb__=XrayDB()
         #if self.fname1 is not None:
         #    self.__Natoms1__,self.__pos1__,self.__f11__=self.readXYZ(self.fname1)
         #if self.fname2 is not None:
         #    self.__Natoms2__,self.__pos2__,self.__f12__=self.readXYZ(self.fname2)
-        self.__x__=self.x
-        self.__qoff__=self.qoff
         self.output_params={'scaler_parameters':{}}
 
 
@@ -86,7 +76,6 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
         self.params=Parameters()
         self.params.add('eta1',value=self.eta1,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('eta2',value=self.eta2,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
-        self.params.add('qoff',value=self.qoff,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('norm',value=self.norm,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('bkg',value=self.bkg,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('sig',value=self.sig,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
@@ -158,29 +147,14 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
         """
         Define the function in terms of x to return some value
         """
-        self.__qoff__=self.params['qoff']
-        #if self.__fnames__!=[None,None]:
         #Contribution from first molecule
         if self.fname1 is not None:
-            # if self.__fnames__[0]!=self.fname1 or self.__E__!=self.E or len(self.__x__)!=len(self.x) or self.__x__[-1]!=self.x[-1] or self.__qoff__!=self.qoff or self.__Nr__!=self.Nr or self.__rmin__!=self.rmin or self.__rmax__!=self.rmax:
-            #     self.__r1__,self.__rho1__=self.calc_xtal_rho(self.fname1,rmin=self.rmin,rmax=self.rmax,Nr=self.Nr,energy=self.E)
-            #form1=self.calc_form(tuple(self.x),tuple(self.__r1__),tuple(self.__rho1__))
-            form1 = self.re**2*1e-16*self.No*self.calc_form(tuple(self.x),self.fname1,energy=self.E)
-            # self.output_params['rho_1']={'x':self.__r1__,'y':np.real(self.__rho1__)}
+            form1 = self.re**2*1e-16*self.No*self.calc_form(tuple(self.x),self.fname1,energy=self.Energy)
         #Contribution from second molecule
         if self.fname2 is not None:
-            # if self.__fnames__[1]!=self.fname2 or self.__E__!=self.E or len(self.__x__)!=len(self.x) or self.__x__[-1]!=self.x[-1] or self.__qoff__!=self.qoff or self.__Nr__!=self.Nr or self.__rmin__!=self.rmin or self.__rmax__!=self.rmax:
-            #     self.__r2__,self.__rho2__=self.calc_xtal_rho(self.fname2,rmin=self.rmin,rmax=self.rmax,Nr=self.Nr,energy=self.E)
-            # form2=self.calc_form(tuple(self.x),tuple(self.__r2__),tuple(self.__rho2__))
-            form2 = self.re**2*1e-16*self.No*self.calc_form(tuple(self.x),self.fname2,energy=self.E)
-            # self.output_params['rho_2']={'x':self.__r2__,'y':np.real(self.__rho2__)}
+            form2 = self.re**2*1e-16*self.No*self.calc_form(tuple(self.x),self.fname2,energy=self.Energy)
 
-        self.__fnames__=[self.fname1,self.fname2]
-        self.__E__=self.E
-        self.__x__=self.x
-        self.__rmin__=self.rmin
-        self.__rmax__=self.rmax
-        self.__Nr__=self.Nr
+        self.__fnames__=[self.fname1, self.fname2]
 
         if self.__fnames__[0] is not None and self.__fnames__[1] is not None:
             self.output_params[os.path.basename(self.fname1)+'_1']={'x':self.x,'y':self.norm*form1*np.exp(-self.x**2*self.sig**2),
@@ -188,19 +162,37 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
             self.output_params[os.path.basename(self.fname2)+'_1']={'x':self.x,'y':self.norm*form2*np.exp(-self.x**2*self.sig**2),
                                                                     'names':['q','Intensity']}
             self.output_params['bkg']={'x':self.x,'y':self.bkg*np.ones_like(self.x)}
-            return (self.eta1*form1+self.eta2*form2)*self.norm*np.exp(-self.x**2*self.sig**2)*1e-3+self.bkg
+            total= (self.eta1*form1+self.eta2*form2)*self.norm*np.exp(-self.x**2*self.sig**2)*1e-3+self.bkg
         elif self.__fnames__[0] is not None and self.__fnames__[1] is None:
             self.output_params[os.path.basename(self.fname1)+'_1']={'x':self.x,'y':self.norm*self.eta1*form1*np.exp(-self.x**2*self.sig**2),
                                                                     'names':['q','Intensity']}
             self.output_params['bkg']={'x':self.x,'y':self.bkg*np.ones_like(self.x)}
-            return self.eta1*form1*self.norm*np.exp(-self.x**2*self.sig**2)*1e-3+self.bkg
+            total= self.eta1*form1*self.norm*np.exp(-self.x**2*self.sig**2)*1e-3+self.bkg
         elif self.__fnames__[0] is None and self.__fnames__[1] is not None:
-            self.output_params[os.path.basename(self.fname2)+'_1']={'x':self.x,'y':self.norm*self.eta2*form2**np.exp(-self.x**2*self.sig**2),
+            self.output_params[os.path.basename(self.fname2)+'_1']={'x':self.x,'y':self.norm*self.eta2*form2*np.exp(-self.x**2*self.sig**2),
                                                                     'names':['q','Intensity']}
             self.output_params['bkg']={'x':self.x,'y':self.bkg*np.ones_like(self.x)}
-            return self.eta2*form2*self.norm*np.exp(-self.x**2*self.sig**2)*1e-3+self.bkg
+            total= self.eta2*form2*self.norm*np.exp(-self.x**2*self.sig**2)*1e-3+self.bkg
         else:
-            return np.ones_like(self.x)
+            total= np.ones_like(self.x)
+        signal = total[0:]
+        minsignal = np.min(signal)
+        normsignal = signal / minsignal
+        norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+        sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
+        meta = {'Energy': self.Energy}
+        tkeys = list(self.output_params.keys())
+        for key in tkeys:
+            if 'simulated_w_err' in key:
+                del self.output_params[key]
+        if self.Energy is not None:
+            self.output_params['simulated_w_err_%.3fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
+                                                                           'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
+                                                                           'meta': meta}
+        else:
+            self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
+                                                     'yerr': np.sqrt(normsignal) * minsignal * self.error_factor, 'meta': meta}
+        return signal
 
 
 if __name__=='__main__':

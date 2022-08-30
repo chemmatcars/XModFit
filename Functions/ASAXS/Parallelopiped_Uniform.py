@@ -78,7 +78,8 @@ def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi, HggtLB
 
 class Parallelopiped_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep='False', L=1.0, B=1.0, H=1.0,
-                 HggtLB=True, sig=0.0, norm=1.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=180,Npsi=360, term='Total',
+                 HggtLB=True, sig=0.0, norm=1.0, norm_err=0.01, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0,
+                 SF='None',Nphi=180,Npsi=360, term='Total',
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                   'Rmoles': [1.0, 1.0], 'Thickness': [0.0, 0.0]}}):
         """
@@ -99,6 +100,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         Nphi        : Number of polar angle points for angular averaging
         Npsi        : Number of azimuthal angle for angular averaging
         norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
+        norm_err    : Percentage of error on normalization to simulated energy dependent SAXS data
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
@@ -120,6 +122,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         else:
             self.x=x
         self.norm=norm
+        self.norm_err = norm_err
         self.sbkg=sbkg
         self.cbkg=cbkg
         self.abkg=abkg
@@ -292,11 +295,16 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
                     dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
                     self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
                     self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
-                signal = total
+                signal = total[0:]
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
+                tkeys = list(self.output_params.keys())
+                for key1 in tkeys:
+                    if 'simulated_w_err' in key1:
+                        del self.output_params[key1]
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
                                                                                    'y': sqerr * minsignal,
@@ -335,49 +343,53 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
                                                           tuple(rho), tuple(eirho),tuple(adensity), dist=self.dist,
                                                           Np=self.Np, Nphi=self.Nphi, Npsi=self.Npsi,HggtLB=self.HggtLB)
             sqf = self.norm * 1e-9 * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-            # if not self.__fit__: #Generate all the quantities below while not fitting
-            asqf = self.norm * 1e-9 * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
-            eisqf = self.norm * 1e-9 * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-            csqf = self.norm * 1e-9 * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
-            # sqerr = np.sqrt(self.norm*6.022e20*self.flux * tsqf * svol*struct+self.sbkg)
-            # sqwerr = (self.norm*6.022e20*tsqf * svol * struct*self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
-            # self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
-            signal = 6.022e20 * 1e-9 * self.norm * np.array(tsqf) * struct + self.sbkg
-            minsignal = np.min(signal)
-            normsignal = signal / minsignal
-            sqerr = np.random.normal(normsignal, scale=self.error_factor)
-            meta = {'Energy': self.Energy}
-            if self.Energy is not None:
-                self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
-                                                                               'yerr': np.sqrt(
-                                                                                   normsignal) * minsignal * self.error_factor,
-                                                                               'meta': meta}
-            else:
-                self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
-                                                         'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
-                                                         'meta': meta}
-            self.output_params['Total'] = {'x': self.x, 'y': sqf}
-            self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
-            self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
-            self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
-            self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],
-                                           'names': ['r<sub>L</sub> (Angs)', 'Electron Density (el/Angs^3)']}
-            self.output_params['eirho_r'] = {'x': rhor[:, 0], 'y': eirhor[:, 1],
-                                             'names': ['r<sub>L</sub> (Angs)', 'Electron Density (el/Angs^3)']}
-            self.output_params['adensity_r'] = {'x': rhor[:, 0], 'y': adensityr[:, 1] * scale,
-                                                'names': ['r<sub>L</sub> (Angs)', 'Density (Molar)']}  # in Molar
-            self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
-            xtmp, yrmoles = create_steps(x=self.__L__[:-1], y=self.__Rmoles__[:-1])
-            xtmp, ydensity = create_steps(x=self.__L__[:-1], y=self.__density__[:-1])
-            xtmp[2:] = xtmp[2:] - self.L / 2
-            self.output_params['Rmoles_radial'] = {'x': xtmp, 'y': yrmoles, 'names':['<sub>L</sub> (Angs)','Rmoles [Moles]']}
-            self.output_params['Density_radial'] = {'x': xtmp, 'y': ydensity, 'names':['<sub>L</sub> (Angs)',
-                                                                                       'Density [gm/cm<sup>3</sup>]']}
-            sqf = self.output_params[self.term]['y']
-            if self.sig>1e-5:
-                dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
-                self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
-                self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
+            if not self.__fit__: #Generate all the quantities below while not fitting
+                asqf = self.norm * 1e-9 * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
+                eisqf = self.norm * 1e-9 * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+                csqf = self.norm * 1e-9 * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
+                # sqerr = np.sqrt(self.norm*6.022e20*self.flux * tsqf * svol*struct+self.sbkg)
+                # sqwerr = (self.norm*6.022e20*tsqf * svol * struct*self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
+                # self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
+                signal = sqf[0:]
+                minsignal = np.min(signal)
+                normsignal = signal / minsignal
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
+                meta = {'Energy': self.Energy}
+                tkeys = list(self.output_params.keys())
+                for key1 in tkeys:
+                    if 'simulated_w_err' in key1:
+                        del self.output_params[key1]
+                if self.Energy is not None:
+                    self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
+                                                                                   'yerr': np.sqrt(
+                                                                                       normsignal) * minsignal * self.error_factor,
+                                                                                   'meta': meta}
+                else:
+                    self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
+                                                             'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
+                                                             'meta': meta}
+                self.output_params['Total'] = {'x': self.x, 'y': sqf}
+                self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
+                self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
+                self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
+                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],
+                                               'names': ['r<sub>L</sub> (Angs)', 'Electron Density (el/Angs^3)']}
+                self.output_params['eirho_r'] = {'x': rhor[:, 0], 'y': eirhor[:, 1],
+                                                 'names': ['r<sub>L</sub> (Angs)', 'Electron Density (el/Angs^3)']}
+                self.output_params['adensity_r'] = {'x': rhor[:, 0], 'y': adensityr[:, 1] * scale,
+                                                    'names': ['r<sub>L</sub> (Angs)', 'Density (Molar)']}  # in Molar
+                self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
+                xtmp, yrmoles = create_steps(x=self.__L__[:-1], y=self.__Rmoles__[:-1])
+                xtmp, ydensity = create_steps(x=self.__L__[:-1], y=self.__density__[:-1])
+                xtmp[2:] = xtmp[2:] - self.L / 2
+                self.output_params['Rmoles_radial'] = {'x': xtmp, 'y': yrmoles, 'names':['<sub>L</sub> (Angs)','Rmoles [Moles]']}
+                self.output_params['Density_radial'] = {'x': xtmp, 'y': ydensity, 'names':['<sub>L</sub> (Angs)',
+                                                                                           'Density [gm/cm<sup>3</sup>]']}
+                if self.sig>1e-5:
+                    dL, totalL, dB, totalB, dist = self.calc_LBdist(tuple(self.__L__), tuple(self.__B__), self.sig, self.dist, self.Np)
+                    self.output_params['L_Distribution'] = {'x': dL, 'y': dist}
+                    self.output_params['B_Distribution'] = {'x': dB, 'y': dist}
         return sqf
 
 
