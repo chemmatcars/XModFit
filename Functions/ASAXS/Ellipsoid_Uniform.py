@@ -66,9 +66,9 @@ def ellipsoid_ml_asaxs(q,Rx,RzRatio,rho,eirho,adensity,Nalf):
 
 class Ellipsoid_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, term='Total', dist='Gaussian', Energy=None, relement='Au', Nalf=200,
-                 NrDep='False', norm=1.0e-9, Rsig=0.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0,
+                 NrDep='False', norm=1.0, Rsig=0.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0,
                  SF='None', mpar={'Layers':{'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
-                                  'Rmoles': [1.0, 0.0], 'R': [1.0, 0.0],'RzRatio':[1.0,1.0]}}):
+                                  'Rmoles': [1.0, 1.0], 'R': [1.0, 0.0],'RzRatio':[1.0,1.0]}}):
         """
         Documentation
         Calculates the Energy dependent form factor of multilayered oblate nanoparticles with different materials
@@ -78,9 +78,9 @@ class Ellipsoid_Uniform: #Please put the class name same as the function name
         Energy      : Energy of X-rays in keV at which the form-factor is calculated. Default: None
         Np          : No. of points with which the size distribution will be computed. Default: 10
         NrDep       : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy dependent)
-        dist        : The probablity distribution fucntion for the radii of different interfaces in the nanoparticles. Default: Gaussian
-        Nalf        : Number of azumuthal angle points for angular averaging
-        norm        : The density of the nanoparticles in Molar (Moles/Liter)
+        dist        : The probability distribution fucntion for the radii of different interfaces in the nanoparticles. Default: Gaussian
+        Nalf        : Number of azimuthal angle points for angular averaging
+        norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term

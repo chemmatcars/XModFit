@@ -37,7 +37,7 @@ def ff_sphere_ml(q,R,rho):
 
 class Biphasic_Sphere_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=20, error_factor=1.0, term='Total',dist='Gaussian', Energy=None, relement='Au', NrDep='False',
-                 norm=1.0e-9, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,
+                 norm=1.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,
                  mpar={'Phase_1':{'Material':['Au','H2O'],
                                   'Density':[19.32,1.0],
                                   'VolFrac':[1.0,1.0],
@@ -62,8 +62,8 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
         Energy      : Energy of X-rays in keV at which the form-factor is calculated. Default: None
         Np          : No. of points with which the size distribution will be computed. Default: 10
         NrDep       : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy dependent)
-        dist        : The probablity distribution fucntion for the radii of different interfaces in the nanoparticles. Default: Gaussian
-        norm        : The density of the nanoparticles in Molar (Moles/Liter)
+        dist        : The probability distribution function for the radii of different interfaces in the nanoparticles. Default: Gaussian
+        norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
@@ -261,7 +261,7 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
         if type(self.x) == dict:
             sqf = {}
             for key in self.x.keys():
-                sqf[key] = self.norm * 6.022e20 * self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__[self.__mkeys__[0]]),
+                sqf[key] = self.norm*1e-9 * 6.022e20 * self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__[self.__mkeys__[0]]),
                                                                        self.Rsig, tuple(rho), tuple(eirho),
                                                                        tuple(adensity), key=key, dist=self.dist,Np=self.Np)  # in cm^-1
                 if self.SF is None:
@@ -277,7 +277,7 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
                 if key == 'Resonant-term':
                     sqf[key] = sqf[key] * struct + self.abkg
             key1 = 'Total'
-            total = self.norm * 6.022e20 * struct * self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__[self.__mkeys__[0]]),
+            total = self.norm*1e-9 * 6.022e20 * struct * self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__[self.__mkeys__[0]]),
                                                                          self.Rsig, tuple(rho), tuple(eirho),
                                                                          tuple(adensity),
                                                                          key=key1,dist=self.dist,Np=self.Np) + self.sbkg  # in cm^-1
@@ -314,14 +314,14 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
 
             tsqf, eisqf, asqf, csqf = self.new_sphere(tuple(self.x), tuple(self.__R__[self.__mkeys__[0]]), self.Rsig, tuple(rho),
                                                       tuple(eirho), tuple(adensity),dist=self.dist,Np=self.Np)
-            sqf = self.norm * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+            sqf = self.norm*1e-9 * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
             if not self.__fit__: #Generate all the quantities below while not fitting
-                asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
-                eisqf = self.norm * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-                csqf = self.norm * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
+                asqf = self.norm*1e-9 * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
+                eisqf = self.norm*1e-9 * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+                csqf = self.norm*1e-9 * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
                 # sqerr = np.sqrt(6.020e20*self.flux *self.norm*tsqf*struct*svol+self.sbkg)
                 # sqwerr = (6.022e20*tsqf * svol * self.flux*self.norm*struct + self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
-                signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.sbkg
+                signal = 6.022e20 * self.norm*1e-9 * np.array(tsqf) * struct + self.sbkg
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
                 sqerr = np.random.normal(normsignal, scale=self.error_factor)

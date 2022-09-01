@@ -1,5 +1,5 @@
 from PyQt5.uic import loadUi
-from PyQt5.QtWidgets import QApplication,QDialog,QMessageBox,QTableWidgetItem,QFileDialog,QComboBox,QWidget
+from PyQt5.QtWidgets import QApplication,QDialog,QMessageBox,QTableWidgetItem,QFileDialog,QComboBox,QWidget, QAbstractItemView
 from PyQt5.QtCore import QFileSystemWatcher, Qt
 from PyQt5.QtTest import QTest
 import sys
@@ -120,8 +120,11 @@ class Data_Dialog(QDialog):
         self.autoUpdateCheckBox.stateChanged.connect(self.autoUpdate_ON_OFF)
         self.saveDataPushButton.clicked.connect(self.saveData)
         self.addPlotPushButton.clicked.connect(lambda x: self.addPlots(plotIndex=None))
+        self.addAllPlotPushButton.clicked.connect(self.addAllPlots)
         self.plotSetupTableWidget.cellChanged.connect(self.updatePlotData)
+        self.plotSetupTableWidget.setSelectionMode(QAbstractItemView.MultiSelection)
         self.removePlotPushButton.clicked.connect(self.removePlots)
+        self.removeAllPlotPushButton.clicked.connect(self.removeAllPlots)
         
         self.addMetaDataPushButton.clicked.connect(self.addMetaData)
         self.metaDataTableWidget.itemChanged.connect(self.metaDataChanged)
@@ -134,7 +137,6 @@ class Data_Dialog(QDialog):
         self.addColumnPushButton.clicked.connect(lambda x: self.addDataColumn(colName=None))
         self.removeColumnPushButton.clicked.connect(self.removeDataColumn)
         self.removeRowsPushButton.clicked.connect(self.removeDataRows)
-        self.dataTableWidget.setSelection
         self.dataTableWidget.horizontalHeader().sortIndicatorChanged.connect(self.dataSorted)
         self.addRowPushButton.clicked.connect(self.addDataRow)
         
@@ -622,10 +624,19 @@ class Data_Dialog(QDialog):
             pi=plotIndex[key]
             if colors is None:
                 color=next(self.colcycler)#array([random.randint(200, high=255),0,0])
-                print(color)
             else:
                 color=colors[key]
             self.addPlots(plotIndex=pi,color=color)
+            QApplication.processEvents()
+
+
+    def addAllPlots(self):
+        self.removeAllPlots()
+        columns=self.data['data'].columns.tolist()
+        plotIndex={}
+        for i in range(1,len(columns),2):
+            plotIndex[columns[i]]=[0,i,i+2]
+        self.addMultiPlots(plotIndex=plotIndex)
             
             
     def addPlots(self,plotIndex=None,color=None):
@@ -680,7 +691,7 @@ class Data_Dialog(QDialog):
         # else:
         #     QMessageBox.warning(self,'Warning','As the Data Dialog is used within another widget you cannot add more plots',QMessageBox.Ok)
         
-    def removePlots(self):
+    def removePlots(self,forced=False):
         """
         Removes data for PlotSetup
         """
@@ -691,7 +702,7 @@ class Data_Dialog(QDialog):
         rowIndexes=self.plotSetupTableWidget.selectionModel().selectedRows()
         selectedRows=[index.row() for index in rowIndexes]
         selectedRows.sort(reverse=True)
-        if self.parentWidget() is None:
+        if self.parentWidget() is None or forced:
             for row in selectedRows:
                 name=self.plotSetupTableWidget.item(row,0).text()
                 self.plotWidget.remove_data([name])
@@ -709,6 +720,13 @@ class Data_Dialog(QDialog):
         self.plotSetupTableWidget.resizeRowsToContents()
         self.plotSetupTableWidget.resizeColumnsToContents()
         self.plotSetupTableWidget.cellChanged.connect(self.updatePlotData)
+
+    def removeAllPlots(self):
+        if self.plotSetupTableWidget.rowCount()>0:
+            for i in range(self.plotSetupTableWidget.rowCount()):
+                self.plotSetupTableWidget.selectRow(i)
+            self.removePlots(forced=True)
+
             
         
         

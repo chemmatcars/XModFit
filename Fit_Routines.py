@@ -133,7 +133,7 @@ class Fit(QObject):
     
     
     def perform_fit(self,xmin,xmax,fit_scale='Linear',fit_method='leastsq',maxiter=1,emcee_walker=100, emcee_steps=100,
-                    emcee_burn=30, emcee_cores=1, reuse_sampler=False):
+                    emcee_burn=30, emcee_cores=1, reuse_sampler=False, emcee_thin=1):
         self.Niter=0
         #self.sync_param()
         self.fit_abort=False
@@ -154,11 +154,11 @@ class Fit(QObject):
         elif fit_method == 'emcee':
             if not reuse_sampler:
                 self.emcee_params = self.result.params.copy()
+                self.emcee_params.add('__lnsigma', value=-1.0, vary=True, min=np.log(0.001), max=np.log(2.0))
                 if 'w/o' in fit_scale:
-                    self.emcee_params.add('__lnsigma', value=-1.0,vary=True, min=np.log(0.001), max=np.log(2.0))
                     self.fitter = Minimizer(self.residual, self.emcee_params, fcn_args=(fit_scale,),
                                             iter_cb=self.callback,
-                                            nan_policy='raise', burn=emcee_burn, steps=emcee_steps, thin=1,
+                                            nan_policy='raise', burn=emcee_burn, steps=emcee_steps, thin=emcee_thin,
                                             is_weighted=False,
                                             nwalkers=emcee_walker, workers=emcee_cores, reuse_sampler=reuse_sampler)
                 else:
@@ -172,7 +172,7 @@ class Fit(QObject):
             self.result = self.fitter.minimize(method=fit_method)
             return fit_report(self.result),self.result.message
         else:
-            self.result = self.fitter.minimize(method=fit_method,burn=emcee_burn, steps=emcee_steps, thin=1, is_weighted=True,
+            self.result = self.fitter.minimize(method=fit_method,burn=emcee_burn, steps=emcee_steps, thin=emcee_thin, is_weighted=True,
                                         nwalkers=emcee_walker, workers=emcee_cores, reuse_sampler=reuse_sampler)
             return fit_report(self.result), 'None'
 

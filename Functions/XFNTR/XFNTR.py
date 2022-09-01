@@ -37,7 +37,6 @@ class XFNTR: #Please put the class name same as the function name
         int_bg  : the background fluorescence intensity from the secondary scattering from the primary beam, should be zero for air/water interface
         Rc : the radius of the interfacial curvature in unit of meter; 0 means it's flat
         sur_cov : the surface coverage of target element in unit of per \AA^-2
-        ion_depth : the monolayer thickness in unit of \AA where doesn't have any ions
         """
         if type(x)==list:
             self.x=np.array(x)
@@ -166,7 +165,7 @@ class XFNTR: #Please put the class name same as the function name
                 ssum = 0
                 steps = int((detlen + fprint[i]) / 2 / 1e6)  # use 0.1 mm as the step size
                 stepsize = (detlen + fprint[i]) / 2 / steps
-                x = np.linspace(-fprint[i] / 2 + stepsize / 2, detlen / 2 - stepsize / 2,steps)  # get the position fo single ray hitting the surface relative to the center of detector area with the step size "steps"
+                x = np.linspace(-fprint[i] / 2, detlen / 2,steps)  # get the position fo single ray hitting the surface relative to the center of detector area with the step size "steps"
                 for j in range(len(x)):
                     alphanew = alpha[i] - x[j] / self.Rc/1e10  # the incident angle at position x[j]
                     y1 = -detlen / 2 - x[j]

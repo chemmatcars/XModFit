@@ -6,32 +6,39 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
 
-    <title>Brief Tutorial &#8212; XModFit 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <title>Brief Tutorial &#8212; XModFit 0.11 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Acknowledgements" href="Acknowledgement.html" />
-    <link rel="prev" title="Installation" href="Installation.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="Installation" href="Installation.html" /> 
   </head><body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="Acknowledgement.html" title="Acknowledgements"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Installation.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">XModFit 0.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Brief Tutorial</a></li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
-
           <div class="body" role="main">
             
   <section id="brief-tutorial">
@@ -40,7 +47,7 @@
 <ol class="arabic simple">
 <li><p>Simulate an already available function</p></li>
 <li><p>Data Importing and Fitting</p></li>
-<li><p>Write your own model/function using the <span class="xref std std-ref">Function_Editor</span></p></li>
+<li><p>Write your own model/function using the <a class="reference internal" href="#function-editor"><span class="std std-ref">Function Editor</span></a></p></li>
 </ol>
 <section id="simulate-an-already-available-function">
 <h2>Simulate an already available function<a class="headerlink" href="#simulate-an-already-available-function" title="Permalink to this headline">¶</a></h2>
@@ -55,7 +62,7 @@
 </section>
 <section id="data-importing-and-fitting">
 <h2>Data importing and fitting<a class="headerlink" href="#data-importing-and-fitting" title="Permalink to this headline">¶</a></h2>
-<p>The main objective of <strong>XModFit</strong> is to provide a user to fit a model/function to a data. Please follow these to perform a data fitting using <span class="xref std std-ref">XAnoS_Fit</span>:</p>
+<p>The main objective of <strong>XModFit</strong> is to provide a user to fit a model/function to a data. Please follow these to perform a data fitting using <strong>XModFit</strong>:</p>
 <ol class="arabic simple">
 <li><p>Click the <strong>Data</strong> tab.</p></li>
 <li><p>Import data file(s) by clicking the <strong>Add Files</strong> button which will prompt for selecting the data files.</p></li>
@@ -83,60 +90,305 @@
 <li><p><strong>Rejecting</strong> will keep the parameters unaltered with the values before starting the fit.</p></li>
 </ul>
 </li>
+<li><p>The <cite>Fit Results</cite> will be available in the <cite>Fit Results</cite> tab besides the <cite>Data and Fit</cite> tab.</p></li>
 </ol>
-<figure class="align-default" id="id2" style="width: 30%">
+<figure class="align-default" id="id7" style="width: 30%">
 <span id="fit-progress"></span><img alt="_images/Fit_Progress.png" src="_images/Fit_Progress.png" />
 <figcaption>
-<p><span class="caption-text">Fit Progress Dialog</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+<p><span class="caption-text">Fit Progress Dialog</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
-<figure class="align-default" id="id3" style="width: 70%">
+<figure class="align-default" id="id8" style="width: 70%">
 <span id="fit-results"></span><img alt="_images/Fit_Results.png" src="_images/Fit_Results.png" />
 <figcaption>
-<p><span class="caption-text">Fit Results Dialog</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+<p><span class="caption-text">Fit Results Dialog</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<section id="data-dialog">
+<span id="id2"></span><h3>Data Dialog<a class="headerlink" href="#data-dialog" title="Permalink to this headline">¶</a></h3>
+<p>The dialog provides an interface to import and manipulate data for the <strong>XModFit</strong>.</p>
+<figure class="align-default" id="id9" style="width: 70%">
+<img alt="_images/Data_Dialog.png" src="_images/Data_Dialog.png" />
+<figcaption>
+<p><span class="caption-text">Data Dialog in action as a stand-alone data viewer where a file <strong>trial.txt</strong> is imported.</span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
+<div class="legend">
+<p><strong>Features</strong></p>
+<p>Data Dialog has several cool features:</p>
+<ol class="arabic simple">
+<li><p>It can import any ascii file with tabulated data with the file extensions (<strong>.txt</strong>, <strong>.dat</strong>).</p></li>
+<li><p>It can show both the meta-data and the data present in the file provided that the data file is written in this particular format as mentioned in <a class="reference internal" href="#data-file-format"><span class="std std-ref">Data File Format</span></a>.</p></li>
+<li><p>After loading the file, both meta-data and the data can be added or removed or modified.</p></li>
+<li><p>New rows and columns can be added or removed for the data.</p></li>
+<li><p>Mathematical calculations can be done on the existing columns of the data which will be added as new columns. For data manipulations please follow the instructions in <a class="reference internal" href="#data-manipulation"><span class="std std-ref">Data Manipulation</span></a>.</p></li>
+<li><p>Provides 1D plots of all/some of the columns of the data. See <a class="reference internal" href="#plotting-with-data-dialog"><span class="std std-ref">Plotting with Data Dialog</span></a></p></li>
+<li><p>If the <strong>☐Auto Update</strong> is checked, any change in the data file will update the data automatically in the <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a> along with <strong>Plots</strong>.</p></li>
+<li><p>Using the <strong>☐Auto Update</strong> feature a datafile can be visualized dynamically on change in the data within the file.</p></li>
+</ol>
+<p><strong>Usage</strong></p>
+<p>The dialog can be used as a dialog to import data in any other widgets like the <strong>XModFit</strong>. For example, within the <strong>XModFit</strong> the <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a> is used to manipulate the data by opening the dialog using the following function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">Data_Dialog</span> <span class="kn">import</span> <span class="n">Data_Dialog</span>
+
+<span class="k">def</span> <span class="nf">openDataDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">item</span><span class="p">):</span>
+    <span class="n">fnum</span><span class="p">,</span><span class="n">fname</span><span class="o">=</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;&lt;&gt;&#39;</span><span class="p">)</span>
+    <span class="n">data_dlg</span><span class="o">=</span><span class="n">Data_Dialog</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dlg_data</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()],</span><span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span><span class="n">expressions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()],</span><span class="n">plotIndex</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plotColIndex</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()],</span><span class="n">colors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plotColors</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()])</span>
+    <span class="n">data_dlg</span><span class="o">.</span><span class="n">tabWidget</span><span class="o">.</span><span class="n">setCurrentIndex</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">data_dlg</span><span class="o">.</span><span class="n">dataFileLineEdit</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">data_dlg</span><span class="o">.</span><span class="n">exec_</span><span class="p">():</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotWidget</span><span class="o">.</span><span class="n">remove_data</span><span class="p">(</span><span class="n">datanames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pfnames</span><span class="p">)</span>
+        <span class="n">newFname</span><span class="o">=</span><span class="n">data_dlg</span><span class="o">.</span><span class="n">dataFileLineEdit</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">fname</span><span class="o">==</span><span class="n">newFname</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plotColIndex</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()]</span><span class="o">=</span><span class="n">data_dlg</span><span class="o">.</span><span class="n">plotColIndex</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plotColors</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()]</span><span class="o">=</span><span class="n">data_dlg</span><span class="o">.</span><span class="n">plotColors</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dlg_data</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()]</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data_dlg</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()]</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data_dlg</span><span class="o">.</span><span class="n">externalData</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()]</span><span class="o">=</span><span class="n">data_dlg</span><span class="o">.</span><span class="n">expressions</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plotWidget</span><span class="o">.</span><span class="n">add_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()][</span><span class="n">key</span><span class="p">][</span><span class="s1">&#39;x&#39;</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()][</span><span class="n">key</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">],</span><span class="n">yerr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()][</span><span class="n">key</span><span class="p">][</span><span class="s1">&#39;yerr&#39;</span><span class="p">],</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">:</span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">fnum</span><span class="p">,</span><span class="n">key</span><span class="p">),</span><span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plotColors</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()][</span><span class="n">key</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">text</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&lt;&gt;</span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">fnum</span><span class="p">,</span><span class="n">newFname</span><span class="p">)</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">text</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dlg_data</span><span class="p">[</span><span class="n">text</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dlg_data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dlg_data</span><span class="p">[</span><span class="n">text</span><span class="p">]</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data_dlg</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">text</span><span class="p">]</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data_dlg</span><span class="o">.</span><span class="n">externalData</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plotColIndex</span><span class="p">[</span><span class="n">text</span><span class="p">]</span><span class="o">=</span><span class="n">data_dlg</span><span class="o">.</span><span class="n">plotColIndex</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plotColors</span><span class="p">[</span><span class="n">text</span><span class="p">]</span><span class="o">=</span><span class="n">data_dlg</span><span class="o">.</span><span class="n">plotColors</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">[</span><span class="n">text</span><span class="p">]</span><span class="o">=</span><span class="n">data_dlg</span><span class="o">.</span><span class="n">expressions</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">text</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plotWidget</span><span class="o">.</span><span class="n">add_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">text</span><span class="p">][</span><span class="n">key</span><span class="p">][</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">text</span><span class="p">][</span><span class="n">key</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">yerr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">text</span><span class="p">][</span><span class="n">key</span><span class="p">][</span>
+                <span class="s1">&#39;yerr&#39;</span><span class="p">],</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">:</span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">fnum</span><span class="p">,</span><span class="n">key</span><span class="p">),</span><span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plotColors</span><span class="p">[</span><span class="n">text</span><span class="p">][</span><span class="n">key</span><span class="p">])</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">plotWidget</span><span class="o">.</span><span class="n">updatePlot</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The dialog can also be used stand-alone to visualize, manipulate a data file with data and meta-data (see <a class="reference internal" href="#data-file-format"><span class="std std-ref">Data File Format</span></a>) by running this command in terminal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">Data_Dialog</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="n">filename</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>where [filename] is an optional argument to provide a file with full path.</p>
+</div>
 </figcaption>
 </figure>
 </section>
 </section>
+<section id="data-file-format">
+<span id="id3"></span><h2>Data File Format<a class="headerlink" href="#data-file-format" title="Permalink to this headline">¶</a></h2>
+<p>The data file must be written in the format as shown below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#Any text about explaining the data</span>
+<span class="c1">#parameter1_name=parameter1_value</span>
+<span class="c1">#parameter2_name=parameter2_value</span>
+<span class="c1">#col_names=[&#39;col1&#39;,&#39;col2&#39;,&#39;col3&#39;]</span>
+<span class="mi">1</span>   <span class="mi">1</span>   <span class="mi">1</span>
+<span class="mi">2</span>   <span class="mi">4</span>   <span class="mi">8</span>
+<span class="mi">3</span>   <span class="mi">9</span>   <span class="mi">27</span>
+</pre></div>
+</div>
+<p>The first few lines with ‘#’ can be used for stating the details of the file. Any meta-data needs to be saved should
+follow the syntax as shown above as ‘#parameter1_name=parameter1_value’. When the above file is saved as <strong>data_file.txt</strong> and opened in <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a>, the data looks like this:</p>
+<figure class="align-default" id="id10" style="width: 70%">
+<img alt="_images/Data_Dialog_w_Data_File.png" src="_images/Data_Dialog_w_Data_File.png" />
+<figcaption>
+<p><span class="caption-text">Data Dialog in action in which it is loaded with <strong>data_fle.txt</strong></span><a class="headerlink" href="#id10" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="data-manipulation">
+<span id="id4"></span><h2>Data Manipulation<a class="headerlink" href="#data-manipulation" title="Permalink to this headline">¶</a></h2>
+<p>In the <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a> both the meta-data and data can be added/removed and edited with the following conditions:</p>
+<ol class="arabic simple">
+<li><p>If a file is imported with <strong>col_names</strong> as one of the meta-data, you can edit the values of the <strong>col_names</strong> but cannot remove it.</p></li>
+<li><p>If the columns are already set for plotting in the <strong>Plot Setup</strong> tab you cannot remove the last two tabs.</p></li>
+<li><p>When the <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a> is not used within any other widgets, all the data columns can be removed.</p></li>
+<li><p>When the <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a> is used within any other widgets, one can delete all the columns except the remaining two.</p></li>
+</ol>
+<section id="add-new-data-column">
+<h3>Add New Data Column<a class="headerlink" href="#add-new-data-column" title="Permalink to this headline">¶</a></h3>
+<p>You can add new columns by clicking <strong>Add Column</strong> which will open up a <a class="reference internal" href="#data-column-dialog-i"><span class="std std-ref">Data Column Dialog with numpy expression involving i</span></a>. Then the column values can be either:</p>
+<ol class="arabic">
+<li><p>An expression of <strong>i</strong> which can take integer values from a minimum value (default=0) to a maximum value (default=100). The expression can be any numpy expression like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">i</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">sin</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="n">cos</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<span class="n">exp</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<blockquote>
+<div><p>Here <strong>np</strong> is the imported <strong>numpy</strong> module. Please see <a class="reference internal" href="#data-column-dialog-i"><span class="std std-ref">Data Column Dialog with numpy expression involving i</span></a>.</p>
+</div></blockquote>
+<ol class="arabic" start="2">
+<li><p>A numpy expression involving the data columns (col_A and col_B in this case) like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_A&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_B&#39;</span><span class="p">]</span>
+<span class="n">sin</span><span class="p">(</span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_A&#39;</span><span class="p">])</span><span class="o">+</span><span class="n">cos</span><span class="p">(</span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_B&#39;</span><span class="p">])</span>
+<span class="n">exp</span><span class="p">(</span><span class="n">col</span><span class="p">[</span><span class="s1">&#39;col_A&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<blockquote>
+<div><p>Here a particular column is used as <strong>col.Column_Name</strong>. Please see <a class="reference internal" href="#data-column-dialog-columns">Data_Column_Dialog_Columns</a>.</p>
+</div></blockquote>
+<figure class="align-default" id="id11" style="width: 70%">
+<span id="data-column-dialog-i"></span><img alt="_images/Data_Column_Dialog_with_i.png" src="_images/Data_Column_Dialog_with_i.png" />
+<figcaption>
+<p><span class="caption-text">Data Column Dialog with numpy expression involving i</span><a class="headerlink" href="#id11" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-default" id="id12" style="width: 70%">
+<span id="data-column-dialog-columns"></span><img alt="_images/Data_Column_Dialog_with_columns.png" src="_images/Data_Column_Dialog_with_columns.png" />
+<figcaption>
+<p><span class="caption-text">Data Column Dialog with numpy expression involving columns</span><a class="headerlink" href="#id12" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="remove-data-columns">
+<h3>Remove Data Columns<a class="headerlink" href="#remove-data-columns" title="Permalink to this headline">¶</a></h3>
+<p>The columns can be removed by:</p>
+<ol class="arabic simple">
+<li><p>Selecting the entire column either by:</p>
+<ul class="simple">
+<li><p>Selecting the first row of the column and select the last row with <strong>SHIFT</strong> button pressed.</p></li>
+<li><p>Clicking the <strong>Left-Mouse-Button</strong> of the mouse over the first row of the column and keeping the <strong>Left-Mouse-Button</strong> pressed drag all the way to the last column.</p></li>
+<li><p>All the columns can be selected by be clicking on a single data cell and press <strong>CTRL-A</strong></p></li>
+</ul>
+</li>
+<li><p>Click the <strong>Remove Column</strong> button.</p></li>
+</ol>
+</section>
+<section id="add-new-data-rows">
+<h3>Add New Data Rows<a class="headerlink" href="#add-new-data-rows" title="Permalink to this headline">¶</a></h3>
+<p>A new row can be added by selecting a row where you want to add a row and click <strong>Add Row</strong></p>
+</section>
+<section id="remove-data-rows">
+<h3>Remove Data Rows<a class="headerlink" href="#remove-data-rows" title="Permalink to this headline">¶</a></h3>
+<p>Multiple rows can be removed by selecting multiple rows and click <strong>Remove Rows</strong></p>
+</section>
+<section id="change-data-column-names">
+<h3>Change Data Column Names<a class="headerlink" href="#change-data-column-names" title="Permalink to this headline">¶</a></h3>
+<p>The column names of the Data can be changed by changing the meta-data <strong>col_names</strong>.</p>
+</section>
+</section>
+<section id="plotting-with-data-dialog">
+<span id="id5"></span><h2>Plotting with Data Dialog<a class="headerlink" href="#plotting-with-data-dialog" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="#data-dialog">Data_Dialog</a> can also be used for visualizing (within the Data Dialog) and selecting the data (for other widgets) to create 1D plots with errorbars. In order to plot the data needs to be at least a two column data. Once a two-column data is opened, in order to to visualize/select the data for plotting one needs to do the following:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Click to the <strong>Plot Setup</strong> tab. See <a class="reference internal" href="#data-dialog-plot-setup"><span class="std std-ref">Plot Setup of the Data Dialog</span></a>.</p></li>
+<li><p>Click <strong>Add</strong> button which will automatically add a row in the table.</p></li>
+<li><p>By default the row will be loaded with with <em>Data_0</em> as label, first and second column of the data as <em>X</em> and <em>Y</em> column, respectively.</p></li>
+<li><p>By default the <em>Yerr</em> column is selected as <em>None</em>.</p></li>
+<li><p>The color of the plotting symbol can be selected by clicking the color button. By default the plots will choose different variants of <em>Red</em>.</p></li>
+<li><p>Many rows can be added in this way to visualize the data in <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a> whereas when the <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a> is used within other widgets only one row will be added by default.</p></li>
+<li><p>The data rows can be removed from the <strong>Plot Setup</strong> by selecting entire row (by clicking the row numbers at the extreme left) and clicking the <strong>Remove</strong> button.</p></li>
+<li><p>When using the <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a> with any other widget, you cannot add or remove plots set for plotting. Though you can change the columns to plot.</p></li>
+<li><p>All the columns of the data will be available as drop down menu in each of the cells for selecting them as <em>X</em>, <em>Y</em>, and <em>Yerr</em> columns to plot.</p></li>
+<li><p>After adding the column, go to <strong>Plots</strong> tab within the <a class="reference internal" href="#data-dialog"><span class="std std-ref">Data Dialog</span></a> to visualize the data. See <a class="reference internal" href="#data-dialog-plot-tab"><span class="std std-ref">Plot tab of the Data Dialog</span></a>.</p></li>
+<li><p>Both the X- and Y-axis labels will be updated with the column names selected in the <strong>Plot Setup</strong>.</p></li>
+<li><p>In order to switch between the log/linear scales of both the axes check/uncheck the <strong>☐LogX</strong> and <strong>☐LogY</strong> checkboxes.</p></li>
+<li><p>Line-width and the Symbol sizes can be tweaked by changing the <strong>Line width</strong> and <strong>Point size</strong> options.</p></li>
+<li><p>By default, the errorbars are not plotted and can be plotted by checking the <strong>☐Errorbar</strong> checkbox, provided that a column is already selected in <em>Yerr</em> column of the <strong>Plot Setup</strong>.</p></li>
+</ol>
+</div></blockquote>
+<figure class="align-default" id="id13" style="width: 70%">
+<span id="data-dialog-plot-setup"></span><img alt="_images/Data_Dialog_Plot_Setup.png" src="_images/Data_Dialog_Plot_Setup.png" />
+<figcaption>
+<p><span class="caption-text">Plot Setup of the Data Dialog</span><a class="headerlink" href="#id13" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-default" id="id14" style="width: 70%">
+<span id="data-dialog-plot-tab"></span><img alt="_images/Data_Dialog_Plot_tab.png" src="_images/Data_Dialog_Plot_tab.png" />
+<figcaption>
+<p><span class="caption-text">Plot tab of the Data Dialog</span><a class="headerlink" href="#id14" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<section id="function-editor">
+<span id="id6"></span><h3>Function Editor<a class="headerlink" href="#function-editor" title="Permalink to this headline">¶</a></h3>
+<p>The editor provides an interface to write new functions to be included
+in the <strong>XModFit</strong>. The editor is enabled with python syntax highlighting.</p>
+<figure class="align-default" id="id15" style="width: 100%">
+<img alt="_images/Function_Editor.png" src="_images/Function_Editor.png" />
+<figcaption>
+<p><span class="caption-text">Function Editor</span><a class="headerlink" href="#id15" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>The editor starts with a template to write new functions. The template looks like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">####Please do not remove lines below####</span>
+<span class="kn">from</span> <span class="nn">lmfit</span> <span class="kn">import</span> <span class="n">Parameters</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">))</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;./Functions&#39;</span><span class="p">))</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;./Fortran_rountines&#39;</span><span class="p">))</span>
+<span class="c1">####Please do not remove lines above####</span>
+
+<span class="c1">####Import your modules below if needed####</span>
 
 
+
+<span class="k">class</span> <span class="nc">FunctionName</span><span class="p">:</span> <span class="c1">#Please put the class name same as the function name</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">mpar</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Documentation</span>
+<span class="sd">        x           : independent variable in ter form of a scalar or an array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">==</span><span class="nb">list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">=</span><span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__mpar__</span><span class="o">=</span><span class="n">mpar</span> <span class="c1">#If there is any multivalued parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">choices</span><span class="o">=</span><span class="p">{}</span> <span class="c1">#If there are choices available for any fixed parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_params</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">init_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Define all the fitting parameters like</span>
+<span class="sd">        self.param.add(&#39;sig&#39;,value = 0, vary = 0, min = -np.inf, max = np.inf, expr = None, brute_step = None)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">=</span><span class="n">Parameters</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">y</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Define the function in terms of x to return some value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_params</span><span class="o">=</span><span class="p">{}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+</pre></div>
+</div>
+<p>A new function is basically as a python <strong>class</strong>. The <em>class name</em> determines the name of the function. As per the template there are three essential functions needs to be defined within the <strong>class</strong>:</p>
+<ol class="arabic simple">
+<li><dl class="simple">
+<dt><strong>__init__</strong> function</dt><dd><p>. With this function we initialize all the parameters necessary for the class. The function atleast needs a value of an independent parameter <strong>x</strong> which by default takes scaler value <strong>0</strong>. <strong>x</strong> can take a scaler or array of values. <strong>mpar</strong> is a python dictionary to define multiple fitting parameters. The first parameter within <strong>mpar</strong> dictionary should be <strong>list of strings</strong> to provide some information about the nature of other parameters. In order to learn how to use <strong>mpar</strong> please look at the functions like: <strong>MultiSphereAtInterface</strong>, <strong>Parratt</strong>, and <strong>MultiPeaks</strong>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>init_params</strong> function</dt><dd><p>. With this function we define among all the parameters (single and multiple) which one will be treated as our fitting parameters.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>y</strong> function</dt><dd><p>. This function actually returns the actual values of the function to be calculated by the <strong>class</strong></p>
+</dd>
+</dl>
+</li>
+</ol>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
           </div>
-          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">XModFit</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<p><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Brief Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#simulate-an-already-available-function">Simulate an already available function</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#data-importing-and-fitting">Data importing and fitting</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="Acknowledgement.html">Acknowledgements</a></li>
-</ul>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="Installation.html" title="previous chapter">Installation</a></li>
-      <li>Next: <a href="Acknowledgement.html" title="next chapter">Acknowledgements</a></li>
-  </ul></li>
-</ul>
-</div>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Installation.html"
+                        title="previous chapter">Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Acknowledgement.html"
+                        title="next chapter">Acknowledgements</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
@@ -147,32 +399,29 @@
     </div>
 </div>
 <script>$('#searchbox').show(0);</script>
-
-
-
-
-
-
-
-
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2021, Mrinal Bera, Wei Bu.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.3</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
-      
-      |
-      <a href="_sources/Brief_Tutorial.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="Acknowledgement.html" title="Acknowledgements"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Installation.html" title="Installation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">XModFit 0.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Brief Tutorial</a></li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Mrinal Kanti Bera and Wei Bu@NSF&#39;s ChemMatCARS.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+    </div>
   </body>
 </html>
