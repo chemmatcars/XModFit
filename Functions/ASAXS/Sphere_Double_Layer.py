@@ -39,7 +39,7 @@ def ff_sphere_ml(q,R,rho):
 
 class Sphere_Double_Layer: #Please put the class name same as the function name
     def __init__(self, x=0, Np=20, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep=False, norm=1.0,
-                 sbkg=0.0, cbkg=0.0, abkg=0.0, nearIon='Rb', farIon='Cl', ionDensity=0.0, stThickness=1.0,
+                 norm_err=0.01, sbkg=0.0, cbkg=0.0, abkg=0.0, nearIon='Rb', farIon='Cl', ionDensity=0.0, stThickness=1.0,
                  stDensity=0.0, dbLength=1.0, dbDensity=0.0,Ndb=20,Rsig=0.0,D=0.0,phi=0.1,U=-1.0,SF=None,term='Total',
                  mpar={'Layers':{'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                       'Rmoles': [1.0, 1.0], 'R': [1.0, 0.0]}}):
@@ -54,6 +54,7 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
         NrDep       : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy dependent)
         dist        : The probability distribution function for the radii of different interfaces in the nanoparticles. Default: Gaussian
         norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
+        norm_err    : Percentage of error on normalization to simulated energy dependent SAXS data
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
@@ -84,6 +85,7 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
         else:
             self.x = x
         self.norm = norm
+        self.norm_err = norm_err
         self.sbkg = sbkg
         self.cbkg = cbkg
         self.abkg = abkg
@@ -430,7 +432,8 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
                 signal = total
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
@@ -477,7 +480,8 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
                 signal = 6.022e20 * self.norm*1e-9 * np.array(tsqf) * struct + self.sbkg
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale = self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale = self.error_factor)
                 meta = {'Energy': self.Energy}
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,

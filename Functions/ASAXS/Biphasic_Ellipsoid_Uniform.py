@@ -65,7 +65,7 @@ def ellipsoid_ml_asaxs(q,Rx,RzRatio,rho,eirho,adensity,Nalf):
 
 class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, term='Total', dist='Gaussian', Energy=None, relement='Au', Nalf=200,
-                 NrDep='False', norm=1.0, Rsig=0.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0,
+                 NrDep='False', norm=1.0, norm_err=0.01, Rsig=0.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0,
                  SF='None', mpar={'Phase_1':{'Material': ['Au', 'H2O'],
                                              'Density': [19.32, 1.0],
                                              'VolFrac': [1.0, 1.0],
@@ -97,6 +97,7 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
         dist        : The probability distribution function for the radii of different interfaces in the nanoparticles. Default: Gaussian
         Nalf        : Number of azumuthal angle points for angular averaging
         norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
+        norm_err    : Percentage of error on normalization to simulated energy dependent SAXS data
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
@@ -121,6 +122,7 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
             self.x = x
         self.Nalf = Nalf
         self.norm = norm
+        self.norm_err = norm_err
         self.sbkg = sbkg
         self.cbkg = cbkg
         self.abkg = abkg
@@ -331,7 +333,8 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
                 signal = total
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
@@ -380,7 +383,8 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
                 signal = 6.022e20 * self.norm*1e-9 * np.array(tsqf) * struct + self.sbkg
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,

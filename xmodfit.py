@@ -406,7 +406,7 @@ class XModFit(QWidget):
 
 
     def aboutDialog(self):
-        QMessageBox.information(self,'About','Copyright (c) 2021 NSF\'s ChemMAtCARS, University of Chicago.\n\n'
+        QMessageBox.information(self,'About','Copyright (c) 2022 NSF\'s ChemMAtCARS, University of Chicago.\n\n'
                                              'Developers:\n'
                                              'Mrinal K. Bera (mrinalkb@cars.uchicago.edu \n'
                                              'Wei Bu (bu@cars.uchicago.edu)'
@@ -1806,7 +1806,7 @@ class XModFit(QWidget):
                 except:
                     pardata=[self.param_chain[key][chain][burn:]]
             pardata=np.ndarray.flatten(pardata)
-            errors=np.percentile(pardata,[100-percentile,50,percentile])
+            errors=np.quantile(pardata,[(100-percentile)/100,50/100,percentile/100])
             mesg.append([key, errors[1], errors[1]-errors[0], errors[2]-errors[1]])
         self.emceeConfIntervalWidget.confIntervalTextEdit.clear()
         self.emceeConfIntervalWidget.confIntervalTextEdit.setFont(QFont("Courier", 10))

@@ -65,7 +65,7 @@ def parallelopiped_ml(q, L, B, H, rho, Nphi, Npsi, HggtLB=True):
 
 class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, dist='LogNormal', Energy=None, relement='Au', NrDep='True',# L=1.0, B=1.0,
-                 H=1.0, norm=1.0, bkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=200,Npsi=400, tol=1e-3,HggtLB=True,
+                 H=1.0, norm=1.0, norm_err=0.01, bkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=200,Npsi=400, tol=1e-3,HggtLB=True,
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                   'Rmoles': [1.0, 1.0], 'L': [1.0, 0.0],'Lsig':[1.0,0.0],'B':[1.0,0.0],'Bsig':[1.0,0.0]}}):
         """
@@ -83,6 +83,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
         Nphi        : Number of polar angle points for angular averaging
         Npsi        : Number of azimuthal angle for angular averaging
         norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
+        norm_err    : Percentage of error on normalization to simulated energy dependent SAXS data
         bkg         : Constant incoherent background
         tol         : Tolerence for Monte-Carlo Integration
         error_factor: Error-factor to simulate the error-bars
@@ -104,6 +105,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
         else:
             self.x=x
         self.norm=norm
+        self.norm_err = norm_err
         self.bkg=bkg
         self.dist=dist
         self.Np=Np
@@ -294,7 +296,8 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                     signal = sqf[key]
                     minsignal = np.min(signal)
                     normsignal = signal / minsignal
-                    sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                    norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                    sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                     meta = {'Energy': Energy}
                     self.output_params['simulated_w_err_' + Energy + 'keV'] = {'x': self.x[key], 'y': sqerr * minsignal,
                                                                                'yerr': np.sqrt(
@@ -319,7 +322,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                                                          self.H, tuple(rho),
                                                          dist=self.dist, Np=self.Np, Nphi=self.Nphi, Npsi=self.Npsi,
                                                          tol=self.tol,HggtLB=self.HggtLB)
-
+            sqf = self.norm * 1e-9 * np.array(sq) * 6.022e20 * struct + self.sbkg  # in cm^-1
             if not self.__fit__:
                 keys = list(self.output_params.keys())
                 for key in keys:
@@ -340,10 +343,11 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                     iBsort=np.argsort(B[:,0])
                     self.output_params['L_1']={'x':L[iLsort,0],'y':Ldist[iLsort]}
                     self.output_params['B_1'] = {'x': B[iBsort, 0], 'y': Bdist[iBsort]}
-                signal = 6.022e20 * self.norm * 1e-9 * sq * struct + self.bkg
+                signal = sqf[0:]
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
                 tkeys = list(self.output_params.keys())
                 for key in tkeys:
@@ -363,7 +367,6 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                 self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1]}
                 self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
-            sqf = signal
         return sqf
 
 
