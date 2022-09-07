@@ -476,16 +476,16 @@ class XModFit(QWidget):
         popMenu.exec_(self.funcListWidget.mapToGlobal(pos))
 
     def showDetails(self):
-        url = os.path.join(os.path.curdir, 'Function_Details', self.categoryListWidget.currentItem().text(),
+        url = os.path.join(os.path.abspath(os.path.curdir), 'Function_Details', self.categoryListWidget.currentItem().text(),
                             self.funcListWidget.currentItem().text(),'help.pdf')
         if os.path.exists(url):
-            webbrowser.open_new_tab(url)
+            webbrowser.open_new_tab('File://'+url)
         else:
             QMessageBox.warning(self,'File Error','The help files regarding the function details do not exist.',QMessageBox.Ok)
         # os.system('C:/Users/mrinalkb/Desktop/ESH738.pdf')
 
     def addDetails(self):
-        path=os.path.join(os.path.curdir,'Function_Details',self.categoryListWidget.currentItem().text(),self.funcListWidget.currentItem().text())
+        path=os.path.join(os.path.abspath(os.path.curdir),'Function_Details',self.categoryListWidget.currentItem().text(),self.funcListWidget.currentItem().text())
         if os.path.exists(path):
             fname = QFileDialog.getOpenFileName(self,caption='Select help file',directory=self.curDir,filter="Help files (*.docx *.pdf)")[0]
             tfname=os.path.join(path,'help'+os.path.splitext(fname)[1])
@@ -496,10 +496,10 @@ class XModFit(QWidget):
     def modifyDetails(self):
         category=self.categoryListWidget.currentItem().text()
         function=self.funcListWidget.currentItem().text()
-        path = os.path.join(os.path.curdir, 'Function_Details', category,
+        path = os.path.join(os.path.abspath(os.path.curdir), 'Function_Details', category,
                             function,'help.docx')
         if os.path.exists(path):
-            webbrowser.open_new_tab(path)
+            webbrowser.open_new_tab('File://'+path)
         else:
             if not os.path.exists(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
@@ -509,7 +509,7 @@ class XModFit(QWidget):
             text=getattr(self.curr_funcClass[module], function).__init__.__doc__
             doc.add_paragraph(text)
             doc.save(path)
-            webbrowser.open_new_tab(path)
+            webbrowser.open_new_tab('File://'+path)
 
         
     def addCategory(self):
