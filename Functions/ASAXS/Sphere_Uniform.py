@@ -45,30 +45,30 @@ class Sphere_Uniform: #Please put the class name same as the function name
         """
         Calculates the Energy dependent form factor of multilayered nanoparticles with different materials
 
-        x            = Reciprocal wave-vector 'Q' inv-Angs in the form of a scalar or an array
-        relement     = Resonant element of the nanoparticle. Default: 'Au'
-        Energy       = Energy of X-rays in keV at which the form-factor is calculated. Default: None
-        Np           = No. of points with which the size distribution will be computed. Default: 10
-        NrDep        = Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy dependent)
-        dist         = The probability distribution function for the radii of different interfaces in the nanoparticles. Default: Gaussian
-        norm         = The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
-        norm_err     = Percentage of error on normalization to simulated energy dependent SAXS data
-        sbkg         = Constant incoherent background for SAXS-term
-        cbkg         = Constant incoherent background for cross-term
-        abkg         = Constant incoherent background for Resonant-term
-        error_factor = Error-factor to simulate the error-bars
-        term         = 'SAXS-term' or 'Cross-term' or 'Resonant-term' or 'Total'
-        D            = Hard Sphere Diameter
-        phi          = Volume fraction of particles
-        U            = The sticky-sphere interaction energy
-        SF           = Type of structure factor. Default: 'None'
-        Rsig         = Widths of the total radius of the nanoparticles. Default: 0.0
-        mpar         = Multi-parameter which defines the following including the solvent/bulk medium which is the last one. Default: 'H2O'
+        x            : Reciprocal wave-vector 'Q' inv-Angs in the form of a scalar or an array
+        relement     : Resonant element of the nanoparticle. Default: 'Au'
+        Energy       : Energy of X-rays in keV at which the form-factor is calculated. Default: None
+        Np           : No. of points with which the size distribution will be computed. Default: 10
+        NrDep        : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy dependent)
+        dist         : The probability distribution function for the radii of different interfaces in the nanoparticles. Default: Gaussian
+        norm         : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
+        norm_err     : Percentage of error on normalization to simulated energy dependent SAXS data
+        sbkg         : Constant incoherent background for SAXS-term
+        cbkg         : Constant incoherent background for cross-term
+        abkg         : Constant incoherent background for Resonant-term
+        error_factor : Error-factor to simulate the error-bars
+        term         : 'SAXS-term' or 'Cross-term' or 'Resonant-term' or 'Total'
+        D            : Hard Sphere Diameter
+        phi          : Volume fraction of particles
+        U            : The sticky-sphere interaction energy
+        SF           : Type of structure factor. Default: 'None'
+        Rsig         : Widths of the total radius of the nanoparticles. Default: 0.0
+        mpar         : Multi-parameter which defines the following including the solvent/bulk medium which is the last one. Default: 'H2O'
                         Material ('Materials' using chemical formula),
                         Density ('Density' in gm/cubic-cms),
                         Density of solvent ('SolDensity' in gm/cubic-cms) of the particular layer
                         Mole-fraction ('Rmoles') of resonant element in the material)
-                        Radii ('R' in Angs), and
+                        Radii ('R' in Angs)
 
         """
         if type(x)==list:
