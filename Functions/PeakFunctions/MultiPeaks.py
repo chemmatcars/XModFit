@@ -59,6 +59,7 @@ class MultiPeaks: #Please put the class name same as the function name
         self.params.add('c1',value=self.c1,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('c2',value=self.c2,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('c3',value=self.c3,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
+        self.params.add('N',value=self.N,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('cN',value=self.cN,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('cexp',value=self.cexp,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
         self.params.add('lexp',value=self.lexp,vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
