@@ -38,12 +38,12 @@ def ff_sphere_ml(q,R,rho):
 class Biphasic_Sphere_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=20, error_factor=1.0, term='Total',dist='Gaussian', Energy=None, relement='Au', NrDep='False',
                  norm=1.0, norm_err=0.01, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Rsig=0.0,
-                 mpar={'Phase_1':{'Material':['Au','H2O'],
+                 mpar={'Phase1':{'Material':['Au','H2O'],
                                   'Density':[19.32,1.0],
                                   'VolFrac':[1.0,1.0],
                                   'Rmoles':[1.0,0.0],
                                   'R':[1.0,0.0]},
-                       'Phase_2':{'Material':['Au','H2O'],
+                       'Phase2':{'Material':['Au','H2O'],
                                   'Density':[19.32,1.0],
                                   'VolFrac':[1.0,1.0],
                                   'Rmoles':[1.0,0.0],
@@ -223,7 +223,7 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
         key = 'VolFrac'
         for i in range(Nmpar):
             self.params['__%s_%s_%03d' % (mkey, key, i)].set(
-                expr='1.0-__Phase_1_VolFrac_%03d-__Phase_2_VolFrac_%03d' % (i, i))
+                expr='1.0-__Phase1_VolFrac_%03d-__Phase2_VolFrac_%03d' % (i, i))
 
 
     def y(self):
@@ -244,6 +244,10 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
                                                                  Energy=self.Energy,
                                                                  Rmoles=tuple(self.__Rmoles__[mkey]),
                                                                  NrDep=self.NrDep)
+        vf = np.array(self.__VolFrac__[mkey])
+        rho = vf * rho
+        eirho = vf * eirho
+        adensity = vf * adensity
         for mkey in self.__mkeys__:
             if mkey != 'Solvent':
                 trho, teirho, tadensity, trhor, teirhor, tadensityr = calc_rho(R=tuple(self.__R__[mkey]),
@@ -258,7 +262,6 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
                 rho = rho + vf * trho
                 eirho = eirho + vf * teirho
                 adensity = adensity + vf * tadensity
-
 
         if type(self.x) == dict:
             sqf = {}
@@ -302,9 +305,13 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
                 self.output_params['Total'] = {'x': self.x[key], 'y': total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
-                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1]}
-                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
-                self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
+                print(self.__R__[self.__mkeys__[0]], eirho)
+                xtmp, ytmp = create_steps(x=self.__R__[self.__mkeys__[0]], y=rho)
+                self.output_params['rho_r'] = {'x': xtmp, 'y': ytmp}
+                xtmp, ytmp = create_steps(x=self.__R__[self.__mkeys__[0]], y=eirho)
+                self.output_params['eirho_r'] = {'x': xtmp, 'y': ytmp}
+                xtmp, ytmp = create_steps(x=self.__R__[self.__mkeys__[0]],y=adensity)
+                self.output_params['adensity_r'] = {'x': xtmp, 'y': ytmp}
                 self.output_params['Structure_Factor'] = {'x': self.x[key], 'y': struct}
 
         else:
@@ -345,9 +352,12 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
                 self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
                 self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
                 self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
-                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1]}
-                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
-                self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
+                xtmp, ytmp = create_steps(x=self.__R__[self.__mkeys__[0]], y=rho)
+                self.output_params['rho_r'] = {'x': xtmp, 'y': ytmp}
+                xtmp, ytmp = create_steps(x=self.__R__[self.__mkeys__[0]], y=eirho)
+                self.output_params['eirho_r'] = {'x': xtmp, 'y': ytmp}
+                xtmp, ytmp = create_steps(x=self.__R__[self.__mkeys__[0]], y=adensity)
+                self.output_params['adensity_r'] = {'x': xtmp, 'y': ytmp}
                 self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
             sqf = self.output_params[self.term]['y']
         return sqf

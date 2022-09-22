@@ -66,13 +66,13 @@ def ellipsoid_ml_asaxs(q,Rx,RzRatio,rho,eirho,adensity,Nalf):
 class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, term='Total', dist='Gaussian', Energy=None, relement='Au', Nalf=200,
                  NrDep='False', norm=1.0, norm_err=0.01, Rsig=0.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0,
-                 SF='None', mpar={'Phase_1':{'Material': ['Au', 'H2O'],
+                 SF='None', mpar={'Phase1':{'Material': ['Au', 'H2O'],
                                              'Density': [19.32, 1.0],
                                              'VolFrac': [1.0, 1.0],
                                              'Rmoles': [1.0, 0.0],
                                              'R': [1.0, 0.0],
                                              'RzRatio':[1.0,1.0]},
-                                  'Phase_2': {'Material': ['Au', 'H2O'],
+                                  'Phase2': {'Material': ['Au', 'H2O'],
                                               'Density': [19.32, 1.0],
                                               'VolFrac': [1.0, 1.0],
                                               'Rmoles': [1.0, 0.0],
@@ -258,7 +258,7 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
         mkey='Solvent'
         key='VolFrac'
         for i in range(Nmpar):
-            self.params['__%s_%s_%03d'%(mkey,key,i)].set(expr='1.0-__Phase_1_VolFrac_%03d-__Phase_2_VolFrac_%03d'%(i,i))
+            self.params['__%s_%s_%03d'%(mkey,key,i)].set(expr='1.0-__Phase1_VolFrac_%03d-__Phase2_VolFrac_%03d'%(i,i))
 
 
     def y(self):
@@ -278,6 +278,10 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
                                                                  Energy=self.Energy,
                                                                  Rmoles=tuple(self.__Rmoles__[mkey]),
                                                                  NrDep=self.NrDep)
+        vf = np.array(self.__VolFrac__[mkey])
+        rho = vf * rho
+        eirho = vf * eirho
+        adensity = vf * adensity
         for mkey in self.__mkeys__:
             if mkey!='Solvent':
                 trho, teirho, tadensity, trhor, teirhor, tadensityr = calc_rho(R=tuple(self.__R__[mkey]),
@@ -348,11 +352,11 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
                 self.output_params['Total'] = {'x': self.x[key], 'y': total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
-                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]],rho)
+                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]][:-1],rho[:-1])
                 self.output_params['rho_r'] = {'x': xtmp, 'y': ytmp}
-                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]],eirho)
+                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]][:-1],eirho[:-1])
                 self.output_params['eirho_r'] = {'x': xtmp, 'y': ytmp}
-                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]], adensity)
+                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]][:-1], adensity[:-1])
                 self.output_params['adensity_r'] = {'x': xtmp, 'y': ytmp}
                 self.output_params['Structure_Factor'] = {'x': self.x[key], 'y': struct}
                 # xtmp,ytmp=create_steps(x=self.__R__[][:-1],y=self.__Rmoles__[:-1])
@@ -400,11 +404,11 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
                 self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
                 self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
                 self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
-                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]], rho)
+                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]][:-1], rho[:-1])
                 self.output_params['rho_r'] = {'x': xtmp, 'y': ytmp}
-                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]], eirho)
+                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]][:-1], eirho[:-1])
                 self.output_params['eirho_r'] = {'x': xtmp, 'y': ytmp}
-                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]], adensity)
+                xtmp, ytmp = create_steps(self.__R__[self.__mkeys__[0]][:-1], adensity[:-1])
                 self.output_params['adensity_r'] = {'x': xtmp, 'y': ytmp}
                 self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
                 # xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__Rmoles__[:-1])
