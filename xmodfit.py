@@ -233,14 +233,14 @@ class XModFit(QWidget):
     
     1. Read and fit multiple data files
     2. Already available functions are categorized as per the function types and techniques
-    3. Easy to add more catergories and user-defined functions
+    3. Easy to add more categories and user-defined functions
     4. Once the function is defined properly all the free and fitting parameters will be available within the GUI as tables.
     5. An in-built Function editor with a function template is provided.
     6. The function editor is enabled with python syntax highlighting.
     
     **Usage**
     
-    :class:`Fit_Widget` can be used as stand-alone python fitting package by running it in terminal as::
+    :class:`XModFit` can be used as stand-alone python fitting package by running it in terminal as::
     
         $python xmodfit.py
         
@@ -276,10 +276,12 @@ class XModFit(QWidget):
         self.paramDock=Dock('Parameters',size=(2,8),closable=False,hideTitle=False)
         self.plotDock=Dock('Data and Fit',size=(5,8),closable=False,hideTitle=False)
         self.fitResultDock=Dock('Fit Results',size=(5,8),closable=False,hideTitle=False)
+        self.metaDataDock=Dock('Meta Data',size=(5,8),closable=False,hideTitle=False)
         self.mainDock.addDock(self.dataDock)
         self.mainDock.addDock(self.fitDock,'bottom')
         self.mainDock.addDock(self.paramDock,'right')
-        self.mainDock.addDock(self.fitResultDock, 'right')
+        self.mainDock.addDock(self.metaDataDock, 'right')
+        self.mainDock.addDock(self.fitResultDock, 'above',self.metaDataDock)
         self.mainDock.addDock(self.plotDock,'above',self.fitResultDock)
 
         self.mainDock.addDock(self.funcDock,'above',self.dataDock)
@@ -288,6 +290,9 @@ class XModFit(QWidget):
         
         
         self.data={}
+        self.meta={}
+        self.xmin={}
+        self.xmax={}
         self.dlg_data={}
         self.plotColIndex={}
         self.plotColors={}
@@ -325,6 +330,7 @@ class XModFit(QWidget):
         self.create_dataDock()
         self.create_plotDock()
         self.create_fitResultDock()
+        self.create_metaDataDock()
         self.update_catagories()
         self.create_paramDock()
         # self.xminmaxChanged()
@@ -334,6 +340,7 @@ class XModFit(QWidget):
     def create_menus(self):
         self.fileMenu = self.menuBar.addMenu('&File')
         self.settingsMenu = self.menuBar.addMenu('&Settings')
+        self.dataMenu = self.menuBar.addMenu('&Data')
         self.toolMenu = self.menuBar.addMenu('&Tools')
         self.helpMenu = self.menuBar.addMenu('&Help')
 
@@ -344,6 +351,10 @@ class XModFit(QWidget):
         parFormat=QAction('&Parameter format',self)
         parFormat.triggered.connect(self.changeParFormat)
         self.settingsMenu.addAction(parFormat)
+
+        dataProcess=QAction('&Column Operatations',self)
+        dataProcess.triggered.connect(self.columnOperation)
+        self.dataMenu.addAction(dataProcess)
 
         about=QAction('&About',self)
         about.triggered.connect(self.aboutDialog)
@@ -387,6 +398,18 @@ class XModFit(QWidget):
             self.tApp_Clients[tmodule]=tclass(self)
             self.tApp_Clients[tmodule].setWindowTitle(tname[1:])
             self.tApp_Clients[tmodule].show()
+
+    def columnOperation(self):
+        for i, fname in enumerate(self.sfnames):
+            data_dlg = Data_Dialog(data=copy.copy(self.dlg_data[fname]), parent=self,
+                                   expressions=copy.copy(self.expressions[fname]),
+                                   plotIndex=copy.copy(self.plotColIndex[fname]),
+                                   colors=copy.copy(self.plotColors[fname]))
+            if i==0:
+                pass
+            else:
+                pass
+
 
 
 
@@ -723,10 +746,10 @@ class XModFit(QWidget):
             self.pfnames=self.pfnames+[txt.split('<>')[0]+':'+key for key in self.data[txt].keys()]
         if len(self.sfnames)>0:
             self.curDir = os.path.dirname(self.sfnames[-1].split('<>')[1])
-            xmin=np.min([np.min([np.min(self.data[key][k1]['x']) for k1 in self.data[key].keys()]) for key in self.sfnames])
-            xmax=np.max([np.max([np.max(self.data[key][k1]['x']) for k1 in self.data[key].keys()]) for key in self.sfnames])
+            xmin=np.min([self.xmin[key] for key in self.sfnames])
+            xmax=np.max([self.xmax[key] for key in self.sfnames])
             self.xminmaxLineEdit.setText('%0.3f:%0.3f'%(xmin,xmax))
-            self.xminmaxChanged()
+            # self.xminmaxChanged()
             # if len(self.data[self.sfnames[-1]].keys())>1:
             #     text='{'
             #     for key in self.data[self.sfnames[-1]].keys():
@@ -738,10 +761,10 @@ class XModFit(QWidget):
             self.fitButton.setEnabled(True)
         else:
             self.fitButton.setDisabled(True)
-            try:
-                self.update_plot()
-            except:
-                pass
+        try:
+            self.update_plot()
+        except:
+            pass
         # self.update_plot()
         # self.xChanged()
         self.errorAvailable = False
@@ -751,7 +774,8 @@ class XModFit(QWidget):
     def openDataDialog(self,item):
         fnum,fname=item.text().split('<>')
         self.dataListWidget.itemSelectionChanged.disconnect()
-        data_dlg=Data_Dialog(data=self.dlg_data[item.text()],parent=self,expressions=self.expressions[item.text()],plotIndex=self.plotColIndex[item.text()],colors=self.plotColors[item.text()])
+        data_dlg=Data_Dialog(data=copy.copy(self.dlg_data[item.text()]),parent=self,expressions=copy.copy(self.expressions[item.text()]),
+                             plotIndex=copy.copy(self.plotColIndex[item.text()]),colors=copy.copy(self.plotColors[item.text()]))
         data_dlg.setModal(True)
         data_dlg.closePushButton.setText('Cancel')
         data_dlg.tabWidget.setCurrentIndex(1)
@@ -764,9 +788,10 @@ class XModFit(QWidget):
                 self.plotColors[item.text()]=data_dlg.plotColors
                 self.dlg_data[item.text()]=copy.copy(data_dlg.data)
                 self.data[item.text()]=copy.copy(data_dlg.externalData)
-                self.expressions[item.text()]=data_dlg.expressions
+                self.expressions[item.text()]=copy.copy(data_dlg.expressions)
                 for key in self.data[item.text()].keys():
-                    self.plotWidget.add_data(self.data[item.text()][key]['x'],self.data[item.text()][key]['y'],yerr=self.data[item.text()][key]['yerr'],name='%s:%s'%(fnum,key),color=self.plotColors[item.text()][key])
+                    self.plotWidget.add_data(self.data[item.text()][key]['x'],self.data[item.text()][key]['y'],
+                                             yerr=self.data[item.text()][key]['yerr'],name='%s:%s'%(fnum,key),color=self.plotColors[item.text()][key])
             else:
                 text = '%s<>%s' % (fnum, newFname)
                 self.data[text] = self.data.pop(item.text())
@@ -774,38 +799,35 @@ class XModFit(QWidget):
                 item.setText(text)
                 self.dlg_data[text]=copy.copy(data_dlg.data)
                 self.data[text]=copy.copy(data_dlg.externalData)
-                self.plotColIndex[text]=data_dlg.plotColIndex
-                self.plotColors[text]=data_dlg.plotColors
-                self.expressions[text]=data_dlg.expressions
+                self.plotColIndex[text]=copy.copy(data_dlg.plotColIndex)
+                self.plotColors[text]=copy.copy(data_dlg.plotColors)
+                self.expressions[text]=copy.copy(data_dlg.expressions)
                 for key in self.data[text].keys():
-                    self.plotWidget.add_data(self.data[text][key]['x'], self.data[text][key]['y'], yerr=self.data[text][key][
-                    'yerr'],name='%s:%s'%(fnum,key),color=self.plotColors[text][key])
-        # self.sfnames = []
-        # self.pfnames = []
-        # for item in self.dataListWidget.selectedItems():
-        #     self.sfnames.append(item.text())
-        #     txt=item.text()
-        #     self.pfnames=self.pfnames+[txt.split('<>')[0]+':'+key for key in self.data[txt].keys()]
+                    self.plotWidget.add_data(self.data[text][key]['x'], self.data[text][key]['y'], yerr=self.data[text][key]['yerr'],
+                                             name='%s:%s'%(fnum,key),color=self.plotColors[text][key])
         self.dataFileSelectionChanged()
-        # self.xChanged()
         self.dataListWidget.itemSelectionChanged.connect(self.dataFileSelectionChanged)
-        #self.update_plot()
+
+
 
     def xminmaxChanged(self):
         try:
             xmin,xmax=self.xminmaxLineEdit.text().split(':')
-            self.xmin, self.xmax=float(xmin),float(xmax)
-            self.update_plot()
         except:
-            QMessageBox.warning(self,"Value Error", "Please supply the Xrange in this format:\n xmin:xmax",QMessageBox.Ok)
-    
+            QMessageBox.warning(self, "Value Error", "Please supply the Xrange in this format:\n xmin:xmax",
+                                QMessageBox.Ok)
+            return
+        for item in self.dataListWidget.selectedItems():
+            fname=item.text()
+            self.xmin[fname], self.xmax[fname]=float(xmin), float(xmax)
+        self.update_plot()
 
 
     def doFit(self, fit_method=None, emcee_walker=100, emcee_steps=100,
                        emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):
         self.fchanged=False
         self.tchisqr=1e30
-        self.xminmaxChanged()
+        # self.xminmaxChanged()
         if self.sfnames is None or self.sfnames==[]:
             QMessageBox.warning(self,'Data Error','Please select a dataset first before fitting',QMessageBox.Ok)
             return
@@ -894,7 +916,10 @@ class XModFit(QWidget):
                     self.emcee_steps=100
                     self.emcee_frac=self.emcee_burn/self.emcee_steps
                     self.showConfIntervalButton.setDisabled(True)
-                    self.fit.functionCalled.disconnect()
+                    try:
+                        self.fit.functionCalled.disconnect()
+                    except:
+                        pass
                     try:
                         self.sfitParamTableWidget.cellChanged.disconnect()
                         for i in range(self.mfitParamTabWidget.count()):
@@ -1105,10 +1130,11 @@ class XModFit(QWidget):
 
     def checkMinMaxErrLimits(self,fpar,vmin,vmax):
         self.fit.fit_params[fpar].vary=False
+        xmin,xmax=self.xmin[self.sfnames[-1]],self.xmax[self.sfnames[-1]]
         for key in self.minimafitparameters:  # Putting back the minima parameters
             self.fit.fit_params[key].value = self.minimafitparameters[key].value
         self.fit.fit_params[fpar].value = vmin
-        fit_report, mesg = self.fit.perform_fit(self.xmin, self.xmax, fit_scale=self.fit_scale,
+        fit_report, mesg = self.fit.perform_fit(xmin, xmax, fit_scale=self.fit_scale,
                                                 fit_method=self.fit_method,
                                                 maxiter=int(self.fitIterationLineEdit.text()))
         if self.fit.result.redchi>self.targetchisqr or self.fit.fit_params[fpar].min>vmin:
@@ -1118,7 +1144,7 @@ class XModFit(QWidget):
         for key in self.minimafitparameters:  # Putting back the minima parameters
             self.fit.fit_params[key].value = self.minimafitparameters[key].value
         self.fit.fit_params[fpar].value = vmax
-        fit_report, mesg = self.fit.perform_fit(self.xmin, self.xmax, fit_scale=self.fit_scale,
+        fit_report, mesg = self.fit.perform_fit(xmin, xmax, fit_scale=self.fit_scale,
                                                 fit_method=self.fit_method,
                                                 maxiter=int(self.fitIterationLineEdit.text()))
         if self.fit.result.redchi>self.targetchisqr or self.fit.fit_params[fpar].max<vmax:
@@ -1130,6 +1156,7 @@ class XModFit(QWidget):
 
 
     def calcErrPushButtonClicked(self,row,fpar):
+        xmin, xmax = self.xmin[self.sfnames[-1]], self.xmax[self.sfnames[-1]]
         self.stopCalc=False
         for key in self.minimafitparameters:
             self.fit.fit_params[key].value = self.minimafitparameters[key].value
@@ -1140,7 +1167,7 @@ class XModFit(QWidget):
         Nval = int(self.confIntervalWidget.fitParamTableWidget.item(row, 4).text())
         self.errProgressBars[fpar].setMaximum(Nval)
         #Getting the chi-sqr value at the minima position keeping the value of fpar fixed at the minima position
-        fit_report, mesg =self.fit.perform_fit(self.xmin, self.xmax, fit_scale=self.fit_scale, fit_method=self.fit_method,
+        fit_report, mesg =self.fit.perform_fit(xmin, xmax, fit_scale=self.fit_scale, fit_method=self.fit_method,
                              maxiter=int(self.fitIterationLineEdit.text()))
         self.setTargetChiSqr()
         redchi_r.append([self.fit.fit_params[fpar].value, self.fit.result.redchi])
@@ -1164,7 +1191,7 @@ class XModFit(QWidget):
                 for key in self.minimafitparameters: # Putting back the minima parameters
                     self.fit.fit_params[key].value = self.minimafitparameters[key].value
                 self.fit.fit_params[fpar].value=parvalue
-                fit_report, mesg = self.fit.perform_fit(self.xmin, self.xmax, fit_scale=self.fit_scale,
+                fit_report, mesg = self.fit.perform_fit(xmin, xmax, fit_scale=self.fit_scale,
                                                         fit_method=self.fit_method,
                                                         maxiter=int(self.fitIterationLineEdit.text()))
                 if self.fit.result.success:
@@ -1187,7 +1214,7 @@ class XModFit(QWidget):
                 for key in self.minimafitparameters: # Putting back the minima parameters
                     self.fit.fit_params[key].value = self.minimafitparameters[key].value
                 self.fit.fit_params[fpar].value = parvalue
-                fit_report, mesg = self.fit.perform_fit(self.xmin, self.xmax, fit_scale=self.fit_scale,
+                fit_report, mesg = self.fit.perform_fit(xmin, xmax, fit_scale=self.fit_scale,
                                                         fit_method=self.fit_method,
                                                         maxiter=int(self.fitIterationLineEdit.text()))
                 if self.fit.result.success:
@@ -1260,7 +1287,7 @@ class XModFit(QWidget):
         for key in self.minimafitparameters:
             self.fit.fit_params[key].value = self.minimafitparameters[key].value
         self.fit.fit_params[fpar].vary = True
-        fit_report, mesg = self.fit.perform_fit(self.xmin, self.xmax, fit_scale=self.fit_scale,
+        fit_report, mesg = self.fit.perform_fit(xmin, xmax, fit_scale=self.fit_scale,
                                                 fit_method=self.fit_method,
                                                 maxiter=int(self.fitIterationLineEdit.text()))
 
@@ -1620,7 +1647,8 @@ class XModFit(QWidget):
         
     def runFit(self,  emcee_walker=100, emcee_steps=100, emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):
         self.start_time=time.time()
-        self.fit_report,self.fit_message=self.fit.perform_fit(self.xmin,self.xmax,fit_scale=self.fit_scale, fit_method=self.fit_method,
+        xmin, xmax = self.xmin[self.sfnames[-1]], self.xmax[self.sfnames[-1]]
+        self.fit_report,self.fit_message=self.fit.perform_fit(xmin,xmax,fit_scale=self.fit_scale, fit_method=self.fit_method,
                                                               maxiter=int(self.fitIterationLineEdit.text()),
                                                               emcee_walker=emcee_walker, emcee_steps=emcee_steps,
                                                               emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_burn=emcee_burn,
@@ -1940,18 +1968,28 @@ class XModFit(QWidget):
                     self.plotColIndex[data_key]=data_dlg.plotColIndex
                     self.plotColors[data_key]=data_dlg.plotColors
                     self.data[data_key]=data_dlg.externalData
+                    self.meta[data_key]=data_dlg.externalMeta
                     self.expressions[data_key]=data_dlg.expressions
                     for key in self.data[data_key].keys():
                         self.plotWidget.add_data(self.data[data_key][key]['x'],self.data[data_key][key]['y'],\
                                                  yerr=self.data[data_key][key]['yerr'],name='%d:%s'%(self.fileNumber,key),color=self.data[data_key][key]['color'])
                     self.dataListWidget.addItem(data_key)
                     self.fileNames[self.fileNumber]=fname
-                    self.fileNumber+=1
+                    self.xmin[data_key] = np.min([np.min(self.data[data_key][k1]['x']) for k1 in self.data[data_key].keys()])
+                    self.xmax[data_key] = np.max([np.max(self.data[data_key][k1]['x']) for k1 in self.data[data_key].keys()])
+
+                self.fileNumber+=1
             #     else:
             #         QMessageBox.warning(self,'Import Error','Data file has been imported before.\
             #          Please remove the data file before importing again')
             # #except:
             # #    QMessageBox.warning(self,'File error','The file(s) do(es) not look like a data file. Please format it in x,y[,yerr] column format',QMessageBox.Ok)
+            self.metaXAxisComboBox.clear()
+            self.metaYAxisComboBox.clear()
+            self.metaNormAxisComboBox.clear()
+            self.metaXAxisComboBox.addItems(['None']+list(self.meta[data_key].keys()))
+            self.metaYAxisComboBox.addItems(['None']+list(self.meta[data_key].keys()))
+            self.metaNormAxisComboBox.addItems(['None']+list(self.meta[data_key].keys()))
         self.dataListWidget.clearSelection()
         self.dataListWidget.itemSelectionChanged.connect(self.dataFileSelectionChanged)
         self.dataListWidget.setCurrentRow(self.fileNumber-1)
@@ -1969,15 +2007,19 @@ class XModFit(QWidget):
         except:
             pass
         for item in self.dataListWidget.selectedItems():
-            fnum,fname=item.text().split('<>')
+            txt=item.text()
+            fnum,fname=txt.split('<>')
             self.dataListWidget.takeItem(self.dataListWidget.row(item))
-            for key in self.data[item.text()].keys():
+            for key in self.data[txt].keys():
                 self.plotWidget.remove_data(['%s:%s'%(fnum,key)])
-            del self.data[item.text()]
-            del self.expressions[item.text()]
-            del self.plotColIndex[item.text()]
-            del self.plotColors[item.text()]
-            del self.dlg_data[item.text()]
+            del self.data[txt]
+            del self.meta[txt]
+            del self.xmin[txt]
+            del self.xmax[txt]
+            del self.expressions[txt]
+            del self.plotColIndex[txt]
+            del self.plotColors[txt]
+            del self.dlg_data[txt]
 
         if self.dataListWidget.count()>0:
             self.dataFileSelectionChanged()
@@ -2853,6 +2895,105 @@ class XModFit(QWidget):
         self.fitResultsLayoutWidget.addWidget(self.fitResultTextEdit, colspan=1)
         self.fitResultDock.addWidget(self.fitResultsLayoutWidget)
 
+    def create_metaDataDock(self):
+        """
+        Creates the metaPlotDataDock
+        """
+        self.metaDataPlotLayout = pg.LayoutWidget(self)
+        row = 0
+        col = 0
+        xAxisLabel = QLabel('X-Axis')
+        self.metaDataPlotLayout.addWidget(xAxisLabel, row=row, col=col)
+        col += 1
+        self.metaXAxisComboBox = QComboBox()
+        self.metaXAxisComboBox.currentIndexChanged.connect(self.metaDataChanged)
+        self.metaDataPlotLayout.addWidget(self.metaXAxisComboBox, row=row, col=col)
+        col += 2
+        yAxisLabel = QLabel('Y-Axis')
+        self.metaDataPlotLayout.addWidget(yAxisLabel, row=row, col=col)
+        col += 1
+        self.metaYAxisComboBox = QComboBox()
+        self.metaYAxisComboBox.currentIndexChanged.connect(self.metaDataChanged)
+        self.metaDataPlotLayout.addWidget(self.metaYAxisComboBox, row=row, col=col)
+        col += 2
+        normLabel = QLabel('Normalized by')
+        self.metaDataPlotLayout.addWidget(normLabel, row=row, col=col)
+        col += 1
+        self.metaNormAxisComboBox = QComboBox()
+        self.metaNormAxisComboBox.currentIndexChanged.connect(self.metaDataChanged)
+        self.metaDataPlotLayout.addWidget(self.metaNormAxisComboBox, row=row, col=col)
+
+        row += 1
+        col = 0
+        self.metaDataPlotWidget = PlotWidget(self)
+        self.metaDataPlotLayout.addWidget(self.metaDataPlotWidget, row=row, col=col, colspan=8)
+
+        row += 1
+        col=6
+        self.saveSelectedMetaDataPushButton = QPushButton('Save Selected')
+        self.metaDataPlotLayout.addWidget(self.saveSelectedMetaDataPushButton, row=row, col=col, colspan=2)
+        self.saveSelectedMetaDataPushButton.clicked.connect(self.saveSelectedMetaData)
+
+        # col = 6
+        # self.saveAllMetaDataPushButton = QPushButton('Save All')
+        # self.metaDataPlotLayout.addWidget(self.saveAllMetaDataPushButton, row=row, col=col, colspan=2)
+        # self.saveAllMetaDataPushButton.clicked.connect(self.saveAllMetaData)
+        #
+        self.metaDataDock.addWidget(self.metaDataPlotLayout)
+
+    def metaDataChanged(self):
+        xaxis = self.metaXAxisComboBox.currentText()
+        yaxis = self.metaYAxisComboBox.currentText()
+        normaxis = self.metaNormAxisComboBox.currentText()
+        if xaxis!='None' and yaxis!='None':
+            x=[]
+            y=[]
+            norm=[]
+            for key in self.sfnames:
+                x.append(self.meta[key][xaxis])
+                y.append(self.meta[key][yaxis])
+                if normaxis!='None':
+                    norm.append(self.meta[key][normaxis])
+                else:
+                    norm.append(1.0)
+            x=np.array(x)
+            y=np.array(y)
+            norm=np.array(norm)
+            norm=norm[x.argsort()]
+            self.metay = y[x.argsort()]/norm
+            self.metax=x[x.argsort()]
+            self.metaDataPlotWidget.add_data(self.metax,self.metay)
+
+    def saveSelectedMetaData(self):
+        fname=QFileDialog.getSaveFileName(self,'Save Meta-data as',directory=self.curDir,filter='Text Files (*.txt)')[0]
+        fname=os.path.splitext(fname)[0]+'.txt'
+        header='Meta-data file saved on %s\n'%time.asctime()
+        header+='col_names=["%s", "%s"]\n'%(self.metaXAxisComboBox.currentText(),self.metaYAxisComboBox.currentText())
+        np.savetxt(fname,np.vstack((self.metax,self.metay)).T,header=header)
+
+    # def saveAllMetaData(self):
+    #     fname=QFileDialog.getSaveFileName(self,'Save Meta-data as',directory=self.curDir,filter='Text Files (*.txt)')[0]
+    #     fname=os.path.splitext(fname)[0]+'.txt'
+    #     header='Meta-data file saved on %s\n'%time.asctime()
+    #     header+='col_names=['
+    #     keys=self.meta[self.sfnames[-1]].keys()
+    #     data=[]
+    #     for fname in self.sfnames:
+    #         tdata=[]
+    #         tkeys=[]
+    #         for key in keys:
+    #             tdat=self.meta[fname][key]
+    #             if type(tdat)== int or float:
+    #                 tdata.append(tdat)
+    #                 tkeys.append(key)
+    #         data.append(tdata)
+    #     for key in tkeys:
+    #         header+='"%s", '%key
+    #     header=header[:-2]+']\n'
+    #     data=np.array(data)
+    #     np.savetxt(fname,data,header=header)
+
+
     def update_catagories(self):
         """
         Reads all the modules in the the Functions directory and populates the funcListWidget
@@ -3472,18 +3613,20 @@ class XModFit(QWidget):
                 for key in self.data[self.sfnames[-1]].keys():
                     x[key] = self.data[self.sfnames[-1]][key]['x']
                     y[key] = self.data[self.sfnames[-1]][key]['y']
-                    y[key] = y[key][np.argwhere(x[key] >= self.xmin)[0][0]:np.argwhere(x[key] <= self.xmax)[-1][0]+1]
+                    xmin,xmax=self.xmin[self.sfnames[-1]],self.xmax[self.sfnames[-1]]
+                    y[key] = y[key][np.argwhere(x[key] >= xmin)[0][0]:np.argwhere(x[key] <= xmax)[-1][0]+1]
                     yerr[key] = self.data[self.sfnames[-1]][key]['yerr']
-                    yerr[key] = yerr[key][np.argwhere(x[key] >= self.xmin)[0][0]:np.argwhere(x[key] <= self.xmax)[-1][0]+1]
-                    x[key] = x[key][np.argwhere(x[key]>=self.xmin)[0][0]:np.argwhere(x[key]<=self.xmax)[-1][0]+1]
+                    yerr[key] = yerr[key][np.argwhere(x[key] >= xmin)[0][0]:np.argwhere(x[key] <= xmax)[-1][0]+1]
+                    x[key] = x[key][np.argwhere(x[key]>=xmin)[0][0]:np.argwhere(x[key]<=xmax)[-1][0]+1]
             else:
                 key = list(self.data[self.sfnames[-1]].keys())[0]
+                xmin, xmax = self.xmin[self.sfnames[-1]], self.xmax[self.sfnames[-1]]
                 x = self.data[self.sfnames[-1]][key]['x']
                 y = self.data[self.sfnames[-1]][key]['y']
-                y = y[np.argwhere(x >= self.xmin)[0][0]:np.argwhere(x <= self.xmax)[-1][0]+1]
+                y = y[np.argwhere(x >= xmin)[0][0]:np.argwhere(x <= xmax)[-1][0]+1]
                 yerr = self.data[self.sfnames[-1]][key]['yerr']
-                yerr = yerr[np.argwhere(x >= self.xmin)[0][0]:np.argwhere(x <= self.xmax)[-1][0]+1]
-                x = x[np.argwhere(x>=self.xmin)[0][0]:np.argwhere(x<=self.xmax)[-1][0]+1]
+                yerr = yerr[np.argwhere(x >= xmin)[0][0]:np.argwhere(x <= xmax)[-1][0]+1]
+                x = x[np.argwhere(x>=xmin)[0][0]:np.argwhere(x<=xmax)[-1][0]+1]
 
         if len(self.funcListWidget.selectedItems())>0:
             try:

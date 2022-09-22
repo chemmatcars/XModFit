@@ -3,6 +3,7 @@ from scipy.interpolate import interp1d
 from numpy.linalg import inv
 from functools import lru_cache
 from Chemical_Formula import Chemical_Formula
+import copy
 
 cf=Chemical_Formula(formula='Au')
 
@@ -220,11 +221,14 @@ def calc_rho(R=(1.0, 0.0), material=('Au', 'H2O'), relement='Au', density=(19.3,
         return np.array(rho), np.array(eirho), np.array(adensity), np.array(rhor), np.array(eirhor), np.array(adensityr)
 
 def create_steps(x=[1],y=[1]):
+    x1=copy.copy(x)
+    y1=copy.copy(y)
+    x1[-1]=sum(x1)
     res=np.array([[0.0,0.0]])
     r1=res[0,0]
-    for i,r in enumerate(x):
+    for i,r in enumerate(x1):
         r2=r1+r
-        res=np.vstack((res,np.array([[r1,y[i]],[r2,y[i]]])))
+        res=np.vstack((res,np.array([[r1,y1[i]],[r2,y1[i]]])))
         r1=r2
-    res=np.vstack((res,np.array([[r1,0],[r1+x[-1],0]])))
+    #res=np.vstack((res,np.array([[r1,y[-1]],[r1+x[-1],y[-1]]])))
     return res[:,0],res[:,1]

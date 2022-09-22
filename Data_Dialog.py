@@ -81,6 +81,7 @@ class Data_Dialog(QDialog):
             self.addRowPushButton.setEnabled(False)
             self.removeRowsPushButton.setEnabled(False)
             self.removeColumnPushButton.setEnabled(False)
+        self.oldData = copy.copy(self.data)
         if self.data is not None:
             self.setMeta2Table()
             self.setData2Table()
@@ -144,6 +145,7 @@ class Data_Dialog(QDialog):
                    
     def closeWidget(self):
         self.acceptData=False
+        self.data=copy.copy(self.oldData)
         self.reject()
         
     def acceptWidget(self):
@@ -301,7 +303,7 @@ class Data_Dialog(QDialog):
                             self.data['data'][colname]=eval(expr)
                         except:
                             try:
-                                expr=self.insertColDialog.colExprTextEdit.toPlainText()
+                                expr=self.insertColDialog.colExprTextEdit.toPlainText().strip()
                                 cexpr=expr.replace('col',"self.data['data']")
                                 self.data['data'][colname]=eval(cexpr)
                                 self.data['meta']['col_names'].append(colname)
@@ -768,12 +770,13 @@ class Data_Dialog(QDialog):
         #self.plotColIndex=[self.plotSetupTableWidget.cellWidget(0,i).currentIndex() for i in range(1,4)]
         self.plotColIndex = {}
         self.externalData = {}
+        self.externalMeta = self.data['meta']
         self.plotColors={}
         for i in range(self.plotSetupTableWidget.rowCount()):
             key=self.plotSetupTableWidget.cellWidget(i, 2).currentText()
             self.plotColIndex[key] = [self.plotSetupTableWidget.cellWidget(i, j).currentIndex() for j in range(1, 4)]
             self.plotColors[key]=self.plotSetupTableWidget.cellWidget(i,4).color()
-            self.externalData[key]=copy.copy(self.data['meta'])
+            self.externalData[key]={}
             self.externalData[key]['x']=copy.copy(self.data['data'][self.plotSetupTableWidget.cellWidget(i,1).currentText()].values)
             self.externalData[key]['y']=copy.copy(self.data['data'][self.plotSetupTableWidget.cellWidget(i,2).currentText()].values)
             if self.plotSetupTableWidget.cellWidget(i,3).currentText()=='None':
