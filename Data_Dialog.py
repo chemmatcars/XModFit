@@ -378,6 +378,19 @@ class Data_Dialog(QDialog):
         """
         colIndexes=[index.column() for index in self.dataTableWidget.selectionModel().selectedColumns()]
         colIndexes.sort(reverse=True)
+        # Checking whether the columns for deletion are used in the plotSetupTable Widget
+        check=False
+        for key in self.plotColIndex.keys():
+            pi=copy.copy(self.plotColIndex[key])
+            pi[2]=pi[2]-1
+            res = any([item in pi for item in colIndexes])
+            check=check or res
+        if check:
+            QMessageBox.warning(self, 'Remove Warning',
+                                'Cannot remove these columns because because they are being used in the plotSetup.',
+                                QMessageBox.Ok)
+            return
+
         if self.dataTableWidget.columnCount()-len(colIndexes)>=2 or self.plotSetupTableWidget.rowCount()==0:
             for index in colIndexes:
                 colname=self.data['meta']['col_names'][index]
@@ -400,7 +413,7 @@ class Data_Dialog(QDialog):
                 self.removeRowsPushButton.setEnabled(False)
                 self.removeColumnPushButton.setEnabled(False)
         else:
-            QMessageBox.warning(self,'Remove Error','Cannot remove these many columns because Data Dialog needs to have atleast two columns',QMessageBox.Ok)
+            QMessageBox.warning(self,'Remove Warning','Cannot remove these many columns because Data Dialog needs to have atleast two columns.',QMessageBox.Ok)
                 
     def removeDataRows(self):
         rowIndexes=[index.row() for index in self.dataTableWidget.selectionModel().selectedRows()]
@@ -598,14 +611,20 @@ class Data_Dialog(QDialog):
         self.ylabel=[]
         for row in range(self.plotSetupTableWidget.rowCount()):
             for i in range(1,3):
-                self.plotSetupTableWidget.cellWidget(row,i).currentIndexChanged.disconnect()
+                try:
+                    self.plotSetupTableWidget.cellWidget(row,i).currentIndexChanged.disconnect()
+                except:
+                    pass
                 self.plotSetupTableWidget.cellWidget(row,i).clear()
                 self.plotSetupTableWidget.cellWidget(row,i).addItems(columns)
                 self.plotSetupTableWidget.cellWidget(row,i).setCurrentIndex(i-1)
                 self.plotSetupTableWidget.cellWidget(row,i).currentIndexChanged.connect(self.updateCellData)
             self.xlabel.append('[%s]'%self.plotSetupTableWidget.cellWidget(row,1).currentText())
             self.ylabel.append('[%s]'%self.plotSetupTableWidget.cellWidget(row,2).currentText())
-            self.plotSetupTableWidget.cellWidget(row,3).currentIndexChanged.disconnect()
+            try:
+                self.plotSetupTableWidget.cellWidget(row,3).currentIndexChanged.disconnect()
+            except:
+                pass
             self.plotSetupTableWidget.cellWidget(row,3).clear()
             self.plotSetupTableWidget.cellWidget(row,3).addItems(['None']+columns)
             self.plotSetupTableWidget.cellWidget(row,3).setCurrentIndex(0)
