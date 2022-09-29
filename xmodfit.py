@@ -808,13 +808,20 @@ class XModFit(QWidget):
     def updateData(self):
         fnames=[self.dataListWidget.item(i).text() for i in range(self.dataListWidget.count())]
         self.plotWidget.remove_data(datanames=self.pfnames)
-        for fname in fnames:
+        progressDlg=QProgressDialog('Updating all the data. Please wait...','Cancel',-1,len(fnames)-1)
+        progressDlg.setAutoClose(True)
+        progressDlg.forceShow()
+        for num, fname in enumerate(fnames):
+            if progressDlg.wasCanceled():
+                progressDlg.setValue(len(fnames)-1)
+                progressDlg.close()
+                break
             fnum,_= fname.split('<>')
             data_dlg = Data_Dialog(data=copy.copy(self.dlg_data[fname]), parent=self,
                                    expressions=copy.copy(self.expressions[fname]),
                                    plotIndex=copy.copy(self.plotColIndex[fname]),
                                    colors=copy.copy(self.plotColors[fname]))
-            data_dlg.hide()
+            data_dlg.closePushButton.setText('Cancel')
             data_dlg.setModal(True)
             data_dlg.accept()
             self.plotColIndex[fname] = data_dlg.plotColIndex
@@ -826,6 +833,7 @@ class XModFit(QWidget):
                 self.plotWidget.add_data(self.data[fname][key]['x'], self.data[fname][key]['y'], \
                                          yerr=self.data[fname][key]['yerr'], name='%s:%s' % (fnum, key),
                                          color=self.data[fname][key]['color'])
+            progressDlg.setValue(num)
 
         self.dataFileSelectionChanged()
 
@@ -1227,7 +1235,7 @@ class XModFit(QWidget):
                                 (self.fit.result.params[key].value,
                                  self.fit.result.params[key].stderr))
                             self.meta[fname][key]=self.fit.result.params[key].value
-                            self.meta[fname][key+'_stderr']=self.fit.result.params[key].value
+                            self.meta[fname][key+'_stderr']=self.fit.result.params[key].stderr
                         except:
                             pass
                     self.sfitParamTableWidget.resizeRowsToContents()
@@ -1360,7 +1368,10 @@ class XModFit(QWidget):
                         pass
                     item.setSelected(False)
                     self.dataListWidget.itemSelectionChanged.connect(self.dataFileSelectionChanged)
-        self.metaDataInfoUpdated(fname)
+        try:
+            self.metaDataInfoUpdated(fname)
+        except:
+            pass
         self.sfitParamTableWidget.cellChanged.connect(self.sfitParamChanged)
         for i in range(self.mfitParamTabWidget.count()):
             mkey=self.mfitParamTabWidget.tabText(i)
@@ -2322,7 +2333,6 @@ class XModFit(QWidget):
             self.curDir=os.path.dirname(fnames[0])
             importProgressDlg = QProgressDialog('Importing multiple data...', 'Abort Import', -1, len(fnames) - 1,
                                                 parent=self)
-            importProgressDlg.setAutoClose(True)
             if len(fnames)>1:
                 importProgressDlg.setModal(True)
                 importProgressDlg.forceShow()
@@ -2361,7 +2371,7 @@ class XModFit(QWidget):
 
                 self.fileNumber+=1
                 QApplication.processEvents()
-
+            importProgressDlg.close()
             #     else:
             #         QMessageBox.warning(self,'Import Error','Data file has been imported before.\
             #          Please remove the data file before importing again')
@@ -3369,12 +3379,12 @@ class XModFit(QWidget):
             if self.metaYErrAxisComboBox.currentText()!='None':
                 meta['col_names'] = [self.metaXAxisComboBox.currentText(), self.metaYAxisComboBox.currentText(),
                                      self.metaYErrAxisComboBox.currentText()]
-                data = {'data': pd.DataFrame(list(zip(self.metax, self.metay, self.metayerr)), columns=['x', 'y', 'yerr']),
+                data = {'data': pd.DataFrame(list(zip(self.metax, self.metay, self.metayerr)), columns=meta['col_names']),
                         'meta': meta}
             else:
                 meta['col_names'] = [self.metaXAxisComboBox.currentText(), self.metaYAxisComboBox.currentText()]
                 data = {
-                    'data': pd.DataFrame(list(zip(self.metax, self.metay)), columns=['x', 'y']),
+                    'data': pd.DataFrame(list(zip(self.metax, self.metay)), columns=meta['col_names']),
                     'meta': meta}
             data_dlg = Data_Dialog(data=data, parent=self, expressions={},
                                    plotIndex=None, colors=None)

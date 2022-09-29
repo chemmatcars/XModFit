@@ -58,7 +58,7 @@ class Data_Dialog(QDialog):
         self.plotWidget=PlotWidget(parent=self,matplotlib=matplotlib)
         self.plotTab=self.tabWidget.addTab(self.plotWidget,'Plots')
         self.tabWidget.setCurrentIndex(0)
-        self.show()
+        #self.show()
         self.fileWatcher=QFileSystemWatcher()
         self.fileWatcher.fileChanged.connect(self.fileUpdated)
         self.cwd=None
