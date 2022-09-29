@@ -663,7 +663,7 @@ class XModFit(QWidget):
         
         self.dataLayoutWidget.nextRow()
         self.dataListWidget=QListWidget()
-        self.dataListWidget.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        self.dataListWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.dataListWidget.itemSelectionChanged.connect(self.dataFileSelectionChanged)
         self.dataListWidget.itemDoubleClicked.connect(self.openDataDialog)
         self.dataLayoutWidget.addWidget(self.dataListWidget,colspan=2)
@@ -734,7 +734,9 @@ class XModFit(QWidget):
         for item in self.dataListWidget.selectedItems():
             self.sfnames.append(item.text())
             txt=item.text()
-            self.pfnames=self.pfnames+[txt.split('<>')[0]+':'+key for key in self.data[txt].keys()]
+            fnum=txt.split('<>')[0]
+            self.pfnames=self.pfnames+[fnum+':'+key for key in self.data[txt].keys()]
+            self.meta[txt]['File Number'] = int(fnum)
         if len(self.sfnames)>0:
             self.metaDataInfoUpdated(self.sfnames[-1])
             self.curDir = os.path.dirname(self.sfnames[-1].split('<>')[1])
