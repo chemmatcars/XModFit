@@ -2348,11 +2348,12 @@ class XModFit(QWidget):
 
                 data_key=str(self.fileNumber)+'<>'+fname
                 data_dlg=Data_Dialog(fname=fname,parent=self)
-                #data_dlg.setModal(True)
+                data_dlg.setModal(True)
                 data_dlg.closePushButton.setText('Cancel')
                 if len(fnames)>1:
                     data_dlg.accept()
                 else:
+                    #data_dlg.show()
                     data_dlg.exec_()
                 if data_dlg.acceptData:
                     self.dlg_data[data_key]=data_dlg.data

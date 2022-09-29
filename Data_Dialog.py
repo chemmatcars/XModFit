@@ -290,7 +290,8 @@ class Data_Dialog(QDialog):
             row,col=self.data['data'].shape
             if colName is None:
                 colName='Col_%d'%(col)
-            self.insertColDialog=InsertCol_Dialog(colName=colName,minCounter=1,maxCounter=row,expr=expr)
+            self.insertColDialog=InsertCol_Dialog(colName=colName,minCounter=1,maxCounter=row,expr=expr,parent=self)
+            self.insertColDialog.setModal(True)
             if self.insertColDialog.exec_():
                 imin=eval(self.insertColDialog.minCounterLineEdit.text())
                 imax=eval(self.insertColDialog.maxCounterLineEdit.text())
@@ -817,6 +818,7 @@ if __name__=='__main__':
         fname=None
     #data={'meta':{'a':1,'b':2},'data':pd.DataFrame({'x':arange(1000),'y':arange(1000),'y_err':arange(1000)})}
     w=Data_Dialog(fname=fname,data=None,matplotlib=False)
+    w.show()
     w.resize(600,400)
 #    w.showFullScreen()
     sys.exit(app.exec_())
