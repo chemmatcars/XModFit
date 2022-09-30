@@ -632,9 +632,11 @@ class Data_Dialog(QDialog):
             self.plotSetupTableWidget.cellWidget(row,3).currentIndexChanged.connect(self.updateCellData)
             self.plotSetupTableWidget.setCurrentCell(row,3)
             color=self.plotSetupTableWidget.cellWidget(row,4).color()
-            self.plotSetupTableWidget.setCellWidget(row, 4, pg.ColorButton(color=color))
+            self.plotSetupTableWidget.setCellWidget(row, 4, pg.ColorButton(parent=self,color=color))
             self.plotSetupTableWidget.cellWidget(row, 4).sigColorChanging.connect(self.updateCellData)
             self.plotSetupTableWidget.cellWidget(row, 4).sigColorChanged.connect(self.updateCellData)
+            self.plotSetupTableWidget.cellWidget(row, 4).colorDialog.setParent(self.plotSetupTableWidget.cellWidget(row, 4))
+            self.plotSetupTableWidget.cellWidget(row, 4).colorDialog.setModal(True)
             self.updatePlotData(row,i)
         self.plotSetupTableWidget.resizeRowsToContents()
         self.plotSetupTableWidget.resizeColumnsToContents()
@@ -687,7 +689,9 @@ class Data_Dialog(QDialog):
             self.plotSetupTableWidget.cellWidget(row,3).addItems(['None']+columns)
             if color is None:
                 color=next(self.colcycler)#array([random.randint(200, high=255),0,0])
-            self.plotSetupTableWidget.setCellWidget(row, 4,pg.ColorButton(color=color))
+            self.plotSetupTableWidget.setCellWidget(row, 4,pg.ColorButton(parent=self,color=color))
+            self.plotSetupTableWidget.cellWidget(row, 4).colorDialog.setParent(self.plotSetupTableWidget.cellWidget(row, 4))
+            self.plotSetupTableWidget.cellWidget(row, 4).colorDialog.setModal(True)
             self.plotSetupTableWidget.cellWidget(row, 4).sigColorChanging.connect(self.updateCellData)
             self.plotSetupTableWidget.cellWidget(row, 4).sigColorChanged.connect(self.updateCellData)
             if plotIndex is not None:
