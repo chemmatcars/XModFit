@@ -755,10 +755,10 @@ class XModFit(QWidget):
             self.fitButton.setEnabled(True)
         else:
             self.fitButton.setDisabled(True)
-        try:
-            self.update_plot()
-        except:
-            pass
+        # try:
+        self.update_plot()
+        # except:
+        #     pass
         # self.update_plot()
         # self.xChanged()
         self.errorAvailable = False
@@ -766,12 +766,12 @@ class XModFit(QWidget):
         self.calcConfInterButton.setDisabled(True)
             
     def openDataDialog(self,item):
-        fnum,fname=item.text().split('<>')
         try:
             self.dataListWidget.itemSelectionChanged.disconnect()
         except:
             pass
-        tfname=item.text()
+        tfname = item.text()
+        fnum, fname = tfname.split('<>')
         data_dlg=Data_Dialog(data=copy.copy(self.dlg_data[tfname]),parent=self,expressions=copy.copy(self.expressions[tfname]),
                              plotIndex=copy.copy(self.plotColIndex[tfname]),colors=copy.copy(self.plotColors[tfname]))
         data_dlg.setModal(True)
@@ -790,6 +790,10 @@ class XModFit(QWidget):
                 for key in self.data[tfname].keys():
                     self.plotWidget.add_data(self.data[tfname][key]['x'],self.data[tfname][key]['y'],
                                              yerr=self.data[tfname][key]['yerr'],name='%s:%s'%(fnum,key),color=self.plotColors[tfname][key])
+                self.xmin[tfname] = np.min(
+                    [np.min(self.data[tfname][k1]['x']) for k1 in self.data[tfname].keys()])
+                self.xmax[tfname] = np.max(
+                    [np.max(self.data[tfname][k1]['x']) for k1 in self.data[tfname].keys()])
             else:
                 text = '%s<>%s' % (fnum, newFname)
                 self.data[text] = self.data.pop(tfname)
@@ -803,6 +807,10 @@ class XModFit(QWidget):
                 for key in self.data[text].keys():
                     self.plotWidget.add_data(self.data[text][key]['x'], self.data[text][key]['y'], yerr=self.data[text][key]['yerr'],
                                              name='%s:%s'%(fnum,key),color=self.plotColors[text][key])
+                self.xmin[text] = np.min(
+                    [np.min(self.data[text][k1]['x']) for k1 in self.data[text].keys()])
+                self.xmax[text] = np.max(
+                    [np.max(self.data[text][k1]['x']) for k1 in self.data[text].keys()])
         self.dataFileSelectionChanged()
         self.dataListWidget.itemSelectionChanged.connect(self.dataFileSelectionChanged)
         self.consoleWidget.push_vars({'data': self.dlg_data})
