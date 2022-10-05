@@ -770,6 +770,10 @@ class XModFit(QWidget):
             self.dataListWidget.itemSelectionChanged.disconnect()
         except:
             pass
+        if len(self.dataListWidget.selectedItems())>1:
+            for titem in self.dataListWidget.selectedItems():
+                if titem.text()!=item.text():
+                    titem.setSelected(False)
         tfname = item.text()
         fnum, fname = tfname.split('<>')
         data_dlg=Data_Dialog(data=copy.copy(self.dlg_data[tfname]),parent=self,expressions=copy.copy(self.expressions[tfname]),
@@ -813,7 +817,7 @@ class XModFit(QWidget):
                     [np.max(self.data[text][k1]['x']) for k1 in self.data[text].keys()])
         self.dataFileSelectionChanged()
         self.dataListWidget.itemSelectionChanged.connect(self.dataFileSelectionChanged)
-        self.consoleWidget.push_vars({'data': self.dlg_data})
+        self.consoleWidget.push_vars({'data': self.dlg_data, 'plotColIndex':self.plotColIndex, 'plotColors':self.plotColors, 'expressions':self.expressions})
 
     def updateData(self):
         fnames=[self.dataListWidget.item(i).text() for i in range(self.dataListWidget.count())]
@@ -2395,7 +2399,7 @@ class XModFit(QWidget):
         self.errorAvailable = False
         self.reuse_sampler = False
         self.calcConfInterButton.setDisabled(True)
-        self.consoleWidget.push_vars({'data': self.dlg_data})
+        self.consoleWidget.push_vars({'data': self.dlg_data, 'plotColIndex':self.plotColIndex, 'plotColors':self.plotColors, 'expressions':self.expressions})
 
     def metaDataInfoUpdated(self,data_key):
         try:
@@ -2444,7 +2448,7 @@ class XModFit(QWidget):
         self.errorAvailable = False
         self.reuse_sampler = False
         self.calcConfInterButton.setDisabled(True)
-        self.consoleWidget.push_vars({'data': self.dlg_data})
+        self.consoleWidget.push_vars({'data': self.dlg_data, 'plotColIndex':self.plotColIndex, 'plotColors':self.plotColors, 'expressions':self.expressions})
 
             
         

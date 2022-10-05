@@ -164,7 +164,7 @@ class Data_Dialog(QDialog):
         except:
             pass
         self.metaDialog=MetaData_Dialog(parent=self)
-        self.metaDailog.setModal(True)
+        self.metaDialog.setModal(True)
         if self.metaDialog.exec_():
             name,value=self.metaDialog.parNameLineEdit.text(),self.metaDialog.parValueLineEdit.text()
             if name not in self.data['meta'].keys():
