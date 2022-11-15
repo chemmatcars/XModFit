@@ -33,7 +33,7 @@ class XFNTR: #Please put the class name same as the function name
         vslit   : vertical slits size in unit of mm
         detlen  : detector size projected on the surface in the unit of mm
         qoff  	: q-offset to correct the zero q of the instrument
-        yscale  : a scale factor for the fluorescence intensity in unit of /AA
+        yscale  : a scale factor for the fluorescence intensity in unit of 1E-3 /AA
         int_bg  : the background fluorescence intensity from the secondary scattering from the primary beam, should be zero for air/water interface
         Rc : the radius of the interfacial curvature in unit of meter; 0 means it's flat
         sur_cov : the surface coverage of target element in unit of per \AA^-2
