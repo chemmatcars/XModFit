@@ -37,6 +37,7 @@ class XFNTR: #Please put the class name same as the function name
         int_bg  : the background fluorescence intensity from the secondary scattering from the primary beam, should be zero for air/water interface
         Rc : the radius of the interfacial curvature in unit of meter; 0 means it's flat
         sur_cov : the surface coverage of target element in unit of per \AA^-2
+        ion_depth : the location of ion underneath the interface in unit of \AA
         """
         if type(x)==list:
             self.x=np.array(x)
@@ -154,7 +155,7 @@ class XFNTR: #Please put the class name same as the function name
                                                                                z1 - z2)) / (
                                    detlen * effd + topd * (z1 - z2))
                 int_sur = self.sur_cov * topd * (np.exp(detlen / 2 / topd) - np.exp(-detlen / 2 / topd))  # surface intensity
-                int_bulk = np.exp(-self.ion_depth/effd) * effv * self.__avoganum__ * conbulk / 1e27  # bluk intensity
+                int_bulk =  effv * self.__avoganum__ * conbulk / 1e27  # bluk intensity
                 int_tot = np.exp(-self.ion_depth/effd) * self.yscale * 1e-3 * trans * (int_sur + int_bulk) + self.int_bg
                 flu.append(int_tot)
             #   p_d.append(effd)
