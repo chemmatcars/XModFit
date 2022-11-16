@@ -23,14 +23,15 @@ import numba_scipy.special
 @njit(parallel=True,cache=True)
 def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
     #HvvgtR: H>>R means infinitely long cylinder
-    dalf = np.pi/Nalf
+    pi=3.14159
+    dalf = pi/Nalf
     fft = np.zeros_like(q)
     ffs = np.zeros_like(q)
     ffc = np.zeros_like(q)
     ffr = np.zeros_like(q)
     Nlayers=len(R)
     tR=np.cumsum(R)
-    V = np.pi*tR[:-1]**2*H
+    V = pi*tR[:-1]**2*H
     drho=2.0*np.diff(np.array(rho))*V
     deirho=2.0*np.diff(np.array(eirho))*V
     dadensity=2.0*np.diff(np.array(adensity))*V
@@ -42,7 +43,7 @@ def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
             tfr = 0.0
             for k in prange(Nlayers-1):
                 qh=np.abs(q[i]*H*np.cos(alf)/2)
-                fach=(1.0-HvvgtR)*np.sinc(qh)+HvvgtR*np.cos(qh-np.pi/4.0)*np.sqrt(2/np.pi/qh) #https://math.stackexchange.com/questions/177118/about-the-asymptotic-formula-of-bessel-function
+                fach=(1.0-HvvgtR)*np.sin(qh)/qh+HvvgtR*np.cos(qh-pi/4.0)*np.sqrt(2/pi/qh)
                 qr=q[i]*tR[k]*np.sin(alf)
                 facR=j1(qr)/qr
                 fac =  fach*facR
@@ -61,9 +62,9 @@ def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
 
 class Cylinder_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep='False', H=1.0, HvvgtR=False,
-                 Rsig=0.0, norm=1.0e-9, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nalf=200,term='Total',
+                 Rsig=0.0, norm=1.0, norm_err=0.01, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nalf=200,term='Total',
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
-                                  'Rmoles': [1.0, 0.0], 'R': [1.0, 0.0]}}):
+                                  'Rmoles': [1.0, 1.0], 'R': [1.0, 0.0]}}):
         """
         Documentation
         Calculates the Energy dependent form factor of multilayered cylinders with different materials
@@ -75,10 +76,11 @@ class Cylinder_Uniform: #Please put the class name same as the function name
         H           : Length of the cylinders in Angs
         HvvgtR      : True for H>>R else False
         NrDep       : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy independent)
-        dist        : The probablity distribution fucntion for the radii of different interfaces in the nanoparticles. Default: Gaussian
+        dist        : The probability distribution function for the radii of different interfaces in the nanoparticles. Default: Gaussian
         Rdist       : Width of distribution or radius and shells of the cylinder
-        Nalf        : Number of azumuthal angle points for angular averaging
-        norm        : The density of the nanoparticles in Molar (Moles/Liter)
+        Nalf        : Number of azimuthal angle points for angular averaging
+        norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
+        norm_err    : Percentage of error on normalization to simulated energy dependent SAXS data
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
@@ -100,6 +102,7 @@ class Cylinder_Uniform: #Please put the class name same as the function name
         else:
             self.x=x
         self.norm=norm
+        self.norm_err = norm_err
         self.sbkg=sbkg
         self.cbkg=cbkg
         self.abkg=abkg
@@ -245,20 +248,21 @@ class Cylinder_Uniform: #Please put the class name same as the function name
                 struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
             for key in self.x.keys():
                 if key == 'SAXS-term':
-                    sqf[key] = self.norm * 6.022e20 *sqft[key] * struct + self.sbkg # in cm^-1
+                    sqf[key] = self.norm*1e-9 * 6.022e20 *sqft[key] * struct + self.sbkg # in cm^-1
                 if key == 'Cross-term':
-                    sqf[key] = self.norm * 6.022e20 *sqft[key] * struct + self.cbkg # in cm^-1
+                    sqf[key] = self.norm*1e-9 * 6.022e20 *sqft[key] * struct + self.cbkg # in cm^-1
                 if key == 'Resonant-term':
-                    sqf[key] = self.norm * 6.022e20 *sqft[key] * struct + self.abkg # in cm^-1
+                    sqf[key] = self.norm*1e-9 * 6.022e20 *sqft[key] * struct + self.abkg # in cm^-1
             key1='Total'
-            total= self.norm * 6.022e20 *sqft[key1] * struct + self.sbkg
+            total= self.norm*1e-9 * 6.022e20 *sqft[key1] * struct + self.sbkg
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist}
                 signal = total
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
@@ -294,18 +298,19 @@ class Cylinder_Uniform: #Please put the class name same as the function name
             tsqf, eisqf, asqf, csqf = self.cylinder(tuple(self.x), tuple(self.__R__), self.H, HvvgtR, self.Rsig,
                                                      tuple(rho), tuple(eirho),
                                                       tuple(adensity), dist=self.dist, Np=self.Np, Nalf=self.Nalf)
-            sqf = self.norm * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+            sqf = self.norm*1e-9 * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
             if not self.__fit__: #Generate all the quantities below while not fitting
-                asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
-                eisqf = self.norm * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-                csqf = self.norm * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
+                asqf = self.norm*1e-9 * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
+                eisqf = self.norm*1e-9 * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+                csqf = self.norm*1e-9 * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
                 # sqerr = np.sqrt(self.norm*6.022e20*self.flux * tsqf * svol*struct+self.sbkg)
                 # sqwerr = (self.norm*6.022e20*tsqf * svol * struct*self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
                 # self.output_params['simulated_total_w_err'] = {'x': self.x, 'y': sqwerr, 'yerr': sqerr}
-                signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.sbkg
+                signal = 6.022e20 * self.norm*1e-9 * np.array(tsqf) * struct + self.sbkg
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,

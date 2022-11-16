@@ -65,7 +65,7 @@ def ellipsoid_ml_asaxs(q,Rx,RzRatio,rho,eirho,adensity,Nalf):
 
 class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, term='Total', dist='Gaussian', Energy=None, relement='Au', Nalf=200,
-                 NrDep='False', norm=1.e-9, Rsig=0.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0,
+                 NrDep='False', norm=1.0, norm_err=0.01, Rsig=0.0, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0,
                  SF='None', mpar={'Phase_1':{'Material': ['Au', 'H2O'],
                                              'Density': [19.32, 1.0],
                                              'VolFrac': [1.0, 1.0],
@@ -94,9 +94,10 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
         Energy      : Energy of X-rays in keV at which the form-factor is calculated. Default: None
         Np          : No. of points with which the size distribution will be computed. Default: 10
         NrDep       : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy dependent)
-        dist        : The probablity distribution fucntion for the radii of different interfaces in the nanoparticles. Default: Gaussian
+        dist        : The probability distribution function for the radii of different interfaces in the nanoparticles. Default: Gaussian
         Nalf        : Number of azumuthal angle points for angular averaging
-        norm        : The density of the nanoparticles in Molar (Moles/Liter)
+        norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
+        norm_err    : Percentage of error on normalization to simulated energy dependent SAXS data
         sbkg        : Constant incoherent background for SAXS-term
         cbkg        : Constant incoherent background for cross-term
         abkg        : Constant incoherent background for Resonant-term
@@ -121,6 +122,7 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
             self.x = x
         self.Nalf = Nalf
         self.norm = norm
+        self.norm_err = norm_err
         self.sbkg = sbkg
         self.cbkg = cbkg
         self.abkg = abkg
@@ -318,20 +320,21 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
                 struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
             for key in self.x.keys():
                 if key == 'SAXS-term':
-                    sqf[key] = self.norm * 6.022e20 *sqft[key] * struct + self.sbkg # in cm^-1
+                    sqf[key] = self.norm*1e-9 * 6.022e20 *sqft[key] * struct + self.sbkg # in cm^-1
                 if key == 'Cross-term':
-                    sqf[key] = self.norm * 6.022e20 *sqft[key] * struct + self.cbkg # in cm^-1
+                    sqf[key] = self.norm*1e-9 * 6.022e20 *sqft[key] * struct + self.cbkg # in cm^-1
                 if key == 'Resonant-term':
-                    sqf[key] = self.norm * 6.022e20 *sqft[key] * struct + self.abkg # in cm^-1
+                    sqf[key] = self.norm*1e-9 * 6.022e20 *sqft[key] * struct + self.abkg # in cm^-1
             key1='Total'
-            total= self.norm * 6.022e20 *sqft[key1] * struct + self.sbkg
+            total= self.norm*1e-9 * 6.022e20 *sqft[key1] * struct + self.sbkg
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__[self.__mkeys__[0]]), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist}
                 signal = total
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x[key],
@@ -370,17 +373,18 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
                                                      tuple(self.__RzRatio__[self.__mkeys__[0]]), self.Rsig,
                                                      tuple(rho), tuple(eirho),
                                                       tuple(adensity), dist=self.dist, Np=self.Np, Nalf=self.Nalf)
-            sqf = self.norm * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+            sqf = self.norm*1e-9 * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
             if not self.__fit__: #Generate all the quantities below while not fitting
-                asqf = self.norm * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
-                eisqf = self.norm * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-                csqf = self.norm * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
+                asqf = self.norm*1e-9 * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
+                eisqf = self.norm*1e-9 * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+                csqf = self.norm*1e-9 * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
                 # sqerr = np.sqrt(6.022e20*self.norm*self.flux * tsqf * svol+self.sbkg)
                 # sqwerr = (6.022e20*self.norm*tsqf * svol * self.flux+self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
-                signal = 6.022e20 * self.norm * np.array(tsqf) * struct + self.sbkg
+                signal = 6.022e20 * self.norm*1e-9 * np.array(tsqf) * struct + self.sbkg
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
-                sqerr = np.random.normal(normsignal, scale=self.error_factor)
+                norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
+                sqerr = np.random.normal(normsignal * norm, scale=self.error_factor)
                 meta = {'Energy': self.Energy}
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,

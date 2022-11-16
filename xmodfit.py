@@ -3,7 +3,7 @@ import importlib
 from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QLabel, QLineEdit, QVBoxLayout, QMessageBox, QCheckBox, \
     QComboBox, QListWidget, QDialog, QFileDialog, QAbstractItemView, QSplitter, QSizePolicy, QAbstractScrollArea, QHBoxLayout, QTextEdit, QShortcut,\
     QProgressDialog, QDesktopWidget, QSlider, QTabWidget, QMenuBar, QAction, QTableWidgetSelectionRange, QProgressBar, QMenu, QTableWidgetItem, QTreeWidgetItem
-from PyQt5.QtGui import QKeySequence, QFont, QDoubleValidator, QIntValidator
+from PyQt5.QtGui import QKeySequence, QFont, QDoubleValidator, QIntValidator, QTextCursor
 from PyQt5.QtCore import Qt, QProcess
 from PyQt5 import uic
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -43,6 +43,7 @@ import Chemical_Formula
 import Structure_Factors
 import utils
 import xraydb
+from collections import OrderedDict
 
 
 
@@ -268,7 +269,7 @@ class XModFit(QWidget):
         self.emcee_cores = 1
         self.emcee_frac = self.emcee_burn/self.emcee_steps
         self.reuse_sampler = False
-
+        self.autoCalculate = True
         self.funcDock=Dock('Functions',size=(1,6),closable=False,hideTitle=False)
         self.fitDock=Dock('Fit options',size=(1,2),closable=False,hideTitle=False)
         self.dataDock=Dock('Data',size=(1,8),closable=False,hideTitle=False)
@@ -405,7 +406,7 @@ class XModFit(QWidget):
 
 
     def aboutDialog(self):
-        QMessageBox.information(self,'About','Copyright (c) 2021 NSF\'s ChemMAtCARS, University of Chicago.\n\n'
+        QMessageBox.information(self,'About','Copyright (c) 2022 NSF\'s ChemMAtCARS, University of Chicago.\n\n'
                                              'Developers:\n'
                                              'Mrinal K. Bera (mrinalkb@cars.uchicago.edu \n'
                                              'Wei Bu (bu@cars.uchicago.edu)'
@@ -797,12 +798,12 @@ class XModFit(QWidget):
             self.update_plot()
         except:
             QMessageBox.warning(self,"Value Error", "Please supply the Xrange in this format:\n xmin:xmax",QMessageBox.Ok)
-
     
 
 
     def doFit(self, fit_method=None, emcee_walker=100, emcee_steps=100,
-                       emcee_cores=1, reuse_sampler=False, emcee_burn=30):
+                       emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):
+        self.fchanged=False
         self.tchisqr=1e30
         self.xminmaxChanged()
         if self.sfnames is None or self.sfnames==[]:
@@ -846,7 +847,6 @@ class XModFit(QWidget):
             self.fit.functionCalled.connect(self.fitCallback)
         else:
             self.fit.functionCalled.connect(self.fitErrorCallback)
-
         for fname in self.sfnames:
             if len(self.data[fname].keys())>1:
                 x={}
@@ -879,7 +879,7 @@ class XModFit(QWidget):
             try:
                 self.showFitInfoDlg(emcee_walker=emcee_walker,emcee_steps=emcee_steps, emcee_burn = emcee_burn)
                 self.runFit(emcee_walker=emcee_walker, emcee_steps=emcee_steps, emcee_burn=emcee_burn,
-                            emcee_cores=emcee_cores, reuse_sampler=reuse_sampler)
+                            emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_thin=emcee_thin)
                 if self.fit_stopped:
                     self.fit.result.params = self.temp_params
                 #self.fit_report,self.fit_message=self.fit.perform_fit(self.xmin,self.xmax,fit_scale=self.fit_scale,\
@@ -966,6 +966,9 @@ class XModFit(QWidget):
                             np.savetxt(ofname + '_fit.txt', fitdata, header=header, comments='#')
                         self.calcConfInterButton.setEnabled(True)
                         self.update_plot()
+                        if self.autoSaveGenParamCheckBox.isChecked():
+                            self.saveGenParameters(
+                                bfname=os.path.join(os.path.dirname(ofname), 'genParam_' + os.path.basename(ofname)))
                         # self.xChanged()
                     else:
                         self.undoFit()
@@ -1366,7 +1369,7 @@ class XModFit(QWidget):
         """
         self.fit_method = self.fitMethods[self.fitMethodComboBox.currentText()]
         if not self.errorAvailable:
-             self.emcee_walker=(self.fit.result.nvarys+1)*5
+             self.emcee_walker=(self.fit.result.nvarys+1)*2
         else:
         #     # try:
              tnum=len(self.fit.result.flatchain[self.fit.result.var_names[0]])/self.emcee_walker
@@ -1399,13 +1402,183 @@ class XModFit(QWidget):
         self.emceeConfIntervalWidget.startSamplingPushButton.clicked.connect(self.start_emcee_sampling)
         self.emceeConfIntervalWidget.MCMCWalkerLineEdit.returnPressed.connect(self.MCMCWalker_changed)
         self.emceeConfIntervalWidget.saveConfIntervalPushButton.clicked.connect(self.saveParameterError)
+        self.emceeConfIntervalWidget.addUserDefinedParamPushButton.clicked.connect(lambda x:
+                                                                                   self.addMCMCUserDefinedParam(parname=None, expression=None))
+        self.emceeConfIntervalWidget.removeUserDefinedParamPushButton.clicked.connect(self.removeMCMCUserDefinedParam)
+        self.emceeConfIntervalWidget.saveUserDefinedParamPushButton.clicked.connect(self.saveMCMCUserDefinedParam)
+        self.emceeConfIntervalWidget.loadUserDefinedParamPushButton.clicked.connect(self.loadMCMCUserDefinedParam)
+        self.emceeConfIntervalWidget.userDefinedParamTreeWidget.itemDoubleClicked.connect(self.openMCMCUserDefinedParam)
         self.emceeConfIntervalWidget.progressBar.setValue(0)
+        self.EnableUserDefinedParameterButtons(enable=False)
         self.emceeConfIntervalWidget.showMaximized()
         if self.errorAvailable:
             self.update_emcee_parameters()
             self.perform_post_sampling_tasks()
             self.cornerPlot()
             self.emceeConfIntervalWidget.tabWidget.setCurrentIndex=(4)
+
+    def EnableUserDefinedParameterButtons(self,enable=False):
+        self.emceeConfIntervalWidget.addUserDefinedParamPushButton.setEnabled(enable)
+        self.emceeConfIntervalWidget.removeUserDefinedParamPushButton.setEnabled(enable)
+        self.emceeConfIntervalWidget.saveUserDefinedParamPushButton.setEnabled(enable)
+        self.emceeConfIntervalWidget.loadUserDefinedParamPushButton.setEnabled(enable)
+
+
+
+    def openMCMCUserDefinedParam(self,item,column):
+        txt=item.text(0)
+        if ':chain:' not in txt:
+            parname,expression=txt.split('=')
+            self.addMCMCUserDefinedParam(parname=parname, expression=expression)
+
+
+    def addMCMCUserDefinedParam(self, parname=None, expression=None):
+        self.MCMCUserDefinedParamWidget = QWidget()
+        self.MCMCUserDefinedParamWidget.setWindowModality(Qt.ApplicationModal)
+        uic.loadUi('./UI_Forms/User_Defined_Param_Widget.ui', self.MCMCUserDefinedParamWidget)
+        if parname is not None:
+            self.MCMCUserDefinedParamWidget.parnameLineEdit.setText(parname)
+            self.MCMCUserDefinedParamWidget.parnameLineEdit.setEnabled(False)
+            new=False
+        else:
+            new=True
+        if expression is not None:
+            self.MCMCUserDefinedParamWidget.expressionTextEdit.setText(expression)
+        availParams = self.fit.result.var_names
+        self.MCMCUserDefinedParamWidget.availParamListWidget.addItems(availParams)
+
+        self.MCMCUserDefinedParamWidget.addPushButton.clicked.connect(lambda x: self.acceptUserDefinedParams(new=new))
+        self.MCMCUserDefinedParamWidget.cancelPushButton.clicked.connect(self.MCMCUserDefinedParamWidget.close)
+        self.MCMCUserDefinedParamWidget.availParamListWidget.itemDoubleClicked.connect(self.appendUserDefinedExpression)
+        self.MCMCUserDefinedParamWidget.show()
+
+    def appendUserDefinedExpression(self,item):
+        txt=item.text()
+        self.MCMCUserDefinedParamWidget.expressionTextEdit.insertPlainText(txt)
+        self.MCMCUserDefinedParamWidget.expressionTextEdit.moveCursor(QTextCursor.End)
+
+    def acceptUserDefinedParams(self,new=True,parname=None,expression=None):
+        if parname is None:
+            parname=self.MCMCUserDefinedParamWidget.parnameLineEdit.text()
+        if parname=='':
+            QMessageBox.warning(self, 'Name Error', 'Please provide a parameter name.',QMessageBox.Ok)
+            return
+        elif parname in self.param_chain.keys() and new:
+            QMessageBox.warning(self, 'Name Error', 'Please provide a parameter name which is not already used.', QMessageBox.Ok)
+            return
+        else:
+            if expression is None:
+                txt=self.MCMCUserDefinedParamWidget.expressionTextEdit.toPlainText()
+            else:
+                txt=expression
+            if txt != 'None':
+                try:
+                    self.emceeConfIntervalWidget.userDefinedParamTreeWidget.itemSelectionChanged.disconnect(
+                        self.userDefinedParameterTreeSelectionChanged)
+                except:
+                    pass
+                if new:
+                    l1 = QTreeWidgetItem([parname+'='+txt])
+                else:
+                    self.emceeConfIntervalWidget.userDefinedParamTreeWidget.currentItem().setText(0,parname+'='+txt)
+                self.param_chain[parname] = {}
+                for i in range(self.chain_shape[1]):
+                    ttxt=txt[0:]
+                    for name in self.fit.result.var_names:
+                        ttxt=ttxt.replace(name,"self.param_chain['%s'][%d]"%(name,i))
+                    try:
+                        self.param_chain[parname][i]=eval(ttxt)
+                        if new:
+                            l1_child = QTreeWidgetItem(['%s:chain:%d' % (parname, i)])
+                            l1.addChild(l1_child)
+                            self.emceeConfIntervalWidget.userDefinedParamTreeWidget.addTopLevelItem(l1)
+                        if expression is None:
+                            self.MCMCUserDefinedParamWidget.close()
+
+                    except:
+                        QMessageBox.warning(self, 'Expression Error',
+                                            'Some problems in the expression\n' + traceback.format_exc(),
+                                            QMessageBox.Ok)
+                        return
+                self.emceeConfIntervalWidget.userDefinedParamTreeWidget.itemSelectionChanged.connect(
+                    self.userDefinedParameterTreeSelectionChanged)
+
+            else:
+                self.MCMCUserDefinedParamWidget.close()
+
+    def removeMCMCUserDefinedParam(self):
+        try:
+            self.emceeConfIntervalWidget.userDefinedParamTreeWidget.itemSelectionChanged.disconnect()
+        except:
+            pass
+        for item in self.emceeConfIntervalWidget.userDefinedParamTreeWidget.selectedItems():
+            parname=item.text(0).split('=')[0]
+            del self.param_chain[parname]
+            index=self.emceeConfIntervalWidget.userDefinedParamTreeWidget.indexOfTopLevelItem(item)
+            self.emceeConfIntervalWidget.userDefinedParamTreeWidget.takeTopLevelItem(index)
+        self.emceeConfIntervalWidget.userDefinedParamTreeWidget.itemSelectionChanged.connect(self.userDefinedParameterTreeSelectionChanged)
+
+
+    def saveMCMCUserDefinedParam(self):
+        fname=QFileDialog.getSaveFileName(caption='Save User-Defined parameter expression as',filter='Expression files (*.expr)'
+                                          ,directory=self.curDir)[0]
+        if fname!='':
+            if os.path.splitext(fname)[0]=='':
+                fname=fname+'.expr'
+        else:
+            return
+        fh=open(fname,'w')
+        txt ='#Parameter Expressions saved on %s\n'%(time.asctime())
+        txt += '#Category:%s\n' % self.curr_category
+        txt += '#Function:%s\n' % self.funcListWidget.currentItem().text()
+        root = self.emceeConfIntervalWidget.userDefinedParamTreeWidget.invisibleRootItem()
+        child_count=root.childCount()
+        for i in range(child_count):
+            txt += '%s\n'%root.child(i).text(0)
+        fh.write(txt)
+        fh.close()
+
+
+    def loadMCMCUserDefinedParam(self):
+        fname=QFileDialog.getOpenFileName(self,'Open Expression file',filter='Expression files (*.expr)'
+                                          ,directory=self.curDir)[0]
+        if fname!='':
+            try:
+                self.emceeConfIntervalWidget.userDefinedParamTreeWidget.itemSelectionChanged.disconnect()
+            except:
+                pass
+            #Removing the existing User-Defined parameters, if present
+            root = self.emceeConfIntervalWidget.userDefinedParamTreeWidget.invisibleRootItem()
+            child_count = root.childCount()
+            for i in range(child_count):
+                parname, expression = root.child(i).text(0).split('=')
+                del self.param_chain[parname]
+            self.emceeConfIntervalWidget.userDefinedParamTreeWidget.clear()
+
+            fh=open(fname,'r')
+            lines=fh.readlines()
+            for line in lines:
+                if line[0]=='#':
+                    if 'Category' in line:
+                        _,category=line[1:].strip().split(':')
+                        if category!=self.curr_category:
+                            QMessageBox.warning(self,'File Error','The expression file is not generated from the same category of functions as used here.'
+                                                ,QMessageBox.Ok)
+                            return
+                    elif 'Function' in line:
+                        _,func=line[1:].strip().split(':')
+                        if func!=self.curr_module:
+                            QMessageBox.warning(self, 'File Error',
+                                                'The expression file is not generated from the same function as used here.'
+                                                , QMessageBox.Ok)
+                            return
+                else:
+                    parname,expression=line.strip().split('=')
+                    self.acceptUserDefinedParams(new=True,parname=parname,expression=expression)
+        self.emceeConfIntervalWidget.userDefinedParamTreeWidget.itemSelectionChanged.connect(self.userDefinedParameterTreeSelectionChanged)
+
+
+
 
     def MCMCWalker_changed(self):
         self.emceeConfIntervalWidget.reuseSamplerCheckBox.setCheckState(Qt.Unchecked)
@@ -1437,19 +1610,21 @@ class XModFit(QWidget):
         if not self.errorAvailable:
             self.emcee_frac=self.emcee_burn/self.emcee_steps
         self.doFit(fit_method='emcee', emcee_walker=self.emcee_walker, emcee_steps=self.emcee_steps,
-                       emcee_cores=self.emcee_cores, reuse_sampler=self.reuse_sampler, emcee_burn=0)
+                       emcee_cores=self.emcee_cores, reuse_sampler=self.reuse_sampler, emcee_burn=self.emcee_burn,
+                   emcee_thin=self.emcee_thin)
 
 
     def conf_interv_status(self,params,iterations,residual,fit_scale):
         self.confIntervalStatus.setText(self.confIntervalStatus.text().split('\n')[0]+'\n\n {:^s} = {:10d}'.format('Iteration',iterations))            
         QApplication.processEvents()
         
-    def runFit(self,  emcee_walker=100, emcee_steps=100, emcee_cores=1, reuse_sampler=False, emcee_burn=30):
+    def runFit(self,  emcee_walker=100, emcee_steps=100, emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):
         self.start_time=time.time()
         self.fit_report,self.fit_message=self.fit.perform_fit(self.xmin,self.xmax,fit_scale=self.fit_scale, fit_method=self.fit_method,
                                                               maxiter=int(self.fitIterationLineEdit.text()),
                                                               emcee_walker=emcee_walker, emcee_steps=emcee_steps,
-                                                              emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_burn=emcee_burn)
+                                                              emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_burn=emcee_burn,
+                                                              emcee_thin=emcee_thin)
         
     
     def showFitInfoDlg(self, emcee_walker=100, emcee_steps=100, emcee_burn=30):
@@ -1522,10 +1697,10 @@ class XModFit(QWidget):
         self.emceeConfIntervalWidget.fitIterLabel.setText('Time left (hh:mm:ss): 00:00:00' )
         self.chain=self.fit.result.chain
         self.chain_shape=self.chain.shape
-        self.param_chain={}
+        self.param_chain=OrderedDict()
         for i,key in enumerate(self.fit.result.flatchain.keys()):
             l1=QTreeWidgetItem([key])
-            self.param_chain[key]={}
+            self.param_chain[key]=OrderedDict()
             for j in range(self.chain_shape[1]):
                 self.param_chain[key][j]=self.chain[:,j,i]
                 l1_child=QTreeWidgetItem(['%s:chain:%d'%(key,j)])
@@ -1534,11 +1709,12 @@ class XModFit(QWidget):
         self.emceeConfIntervalWidget.parameterTreeWidget.itemSelectionChanged.connect(self.parameterTreeSelectionChanged)
 
         #Calculating autocorrelation
-        acor={}
+        acor=OrderedDict()
         Nrows=len(self.param_chain.keys())
         self.emceeConfIntervalWidget.correlationMPLWidget.clear()
         ax1 = self.emceeConfIntervalWidget.correlationMPLWidget.fig.add_subplot(1, 1, 1)
         corr_time=[]
+        acor_mcmc=self.fit.fitter.sampler.get_autocorr_time(quiet=True)
         for i,key in enumerate(self.param_chain.keys()):
             tcor=[]
             for ikey in self.param_chain[key].keys():
@@ -1548,7 +1724,7 @@ class XModFit(QWidget):
             tcor=np.array(tcor)
             acor[key]=np.mean(tcor,axis=0)
             ax1.plot(acor[key],'-',label='para=%s'%key)
-            corr_time.append([key,np.sum(np.where(acor[key]>0,acor[key],0))])
+            corr_time.append([key,acor_mcmc[i]])#np.sum(np.where(acor[key]>0,acor[key],0))])
         ax1.set_xlabel('Steps')
         ax1.set_ylabel('Autocorrelation')
         l=ax1.legend(loc='best')
@@ -1569,36 +1745,69 @@ class XModFit(QWidget):
         self.emceeConfIntervalWidget.acceptFracMPLWidget.draw()
 
         self.emceeConfIntervalWidget.calcConfIntervPushButton.clicked.connect(self.cornerPlot)
-        self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(1)
+        self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(2)
+        self.reset_cornerplot=True
 
-
+        #Calculating User-Defined parameters
+        self.EnableUserDefinedParameterButtons(enable=True)
+        root = self.emceeConfIntervalWidget.userDefinedParamTreeWidget.invisibleRootItem()
+        child_count = root.childCount()
+        if child_count>0:
+            for i in range(child_count):
+                parname, expression = root.child(i).text(0).split('=')
+                self.param_chain[parname]={}
+                for j in range(self.chain_shape[1]):
+                    ttxt = expression[0:]
+                    for name in self.fit.result.var_names:
+                        ttxt = ttxt.replace(name, "self.param_chain['%s'][%d]" % (name, j))
+                    self.param_chain[parname][j] = eval(ttxt)
 
     def cornerPlot(self):
         percentile = self.emceeConfIntervalWidget.percentileDoubleSpinBox.value()
-        self.emceeConfIntervalWidget.cornerPlotMPLWidget.clear()
-        names = [name for name in self.fit.result.var_names if name != '__lnsigma']
-        values = [self.fit.result.params[name].value for name in names]
-        ndim = len(names)
-        quantiles=[1.0-percentile/100,0.5,percentile/100]
-        first=int(self.emceeConfIntervalWidget.MCMCBurnLineEdit.text())
-        corner.corner(self.fit.result.flatchain[names][first:], labels=names, bins=50, levels=(percentile/100,),
-                      truths=values, quantiles=quantiles, show_titles=True, title_fmt='.6f',
-                      use_math_text=True, title_kwargs={'fontsize': 3 * 12 / ndim},
-                      label_kwargs={'fontsize': 3 * 12 / ndim}, fig=self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig)
-        for ax3 in self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig.get_axes():
-            ax3.set_xlabel('')
-            ax3.set_ylabel('')
-            ax3.tick_params(axis='y', labelsize=3 * 12 / ndim, rotation=0)
-            ax3.tick_params(axis='x', labelsize=3 * 12 / ndim)
-        self.emceeConfIntervalWidget.cornerPlotMPLWidget.draw()
-        self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(3)
-        err_quantiles={}
-        mesg = [['Parameters', 'Value(50%)', 'Left-error(%.3f)'%(100-percentile), 'Right-error(%.3f)'%percentile]]
-        for name in names:
-            err_quantiles[name] = corner.quantile(self.fit.result.flatchain[name], quantiles)
-            l,p,r=err_quantiles[name]
-            mesg.append([name, p, l - p, r - p])
+        first = int(self.emceeConfIntervalWidget.MCMCBurnLineEdit.text())
+        if self.reset_cornerplot:
+            self.emceeConfIntervalWidget.cornerPlotMPLWidget.clear()
+            names = self.fit.result.var_names#[name for name in self.fit.result.var_names if name != '__lnsigma']
+            values = [self.fit.result.params[name].value for name in names]
+            ndim = len(names)
+            quantiles=[1.0-percentile/100,0.5,percentile/100]
+            corner.corner(self.fit.result.flatchain[names][first:], labels=names, bins=50, levels=(percentile/100,),
+                          truths=values, quantiles=quantiles, show_titles=True, title_fmt='.6f',
+                          use_math_text=True, title_kwargs={'fontsize': 3 * 12 / ndim},
+                          label_kwargs={'fontsize': 3 * 12 / ndim}, fig=self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig)
+            for ax3 in self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig.get_axes():
+                ax3.set_xlabel('')
+                ax3.set_ylabel('')
+                ax3.tick_params(axis='y', labelsize=3 * 12 / ndim, rotation=0)
+                ax3.tick_params(axis='x', labelsize=3 * 12 / ndim)
+            self.emceeConfIntervalWidget.cornerPlotMPLWidget.draw()
+            self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(4)
+            self.reset_cornerplot=False
+        self.calcMCMCerrorbars(burn=first,percentile=percentile)
+        # err_quantiles={}
+        # mesg = [['Parameters', 'Value(50%)', 'Left-error(%.3f)'%(100-percentile), 'Right-error(%.3f)'%percentile]]
+        # for name in names:
+        #     err_quantiles[name] = corner.quantile(self.fit.result.flatchain[name], quantiles)
+        #     l,p,r=err_quantiles[name]
+        #     mesg.append([name, p, l - p, r - p])
+        #
+        # self.emceeConfIntervalWidget.confIntervalTextEdit.clear()
+        # self.emceeConfIntervalWidget.confIntervalTextEdit.setFont(QFont("Courier", 10))
+        # txt = tabulate(mesg, headers='firstrow', stralign='left', numalign='left', tablefmt='simple')
+        # self.emceeConfIntervalWidget.confIntervalTextEdit.append(txt)
 
+
+    def calcMCMCerrorbars(self,burn=0,percentile=85):
+        mesg = [['Parameters', 'Value(50%)', 'Left-error(%.3f%s)' % (100 - percentile,'%'), 'Right-error(%.3f%s)' % (percentile,'%')]]
+        for key in self.param_chain.keys():
+            for chain in self.param_chain[key].keys():
+                try:
+                    pardata=np.vstack((pardata,self.param_chain[key][chain][burn:]))
+                except:
+                    pardata=[self.param_chain[key][chain][burn:]]
+            pardata=np.ndarray.flatten(pardata)
+            errors=np.quantile(pardata,[(100-percentile)/100,50/100,percentile/100])
+            mesg.append([key, errors[1], errors[1]-errors[0], errors[2]-errors[1]])
         self.emceeConfIntervalWidget.confIntervalTextEdit.clear()
         self.emceeConfIntervalWidget.confIntervalTextEdit.setFont(QFont("Courier", 10))
         txt = tabulate(mesg, headers='firstrow', stralign='left', numalign='left', tablefmt='simple')
@@ -1609,33 +1818,57 @@ class XModFit(QWidget):
         self.emceeConfIntervalWidget.chainMPLWidget.clear()
         chaindata={}
         for item in self.emceeConfIntervalWidget.parameterTreeWidget.selectedItems():
-            key,i=item.text(0).split(':chain:')
-            try:
-                chaindata[key].append(int(i))
-            except:
-                chaindata[key]=[int(i)]
+            if ':chain:' in item.text(0):
+                key,i=item.text(0).split(':chain:')
+                try:
+                    chaindata[key].append(int(i))
+                except:
+                    chaindata[key]=[int(i)]
         NRows = len(chaindata.keys())
-        ax={}
-        firstkey=list(chaindata.keys())[0]
-        for j,key in enumerate(chaindata.keys()):
-            try:
-                ax[key]=self.emceeConfIntervalWidget.chainMPLWidget.fig.add_subplot(NRows, 1, j+1, sharex=ax[firstkey])
-            except:
-                ax[key] = self.emceeConfIntervalWidget.chainMPLWidget.fig.add_subplot(NRows, 1, j+1)
-            for i in chaindata[key]:
-                ax[key].plot(self.param_chain[key][i],'-')
-            ax[key].set_xlabel('MC steps')
-            ax[key].set_ylabel(key)
-        self.emceeConfIntervalWidget.chainMPLWidget.draw()
-        self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(0)
+        if NRows>0:
+            ax={}
+            firstkey=list(chaindata.keys())[0]
+            for j,key in enumerate(chaindata.keys()):
+                try:
+                    ax[key]=self.emceeConfIntervalWidget.chainMPLWidget.fig.add_subplot(NRows, 1, j+1, sharex=ax[firstkey])
+                except:
+                    ax[key] = self.emceeConfIntervalWidget.chainMPLWidget.fig.add_subplot(NRows, 1, j+1)
+                for i in chaindata[key]:
+                    ax[key].plot(self.param_chain[key][i],'-')
+                ax[key].set_xlabel('MC steps')
+                ax[key].set_ylabel(key)
+            self.emceeConfIntervalWidget.chainMPLWidget.draw()
+            self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(0)
 
-
-
-
+    def userDefinedParameterTreeSelectionChanged(self):
+        self.emceeConfIntervalWidget.userDefinedChainMPLWidget.clear()
+        chaindata={}
+        for item in self.emceeConfIntervalWidget.userDefinedParamTreeWidget.selectedItems():
+            if ':chain:' in item.text(0):
+                key,i=item.text(0).split(':chain:')
+                try:
+                    chaindata[key].append(int(i))
+                except:
+                    chaindata[key]=[int(i)]
+        NRows = len(chaindata.keys())
+        if NRows>0:
+            ax={}
+            firstkey=list(chaindata.keys())[0]
+            for j,key in enumerate(chaindata.keys()):
+                try:
+                    ax[key]=self.emceeConfIntervalWidget.userDefinedChainMPLWidget.fig.add_subplot(NRows, 1, j+1, sharex=ax[firstkey])
+                except:
+                    ax[key] = self.emceeConfIntervalWidget.userDefinedChainMPLWidget.fig.add_subplot(NRows, 1, j+1)
+                for i in chaindata[key]:
+                    ax[key].plot(self.param_chain[key][i],'-')
+                ax[key].set_xlabel('MC steps')
+                ax[key].set_ylabel(key)
+            self.emceeConfIntervalWidget.userDefinedChainMPLWidget.draw()
+            self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(1)
 
     def saveParameterError(self):
         fname=QFileDialog.getSaveFileName(caption='Save Parameter Errors as',filter='Parameter Error files (*.perr)',directory=self.curDir)[0]
-        if os.path.splitext(fname)=='':
+        if os.path.splitext(fname)[1]=='':
             fname=fname+'.perr'
         text=self.emceeConfIntervalWidget.confIntervalTextEdit.toPlainText()
         fh=open(fname,'w')
@@ -1782,7 +2015,11 @@ class XModFit(QWidget):
         
         self.fixedparamLayoutWidget.nextRow()
         fixedParamLabel=QLabel('Fixed Parameters')
-        self.fixedparamLayoutWidget.addWidget(fixedParamLabel, colspan=3)
+        self.fixedparamLayoutWidget.addWidget(fixedParamLabel, colspan=2)
+        self.autoCalcCheckBox=QCheckBox('Auto Calculate')
+        self.fixedparamLayoutWidget.addWidget(self.autoCalcCheckBox)
+        self.autoCalcCheckBox.setChecked(True)
+        self.autoCalcCheckBox.stateChanged.connect(self.changeAutoCalc)
 
         self.fixedparamLayoutWidget.nextRow()
         self.fixedParamTableWidget=pg.TableWidget()
@@ -1870,7 +2107,9 @@ class XModFit(QWidget):
 
         self.genparamLayoutWidget=pg.LayoutWidget()
         genParameters=QLabel('Generated Parameters')
-        self.genparamLayoutWidget.addWidget(genParameters,colspan=2)
+        self.autoSaveGenParamCheckBox=QCheckBox('Auto Save Selected')
+        self.genparamLayoutWidget.addWidget(genParameters,col=0,colspan=2)
+        self.genparamLayoutWidget.addWidget(self.autoSaveGenParamCheckBox,col=1)
         self.genparamLayoutWidget.nextRow()
         self.genParamListWidget=QListWidget()
         self.genParamListWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -1886,6 +2125,14 @@ class XModFit(QWidget):
         self.parSplitter.addWidget(self.genparamLayoutWidget)
         
         self.paramDock.addWidget(self.parSplitter)
+
+
+    def changeAutoCalc(self):
+        if self.autoCalcCheckBox.isChecked():
+            self.autoCalculate=True
+            self.update_plot()
+        else:
+            self.autoCalculate=False
 
     def mfitParamTabChanged(self,index):
         self.mkey=self.mfitParamTabWidget.tabText(index)
@@ -2284,15 +2531,20 @@ class XModFit(QWidget):
             for i in range(self.fixedParamTableWidget.rowCount()):
                 par, val = self.fixedParamTableWidget.item(i, 0).text(), self.fixedParamTableWidget.item(i, 1).text()
                 if 'meta' in self.fit.params['output_params'][parname]:
-                    if par in self.fit.params['output_params'][parname]['meta']:
+                    if par in self.fit.params['output_params'][parname]['meta'].keys():
                         header += '%s=%s\n' % (par, str(self.fit.params['output_params'][parname]['meta'][par]))
                         added_par.append(par)
+                    else:
+                        header += '%s=%s\n' % (par, val)
                 else:
                     header+='%s=%s\n'%(par,val)
             if 'meta' in self.fit.params['output_params'][parname]:
                 for metakey in self.fit.params['output_params'][parname]['meta'].keys():
                     if metakey not in added_par:
                         header+='%s=%s\n'%(metakey,str(self.fit.params['output_params'][parname]['meta'][metakey]))
+            # for fi in range(self.fixedParamTableWidget.rowCount()):
+            #     par,val=self.fixedParamTableWidget.item(fi,0).text(),self.fixedParamTableWidget.item(fi,1).text()
+            #     header+='%s=%s\n'%(par,val)
             for i in range(self.sfitParamTableWidget.rowCount()):
                 par,val=self.sfitParamTableWidget.item(i,0).text(),self.sfitParamTableWidget.item(i,1).text()
                 header+='%s=%s\n'%(par,val)
@@ -2307,7 +2559,10 @@ class XModFit(QWidget):
             if 'names' in self.fit.params['output_params'][parname]:
                 header += "col_names=%s\n" % str(self.fit.params['output_params'][parname]['names'])
             else:
-                header += "col_names=%s\n" % var
+                lvar=eval(var)
+                if 'meta' in lvar:
+                    lvar.remove('meta')
+                header += "col_names=%s\n" % str(lvar)
 
             header=header.encode("ascii","ignore")
             header=header.decode()
@@ -3169,7 +3424,7 @@ class XModFit(QWidget):
             self.xLineEdit.setText(self.xline)
         self.xLineEdit.returnPressed.connect(self.xChanged)
 
-        
+
     def update_plot(self):
         for row in range(self.fixedParamTableWidget.rowCount()):
             txt=self.fixedParamTableWidget.item(row,0).text()
@@ -3231,17 +3486,19 @@ class XModFit(QWidget):
                 x = x[np.argwhere(x>=self.xmin)[0][0]:np.argwhere(x<=self.xmax)[-1][0]+1]
 
         if len(self.funcListWidget.selectedItems())>0:
-            # try:
-            stime=time.perf_counter()
-            self.fit.func.__fit__=False
-            self.fit.evaluate()
-            ntime=time.perf_counter()
-            exectime=ntime-stime
-            # except:
-            #     print('I m here')
-            #     QMessageBox.warning(self, 'Evaluation Error', traceback.format_exc(), QMessageBox.Ok)
-            #     self.fit.yfit = self.fit.func.x
-            #     exectime=np.nan
+            try:
+                if self.autoCalculate:
+                    stime=time.perf_counter()
+                    self.fit.func.__fit__=False
+                    self.fit.evaluate()
+                    ntime=time.perf_counter()
+                    exectime=ntime-stime
+                else:
+                    exectime=0.0
+            except:
+                QMessageBox.warning(self, 'Evaluation Error', traceback.format_exc(), QMessageBox.Ok)
+                self.fit.yfit = self.fit.func.x
+                exectime=np.nan
             if len(self.dataListWidget.selectedItems()) > 0:
                 self.fit.set_x(x, y=y, yerr=yerr)
                 try:
@@ -3287,7 +3544,7 @@ class XModFit(QWidget):
                         row+=1
                 if not self.fchanged:
                     for i in range(self.genParamListWidget.count()):
-                        item=self.genParamListWidget.item(i)
+                        item = self.genParamListWidget.item(i)
                         if item.text() in self.gen_param_items:
                             item.setSelected(True)
             self.plot_extra_param()
