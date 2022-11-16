@@ -18,7 +18,7 @@ sys.path.append(os.path.abspath('./Fortran_rountines'))
 
 
 class XFNTR: #Please put the class name same as the function name
-    def __init__(self,x=0.1,E=20.0, mpar={}, topchem='C12H26', topden=0.75, botchem='Sr50Cl100H110493.721O55246.86', botden=1.0032, element='Sr', line='Ka1', vslit= 0.02, detlen=12.7, qoff=0.0, yscale=1,int_bg=0, Rc=0, sur_cov=0,ion_depth=0):
+    def __init__(self,x=0.1,E=10.0, mpar={}, topchem='He', topden=1.78e-4, botchem='Sr50Cl100H110493.721O55246.86', botden=1.0032, element='Sr', line='Ka1', vslit= 0.04, detlen=10.5, qoff=0.0, yscale=1,int_bg=0, Rc=0, sur_cov=0,ion_depth=0):
         """
         Calculates X-ray reflectivity from a system of multiple layers using Parratt formalism
 
@@ -33,7 +33,7 @@ class XFNTR: #Please put the class name same as the function name
         vslit   : vertical slits size in unit of mm
         detlen  : detector size projected on the surface in the unit of mm
         qoff  	: q-offset to correct the zero q of the instrument
-        yscale  : a scale factor for the fluorescence intensity in unit of /AA
+        yscale  : a scale factor for the fluorescence intensity in unit of 1E-3 /AA
         int_bg  : the background fluorescence intensity from the secondary scattering from the primary beam, should be zero for air/water interface
         Rc : the radius of the interfacial curvature in unit of meter; 0 means it's flat
         sur_cov : the surface coverage of target element in unit of per \AA^-2
@@ -150,10 +150,15 @@ class XFNTR: #Please put the class name same as the function name
                 z1 = (fprint[i] - detlen) / 2 * alpha[i]
                 z2 = (fprint[i] + detlen) / 2 * alpha[i]
                 effd, trans = self.frsnllCal(topdel, topbet, botdel, botbet, flumu, k0, alpha[i])
-                effv = effd * topd * np.exp(-detlen / 2 / topd) * (detlen * effd * np.exp(z2 / alpha[i] / topd) * (
+                if (fprint[i] > detlen):
+                    effv = effd * topd * np.exp(-detlen / 2 / topd) * (detlen * effd * np.exp(z2 / alpha[i] / topd) * (
                             np.exp(-z1 / effd) - np.exp(-z2 / effd)) + topd * (np.exp(detlen / topd) - 1) * (
                                                                                z1 - z2)) / (
                                    detlen * effd + topd * (z1 - z2))
+                else:
+                    tempf1 = np.exp(- alpha[i] * (fprint[i] + detlen)/ 2 /effd + fprint[i]/ 2 / topd)
+                    tempf2 = np.exp(- alpha[i] * (detlen - fprint[i]) / 2 / effd - fprint[i] / 2 / topd)
+                    effv = 2 * topd * effd * np.sinh(fprint[i]/ 2 / topd) + topd * effd * effd * (tempf1 - tempf2) / (topd * alpha[i] - effd)
                 int_sur = self.sur_cov * topd * (np.exp(detlen / 2 / topd) - np.exp(-detlen / 2 / topd))  # surface intensity
                 int_bulk =  effv * self.__avoganum__ * conbulk / 1e27  # bluk intensity
                 int_tot = np.exp(-self.ion_depth/effd) * self.yscale * 1e-3 * trans * (int_sur + int_bulk) + self.int_bg
@@ -164,9 +169,9 @@ class XFNTR: #Please put the class name same as the function name
             for i in range(len(alpha)):
                 bsum = 0
                 ssum = 0
-                steps = int((detlen + fprint[i]) / 2 / 1e6)  # use 0.1 mm as the step size
-                stepsize = (detlen + fprint[i]) / 2 / steps
-                x = np.linspace(-fprint[i] / 2 + stepsize / 2, detlen / 2 - stepsize / 2,steps)  # get the position fo single ray hitting the surface relative to the center of detector area with the step size "steps"
+                steps = int((min(detlen, fprint[i]) + fprint[i]) / 2 / 1e6)  # use 0.1 mm as the step size
+                stepsize = (min(detlen, fprint[i]) + fprint[i]) / 2 / steps
+                x = np.linspace(-fprint[i] / 2 + stepsize / 2, min(detlen, fprint[i]) / 2 - stepsize / 2,steps)  # get the position fo single ray hitting the surface relative to the center of detector area with the step size "steps"
                 for j in range(len(x)):
                     alphanew = alpha[i] - x[j] / self.Rc/1e10  # the incident angle at position x[j]
                     y1 = -detlen / 2 - x[j]
@@ -210,6 +215,6 @@ class XFNTR: #Please put the class name same as the function name
 
 
 if __name__=='__main__':
-    x = np.linspace(0.006, 0.03, 400)
+    x = np.linspace(0.015, 0.03, 400)
     fun=XFNTR(x=x)
     print(fun.y())
