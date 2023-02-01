@@ -1116,7 +1116,7 @@ class XModFit(QWidget):
     #         pass
 
     def doFit(self, fit_method=None, emcee_walker=100, emcee_steps=100,
-                       emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1)#, backendFile=None):
+                       emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):#, backendFile=None):
         self.fchanged=False
         self.tchisqr=1e30
         # self.xminmaxChanged()
