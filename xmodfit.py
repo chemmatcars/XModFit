@@ -1116,7 +1116,7 @@ class XModFit(QWidget):
     #         pass
 
     def doFit(self, fit_method=None, emcee_walker=100, emcee_steps=100,
-                       emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1, backendFile=None):
+                       emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1)#, backendFile=None):
         self.fchanged=False
         self.tchisqr=1e30
         # self.xminmaxChanged()
@@ -1217,7 +1217,7 @@ class XModFit(QWidget):
                     self.fit.functionCalled.connect(self.fitErrorCallback)
                 self.showFitInfoDlg(emcee_walker=emcee_walker,emcee_steps=emcee_steps, emcee_burn = emcee_burn)
                 self.runFit(emcee_walker=emcee_walker, emcee_steps=emcee_steps, emcee_burn=emcee_burn,
-                            emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_thin=emcee_thin, backendFile=backendFile)
+                            emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_thin=emcee_thin)#, backendFile=backendFile)
                 if self.fit_stopped:
                     self.fit.result.params = self.temp_params
                 #self.fit_report,self.fit_message=self.fit.perform_fit(self.xmin,self.xmax,fit_scale=self.fit_scale,\
@@ -2020,21 +2020,21 @@ class XModFit(QWidget):
             self.emcee_frac=self.emcee_burn/self.emcee_steps
         self.doFit(fit_method='emcee', emcee_walker=self.emcee_walker, emcee_steps=self.emcee_steps,
                        emcee_cores=self.emcee_cores, reuse_sampler=self.reuse_sampler, emcee_burn=self.emcee_burn,
-                   emcee_thin=self.emcee_thin,backendFile='mcmc_chains.h5')
+                   emcee_thin=self.emcee_thin)#,backendFile='mcmc_chains.h5')
 
 
     def conf_interv_status(self,params,iterations,residual,fit_scale):
         self.confIntervalStatus.setText(self.confIntervalStatus.text().split('\n')[0]+'\n\n {:^s} = {:10d}'.format('Iteration',iterations))            
         QApplication.processEvents()
         
-    def runFit(self,  emcee_walker=100, emcee_steps=100, emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1, backendFile=None):
+    def runFit(self,  emcee_walker=100, emcee_steps=100, emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):#, backendFile=None):
         self.start_time=time.time()
         xmin, xmax = self.xmin[self.sfnames[-1]], self.xmax[self.sfnames[-1]]
         self.fit_report,self.fit_message=self.fit.perform_fit(xmin,xmax,fit_scale=self.fit_scale, fit_method=self.fit_method,
                                                               maxiter=int(self.fitIterationLineEdit.text()),
                                                               emcee_walker=emcee_walker, emcee_steps=emcee_steps,
                                                               emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_burn=emcee_burn,
-                                                              emcee_thin=emcee_thin, backendFile=backendFile)
+                                                              emcee_thin=emcee_thin)#, backendFile=backendFile)
         
     
     def showFitInfoDlg(self, emcee_walker=100, emcee_steps=100, emcee_burn=30):
