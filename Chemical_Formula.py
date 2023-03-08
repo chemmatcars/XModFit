@@ -12,13 +12,14 @@ class Chemical_Formula:
     def __init__(self, formula=None):
         self.formula = formula
         self.xdb = XrayDB()
-        cols = ['symbol', 'covalent_radius_cordero']
+        cols = ['symbol', 'covalent_radius_cordero', 'vdw_radius']
         try:
             ptable=fetch_table('elements')
         except:
             ptable = get_table('elements')
         x = ptable[cols]
         self.covalent_radius = x.set_index('symbol').T.to_dict('index')['covalent_radius_cordero']
+        self.vdw_radius = x.set_index('symbol').T.to_dict('index')['vdw_radius']
         if formula is not None:
             self.parse(self.formula)
 
@@ -72,11 +73,17 @@ class Chemical_Formula:
         else:
             return 0.0
 
-    def molar_volume(self):
-        """Returns molar volumes in cm^3 or ml"""
+    def molar_volume(self, radius='vdw_radius'):
+        """Returns molar volumes in cm^3 or ml
+        :param radius: 'vdw_radius' or 'cov_radius'
+        """
         volume=0.0
-        for ele,moles in self.formula_dict.items():
-            volume+=moles*4*np.pi*self.covalent_radius[ele]**3/3
+        if radius=='cov_radius':
+            for ele, moles in self.formula_dict.items():
+                volume += moles * 4 * np.pi * self.covalent_radius[ele]**3/3
+        else:
+            for ele,moles in self.formula_dict.items():
+                volume += moles * 4 * np.pi * self.vdw_radius[ele]**3/3
         return 6.023e23*volume*1e-30
 
 

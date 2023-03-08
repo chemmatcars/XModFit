@@ -45,7 +45,7 @@ import utils
 import xraydb
 from ConsoleWidget import ConsoleWidget
 from collections import OrderedDict
-
+import datetime
 
 
 
@@ -410,20 +410,26 @@ class XModFit(QWidget):
 
     def loadConsoleScript(self):
         fname=QFileDialog.getOpenFileName(self,'Open Console Scripts',directory=self.curDir,filter="Script Files (*.py)")[0]
-        self.consoleWidget.print_text("%load "+fname)
+        if fname!='':
+            self.consoleWidget.print_text("%load "+fname)
+            self.consoleDock.raiseDock()
 
     def create_consoleDock(self):
         self.consoleLayout = pg.LayoutWidget(self)
         row = 0
         col = 0
         self.consoleWidget=ConsoleWidget(parent=self)
+        dataDlg=Data_Dialog()
+        self.consoleWidget.push_vars({'readData':dataDlg.readData, 'data': {},
+                                      'plotColIndex': {}, 'plotColors': {},
+                                      'expressions': {}})
         self.consoleLayout.addWidget(self.consoleWidget, row=row, col=col)
         self.consoleDock.addWidget(self.consoleLayout)
     def aboutDialog(self):
-        QMessageBox.information(self,'About','Copyright (c) 2022 NSF\'s ChemMAtCARS, University of Chicago.\n\n'
+        QMessageBox.information(self,'About','Copyright (c) %d NSF\'s ChemMAtCARS, University of Chicago.\n\n'
                                              'Developers:\n'
-                                             'Mrinal K. Bera (mrinalkb@cars.uchicago.edu \n'
-                                             'Wei Bu (bu@cars.uchicago.edu)'
+                                             'Mrinal K. Bera (mrinalkb@cars.uchicago.edu\n'
+                                             'Wei Bu (bu@cars.uchicago.edu)'%datetime.date.today().year
                                              ,QMessageBox.Ok)
         
     def create_funcDock(self):
@@ -663,7 +669,7 @@ class XModFit(QWidget):
         
         self.dataLayoutWidget.nextRow()
         self.dataListWidget=QListWidget()
-        self.dataListWidget.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        self.dataListWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.dataListWidget.itemSelectionChanged.connect(self.dataFileSelectionChanged)
         self.dataListWidget.itemDoubleClicked.connect(self.openDataDialog)
         self.dataLayoutWidget.addWidget(self.dataListWidget,colspan=2)
@@ -734,13 +740,15 @@ class XModFit(QWidget):
         for item in self.dataListWidget.selectedItems():
             self.sfnames.append(item.text())
             txt=item.text()
-            self.pfnames=self.pfnames+[txt.split('<>')[0]+':'+key for key in self.data[txt].keys()]
+            fnum=txt.split('<>')[0]
+            self.pfnames=self.pfnames+[fnum+':'+key for key in self.data[txt].keys()]
+            self.meta[txt]['File Number'] = int(fnum)
         if len(self.sfnames)>0:
             self.metaDataInfoUpdated(self.sfnames[-1])
             self.curDir = os.path.dirname(self.sfnames[-1].split('<>')[1])
             xmin=np.min([self.xmin[key] for key in self.sfnames])
             xmax=np.max([self.xmax[key] for key in self.sfnames])
-            self.xminmaxLineEdit.setText('%0.3f:%0.3f'%(xmin,xmax))
+            self.xminmaxLineEdit.setText('%0.6f:%0.6f'%(xmin,xmax))
             # self.xminmaxChanged()
             # if len(self.data[self.sfnames[-1]].keys())>1:
             #     text='{'
@@ -753,10 +761,10 @@ class XModFit(QWidget):
             self.fitButton.setEnabled(True)
         else:
             self.fitButton.setDisabled(True)
-        try:
-            self.update_plot()
-        except:
-            pass
+        # try:
+        self.update_plot()
+        # except:
+        #     pass
         # self.update_plot()
         # self.xChanged()
         self.errorAvailable = False
@@ -764,12 +772,16 @@ class XModFit(QWidget):
         self.calcConfInterButton.setDisabled(True)
             
     def openDataDialog(self,item):
-        fnum,fname=item.text().split('<>')
         try:
             self.dataListWidget.itemSelectionChanged.disconnect()
         except:
             pass
-        tfname=item.text()
+        if len(self.dataListWidget.selectedItems())>1:
+            for titem in self.dataListWidget.selectedItems():
+                if titem.text()!=item.text():
+                    titem.setSelected(False)
+        tfname = item.text()
+        fnum, fname = tfname.split('<>')
         data_dlg=Data_Dialog(data=copy.copy(self.dlg_data[tfname]),parent=self,expressions=copy.copy(self.expressions[tfname]),
                              plotIndex=copy.copy(self.plotColIndex[tfname]),colors=copy.copy(self.plotColors[tfname]))
         data_dlg.setModal(True)
@@ -788,6 +800,10 @@ class XModFit(QWidget):
                 for key in self.data[tfname].keys():
                     self.plotWidget.add_data(self.data[tfname][key]['x'],self.data[tfname][key]['y'],
                                              yerr=self.data[tfname][key]['yerr'],name='%s:%s'%(fnum,key),color=self.plotColors[tfname][key])
+                self.xmin[tfname] = np.min(
+                    [np.min(self.data[tfname][k1]['x']) for k1 in self.data[tfname].keys()])
+                self.xmax[tfname] = np.max(
+                    [np.max(self.data[tfname][k1]['x']) for k1 in self.data[tfname].keys()])
             else:
                 text = '%s<>%s' % (fnum, newFname)
                 self.data[text] = self.data.pop(tfname)
@@ -801,9 +817,13 @@ class XModFit(QWidget):
                 for key in self.data[text].keys():
                     self.plotWidget.add_data(self.data[text][key]['x'], self.data[text][key]['y'], yerr=self.data[text][key]['yerr'],
                                              name='%s:%s'%(fnum,key),color=self.plotColors[text][key])
+                self.xmin[text] = np.min(
+                    [np.min(self.data[text][k1]['x']) for k1 in self.data[text].keys()])
+                self.xmax[text] = np.max(
+                    [np.max(self.data[text][k1]['x']) for k1 in self.data[text].keys()])
         self.dataFileSelectionChanged()
         self.dataListWidget.itemSelectionChanged.connect(self.dataFileSelectionChanged)
-        self.consoleWidget.push_vars({'data': self.dlg_data})
+        self.consoleWidget.push_vars({'data': self.dlg_data, 'plotColIndex':self.plotColIndex, 'plotColors':self.plotColors, 'expressions':self.expressions})
 
     def updateData(self):
         fnames=[self.dataListWidget.item(i).text() for i in range(self.dataListWidget.count())]
@@ -817,6 +837,7 @@ class XModFit(QWidget):
                 progressDlg.close()
                 break
             fnum,_= fname.split('<>')
+            self.dlg_data[fname]['data'].reset_index(inplace = True, drop = True)
             data_dlg = Data_Dialog(data=copy.copy(self.dlg_data[fname]), parent=self,
                                    expressions=copy.copy(self.expressions[fname]),
                                    plotIndex=copy.copy(self.plotColIndex[fname]),
@@ -1095,7 +1116,7 @@ class XModFit(QWidget):
     #         pass
 
     def doFit(self, fit_method=None, emcee_walker=100, emcee_steps=100,
-                       emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):
+                       emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):#, backendFile=None):
         self.fchanged=False
         self.tchisqr=1e30
         # self.xminmaxChanged()
@@ -1131,10 +1152,7 @@ class XModFit(QWidget):
                                                           'later.', QMessageBox.Ok)
             return
         self.fit_scale=self.fitScaleComboBox.currentText()
-        try:
-            self.fit.functionCalled.disconnect()
-        except:
-            pass
+        self.disconnect_fit_function()
 
         selItems=self.dataListWidget.selectedItems()
         try:
@@ -1148,23 +1166,19 @@ class XModFit(QWidget):
         if len(selItems)>1:
             if self.fit_method=='emcee':
                 QMessageBox.warning(self, 'MultiFit Warning', 'Cannot perfrom Errorbar estimation on more than one data. '
-                                                             'Plesae select only one dataset at a time.',QMessageBox.Ok)
+                                                             'Please select only one dataset at a time.',QMessageBox.Ok)
                 return
             else:
                 self.fitProgressDlg=QProgressDialog('Fitting multiple data...','Abort Fit',-1,len(selItems)-1,parent=self)
                 self.fitProgressDlg.setModal(True)
                 self.fitProgressDlg.forceShow()
-        else:
-            if self.fit_method != 'emcee':
-                self.fit.functionCalled.connect(self.fitCallback)
-            else:
-                self.fit.functionCalled.connect(self.fitErrorCallback)
 
         for itemNum, item in enumerate(selItems):
             if len(selItems)>1:
                 if self.fitProgressDlg.wasCanceled():
                     self.fitProgressDlg.setValue(len(selItems)-1)
                     break
+            self.disconnect_fit_function()
             item.setSelected(True)
             fname=item.text()
             if len(self.data[fname].keys())>1:
@@ -1189,6 +1203,7 @@ class XModFit(QWidget):
             #     self.fit.y=self.data[fname]['y'][posval].T[0]
             #     self.fit.x=self.data[fname]['x'][posval].T[0]
             #     self.fit.yerr=self.data[fname]['yerr'][posval].T[0]
+
             self.fit.set_x(x,y=y,yerr=yerr)
             #self.update_plot()
             self.oldParams=copy.copy(self.fit.params)
@@ -1196,9 +1211,13 @@ class XModFit(QWidget):
             if self.fit.params['__mpar__']!={}:
                 self.oldmpar=copy.deepcopy(self.mfitParamData)
             try:
+                if self.fit_method != 'emcee':
+                    self.fit.functionCalled.connect(self.fitCallback)
+                else:
+                    self.fit.functionCalled.connect(self.fitErrorCallback)
                 self.showFitInfoDlg(emcee_walker=emcee_walker,emcee_steps=emcee_steps, emcee_burn = emcee_burn)
                 self.runFit(emcee_walker=emcee_walker, emcee_steps=emcee_steps, emcee_burn=emcee_burn,
-                            emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_thin=emcee_thin)
+                            emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_thin=emcee_thin)#, backendFile=backendFile)
                 if self.fit_stopped:
                     self.fit.result.params = self.temp_params
                 #self.fit_report,self.fit_message=self.fit.perform_fit(self.xmin,self.xmax,fit_scale=self.fit_scale,\
@@ -1213,10 +1232,7 @@ class XModFit(QWidget):
                     self.emcee_steps=100
                     self.emcee_frac=self.emcee_burn/self.emcee_steps
                     self.showConfIntervalButton.setDisabled(True)
-                    try:
-                        self.fit.functionCalled.disconnect()
-                    except:
-                        pass
+                    self.disconnect_fit_function()
                     try:
                         self.sfitParamTableWidget.cellChanged.disconnect()
                         for i in range(self.mfitParamTabWidget.count()):
@@ -1291,6 +1307,7 @@ class XModFit(QWidget):
                                                      self.fit.yerr[self.fit.imin:self.fit.imax + 1],
                                                      self.fit.yfit)).T
                                 np.savetxt(ofname + '_fit.txt', fitdata, header=header, comments='#')
+                            self.saveParameters(fname=ofname+'_fitparam.par')
                             self.calcConfInterButton.setEnabled(True)
                             self.update_plot()
                             if self.autoSaveGenParamCheckBox.isChecked():
@@ -1334,6 +1351,7 @@ class XModFit(QWidget):
                                                  self.fit.yerr[self.fit.imin:self.fit.imax + 1],
                                                  self.fit.yfit)).T
                             np.savetxt(ofname + '_fit.txt', fitdata, header=header, comments='#')
+                        self.saveParameters(fname=ofname + '_fitparam.par')
                         self.calcConfInterButton.setEnabled(True)
                         self.update_plot()
                         if self.autoSaveGenParamCheckBox.isChecked():
@@ -1344,10 +1362,7 @@ class XModFit(QWidget):
                     self.reuse_sampler = True
                     self.emceeConfIntervalWidget.reuseSamplerCheckBox.setEnabled(True)
                     self.emceeConfIntervalWidget.reuseSamplerCheckBox.setCheckState(Qt.Checked)
-                    try:
-                        self.fit.functionCalled.disconnect()
-                    except:
-                        pass
+                    self.disconnect_fit_function()
                     self.perform_post_sampling_tasks()
                     # self.showConfIntervalButton.setEnabled(True)
             except:
@@ -1376,10 +1391,15 @@ class XModFit(QWidget):
         for i in range(self.mfitParamTabWidget.count()):
             mkey=self.mfitParamTabWidget.tabText(i)
             self.mfitParamTableWidget[mkey].cellChanged.connect(self.mfitParamChanged_new)
+        self.disconnect_fit_function()
+
+
+    def disconnect_fit_function(self):
         try:
             self.fit.functionCalled.disconnect()
         except:
             pass
+
 
 
 
@@ -2000,21 +2020,21 @@ class XModFit(QWidget):
             self.emcee_frac=self.emcee_burn/self.emcee_steps
         self.doFit(fit_method='emcee', emcee_walker=self.emcee_walker, emcee_steps=self.emcee_steps,
                        emcee_cores=self.emcee_cores, reuse_sampler=self.reuse_sampler, emcee_burn=self.emcee_burn,
-                   emcee_thin=self.emcee_thin)
+                   emcee_thin=self.emcee_thin)#,backendFile='mcmc_chains.h5')
 
 
     def conf_interv_status(self,params,iterations,residual,fit_scale):
         self.confIntervalStatus.setText(self.confIntervalStatus.text().split('\n')[0]+'\n\n {:^s} = {:10d}'.format('Iteration',iterations))            
         QApplication.processEvents()
         
-    def runFit(self,  emcee_walker=100, emcee_steps=100, emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):
+    def runFit(self,  emcee_walker=100, emcee_steps=100, emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):#, backendFile=None):
         self.start_time=time.time()
         xmin, xmax = self.xmin[self.sfnames[-1]], self.xmax[self.sfnames[-1]]
         self.fit_report,self.fit_message=self.fit.perform_fit(xmin,xmax,fit_scale=self.fit_scale, fit_method=self.fit_method,
                                                               maxiter=int(self.fitIterationLineEdit.text()),
                                                               emcee_walker=emcee_walker, emcee_steps=emcee_steps,
                                                               emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_burn=emcee_burn,
-                                                              emcee_thin=emcee_thin)
+                                                              emcee_thin=emcee_thin)#, backendFile=backendFile)
         
     
     def showFitInfoDlg(self, emcee_walker=100, emcee_steps=100, emcee_burn=30):
@@ -2348,11 +2368,12 @@ class XModFit(QWidget):
 
                 data_key=str(self.fileNumber)+'<>'+fname
                 data_dlg=Data_Dialog(fname=fname,parent=self)
-                #data_dlg.setModal(True)
+                data_dlg.setModal(True)
                 data_dlg.closePushButton.setText('Cancel')
                 if len(fnames)>1:
                     data_dlg.accept()
                 else:
+                    #data_dlg.show()
                     data_dlg.exec_()
                 if data_dlg.acceptData:
                     self.dlg_data[data_key]=data_dlg.data
@@ -2384,7 +2405,7 @@ class XModFit(QWidget):
         self.errorAvailable = False
         self.reuse_sampler = False
         self.calcConfInterButton.setDisabled(True)
-        self.consoleWidget.push_vars({'data': self.dlg_data})
+        self.consoleWidget.push_vars({'data': self.dlg_data, 'plotColIndex':self.plotColIndex, 'plotColors':self.plotColors, 'expressions':self.expressions})
 
     def metaDataInfoUpdated(self,data_key):
         try:
@@ -2433,7 +2454,7 @@ class XModFit(QWidget):
         self.errorAvailable = False
         self.reuse_sampler = False
         self.calcConfInterButton.setDisabled(True)
-        self.consoleWidget.push_vars({'data': self.dlg_data})
+        self.consoleWidget.push_vars({'data': self.dlg_data, 'plotColIndex':self.plotColIndex, 'plotColors':self.plotColors, 'expressions':self.expressions})
 
             
         
@@ -2454,7 +2475,7 @@ class XModFit(QWidget):
 
         self.fixedparamLayoutWidget.nextRow()
         self.saveParamButton = QPushButton('Save Parameters')
-        self.saveParamButton.clicked.connect(self.saveParameters)
+        self.saveParamButton.clicked.connect(lambda x: self.saveParameters(fname=None))
         self.fixedparamLayoutWidget.addWidget(self.saveParamButton,col=1)
         self.loadParamButton = QPushButton('Load Parameters')
         self.loadParamButton.clicked.connect(lambda x: self.loadParameters(fname=None))
@@ -3035,11 +3056,12 @@ class XModFit(QWidget):
         #     QMessageBox.warning(self,'Selection Error','Please select a single generated data to be saved.',QMessageBox.Ok)
         
         
-    def saveParameters(self):
+    def saveParameters(self, fname=None):
         """
         Saves all the fixed and fitted parameteres in a file
         """
-        fname=QFileDialog.getSaveFileName(self,caption='Save parameters as',directory=self.curDir,filter='Parameter files (*.par)')[0]
+        if fname is None:
+            fname=QFileDialog.getSaveFileName(self,caption='Save parameters as',directory=self.curDir,filter='Parameter files (*.par)')[0]
         if fname!='':
             if fname[-4:]!='.par':
                 fname=fname+'.par'

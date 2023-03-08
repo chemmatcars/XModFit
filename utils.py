@@ -4,6 +4,8 @@ from numpy.linalg import inv
 from functools import lru_cache
 from Chemical_Formula import Chemical_Formula
 import copy
+from Bio import PDB
+import string
 
 cf=Chemical_Formula(formula='Au')
 
@@ -134,16 +136,17 @@ def calc_rho(R=(1.0, 0.0), material=('Au', 'H2O'), relement='Au', density=(19.3,
                 density[i] = fac * density[i]
                 solute_elements = cf.elements()
                 solute_mw = cf.molecular_weight()
-                solute_mv = cf.molar_volume()
+                solute_mv = cf.molar_volume()*0.6
                 solute_mole_ratio = cf.element_mole_ratio()
 
                 solvent_formula = cf.parse(solvent)
                 solvent_elements = cf.elements()
+                solvent_mv = cf.molar_volume()*0.6
                 solvent_mw = cf.molecular_weight()
                 solvent_mole_ratio = cf.element_mole_ratio()
 
                 solvent_moles = sol_density[i] * (1 - solute_mv * density[i] / solute_mw) / solvent_mw
-                solute_moles = density[i] / solute_mw
+                solute_moles = density[i]/solute_mw
                 total_moles = solvent_moles + solute_moles
                 solvent_mole_fraction = solvent_moles / total_moles
                 solute_mole_fraction = solute_moles / total_moles
@@ -153,6 +156,7 @@ def calc_rho(R=(1.0, 0.0), material=('Au', 'H2O'), relement='Au', density=(19.3,
                 for ele in solvent_mole_ratio.keys():
                     comb_material += '%s%.10f' % (ele, solvent_mole_ratio[ele] * solvent_mole_fraction)
                 density[i] = density[i] + sol_density[i] * (1 - solute_mv * density[i] / solute_mw)
+                print(solute_mv)
                 # self.output_params['scaler_parameters']['density[%s]' % material[i]]=tdensity
             else:
                 element_adjust = None
@@ -232,3 +236,29 @@ def create_steps(x=[1],y=[1]):
         r1=r2
     #res=np.vstack((res,np.array([[r1,y[-1]],[r1+x[-1],y[-1]]])))
     return res[:,0],res[:,1]
+
+def pdb2xyz(pdbfname, xyzfname):
+    parser = PDB.PDBParser()
+    io = PDB.PDBIO()
+    struct = parser.get_structure('pdbfname', pdbfname)
+    #Reading PDB file
+    Natom = 0
+    atoms = {}
+    for model in struct:
+        for chain in model:
+            for residue in chain:
+                for atom in residue:
+                    x, y, z = atom.get_coord()
+                    atoms[Natom] = {'element': atom.element, 'X': x, 'Y': y, 'Z': z}
+                    Natom += 1
+    #Writing XYZ file
+    fh = open(xyzfname,'w')
+    fh.write('%d\n\n'%(Natom))
+    for i in range(Natom):
+        fh.write('%s %.5f %.5f %.5f\n'%(string.capwords(atoms[i]['element']),atoms[i]['X'],atoms[i]['Y'],atoms[i]['Z']))
+    fh.close()
+
+
+
+
+

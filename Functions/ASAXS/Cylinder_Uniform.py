@@ -23,30 +23,30 @@ import numba_scipy.special
 @njit(parallel=True,cache=True)
 def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
     #HvvgtR: H>>R means infinitely long cylinder
-    pi=3.14159
-    dalf = pi/Nalf
+    pi = 3.14159
+    dalf = pi/Nalf/2
     fft = np.zeros_like(q)
     ffs = np.zeros_like(q)
     ffc = np.zeros_like(q)
     ffr = np.zeros_like(q)
-    Nlayers=len(R)
-    tR=np.cumsum(R)
+    Nlayers = len(R)
+    tR = np.cumsum(R)
     V = pi*tR[:-1]**2*H
-    drho=2.0*np.diff(np.array(rho))*V
-    deirho=2.0*np.diff(np.array(eirho))*V
-    dadensity=2.0*np.diff(np.array(adensity))*V
+    drho = 2.0 * np.diff(np.array(rho))*V
+    deirho = 2.0 * np.diff(np.array(eirho))*V
+    dadensity = 2.0 * np.diff(np.array(adensity))*V
     for i in prange(len(q)):
         for ialf in prange(Nalf):
-            alf = ialf*dalf + 1e-6
-            tft = np.complex(0.0,0.0)
+            alf = ialf * dalf + 1e-6
+            tft = np.complex(0.0, 0.0)
             tfs = 0.0
             tfr = 0.0
             for k in prange(Nlayers-1):
-                qh=np.abs(q[i]*H*np.cos(alf)/2)
-                fach=(1.0-HvvgtR)*np.sin(qh)/qh+HvvgtR*np.cos(qh-pi/4.0)*np.sqrt(2/pi/qh)
-                qr=q[i]*tR[k]*np.sin(alf)
-                facR=j1(qr)/qr
-                fac =  fach*facR
+                qh = q[i] * H * np.cos(alf) / 2
+                fach = (1.0 - HvvgtR) * np.sin(qh) / qh + HvvgtR * np.cos(qh - pi / 4.0) * np.sqrt(2 / pi / qh)
+                qr = q[i] * tR[k] * np.sin(alf)
+                facR = j1(qr) / qr
+                fac = fach * facR
                 tft += drho[k] * fac
                 tfs += deirho[k] * fac
                 tfr += dadensity[k] * fac
@@ -185,7 +185,7 @@ class Cylinder_Uniform: #Please put the class name same as the function name
         eiform = np.zeros_like(q)
         aform = np.zeros_like(q)
         cform = np.zeros_like(q)
-        pfac = (2.818e-5 * 1.0e-8) ** 2
+        pfac = 7.9411e-26   #(2.818e-5 * 1.0e-8) ** 2
         for i in range(len(dr)):
             r = np.array(R) * (1 + (dr[i] - totalR) / totalR)
             # fft, ffs, ffc, ffr = ff_cylinder_ml_asaxs(q, H, r, rho, eirho, adensity, Nalf)
@@ -255,6 +255,8 @@ class Cylinder_Uniform: #Please put the class name same as the function name
                     sqf[key] = self.norm*1e-9 * 6.022e20 *sqft[key] * struct + self.abkg # in cm^-1
             key1='Total'
             total= self.norm*1e-9 * 6.022e20 *sqft[key1] * struct + self.sbkg
+            if 'Total' in self.x.keys():
+                sqf[key1]=total
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist}

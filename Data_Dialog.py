@@ -163,7 +163,8 @@ class Data_Dialog(QDialog):
             self.metaDataTableWidget.itemChanged.disconnect()
         except:
             pass
-        self.metaDialog=MetaData_Dialog()
+        self.metaDialog=MetaData_Dialog(parent=self)
+        self.metaDialog.setModal(True)
         if self.metaDialog.exec_():
             name,value=self.metaDialog.parNameLineEdit.text(),self.metaDialog.parValueLineEdit.text()
             if name not in self.data['meta'].keys():
@@ -290,7 +291,8 @@ class Data_Dialog(QDialog):
             row,col=self.data['data'].shape
             if colName is None:
                 colName='Col_%d'%(col)
-            self.insertColDialog=InsertCol_Dialog(colName=colName,minCounter=1,maxCounter=row,expr=expr)
+            self.insertColDialog=InsertCol_Dialog(colName=colName,minCounter=1,maxCounter=row,expr=expr,parent=self)
+            self.insertColDialog.setModal(True)
             if self.insertColDialog.exec_():
                 imin=eval(self.insertColDialog.minCounterLineEdit.text())
                 imax=eval(self.insertColDialog.maxCounterLineEdit.text())
@@ -631,9 +633,11 @@ class Data_Dialog(QDialog):
             self.plotSetupTableWidget.cellWidget(row,3).currentIndexChanged.connect(self.updateCellData)
             self.plotSetupTableWidget.setCurrentCell(row,3)
             color=self.plotSetupTableWidget.cellWidget(row,4).color()
-            self.plotSetupTableWidget.setCellWidget(row, 4, pg.ColorButton(color=color))
+            self.plotSetupTableWidget.setCellWidget(row, 4, pg.ColorButton(parent=self,color=color))
             self.plotSetupTableWidget.cellWidget(row, 4).sigColorChanging.connect(self.updateCellData)
             self.plotSetupTableWidget.cellWidget(row, 4).sigColorChanged.connect(self.updateCellData)
+            self.plotSetupTableWidget.cellWidget(row, 4).colorDialog.setParent(self.plotSetupTableWidget.cellWidget(row, 4))
+            self.plotSetupTableWidget.cellWidget(row, 4).colorDialog.setModal(True)
             self.updatePlotData(row,i)
         self.plotSetupTableWidget.resizeRowsToContents()
         self.plotSetupTableWidget.resizeColumnsToContents()
@@ -686,7 +690,9 @@ class Data_Dialog(QDialog):
             self.plotSetupTableWidget.cellWidget(row,3).addItems(['None']+columns)
             if color is None:
                 color=next(self.colcycler)#array([random.randint(200, high=255),0,0])
-            self.plotSetupTableWidget.setCellWidget(row, 4,pg.ColorButton(color=color))
+            self.plotSetupTableWidget.setCellWidget(row, 4,pg.ColorButton(parent=self,color=color))
+            self.plotSetupTableWidget.cellWidget(row, 4).colorDialog.setParent(self.plotSetupTableWidget.cellWidget(row, 4))
+            self.plotSetupTableWidget.cellWidget(row, 4).colorDialog.setModal(True)
             self.plotSetupTableWidget.cellWidget(row, 4).sigColorChanging.connect(self.updateCellData)
             self.plotSetupTableWidget.cellWidget(row, 4).sigColorChanged.connect(self.updateCellData)
             if plotIndex is not None:
@@ -817,6 +823,7 @@ if __name__=='__main__':
         fname=None
     #data={'meta':{'a':1,'b':2},'data':pd.DataFrame({'x':arange(1000),'y':arange(1000),'y_err':arange(1000)})}
     w=Data_Dialog(fname=fname,data=None,matplotlib=False)
+    w.show()
     w.resize(600,400)
 #    w.showFullScreen()
     sys.exit(app.exec_())
