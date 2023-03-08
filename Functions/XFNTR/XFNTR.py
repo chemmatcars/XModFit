@@ -18,7 +18,7 @@ sys.path.append(os.path.abspath('./Fortran_rountines'))
 
 
 class XFNTR: #Please put the class name same as the function name
-    def __init__(self,x=0.1,E=10.0, mpar={}, topchem='He', topden=1.78e-4, botchem='Sr50Cl100H110493.721O55246.86', botden=1.0032, element='Sr', line='Ka1', vslit= 0.04, detlen=10.5, qoff=0.0, yscale=1,int_bg=0, Rc=0, sur_cov=0,ion_depth=0):
+    def __init__(self,x=0.1,E=10.0, mpar={}, topchem='He', topden=1.78e-4, botchem='Sr50Cl100H110493.721O55246.86', botden=1.0032, element='Sr', line='Ka1', vslit= 0.04, detlen=10.5, qoff=0.0, yscale=1,int_bg=0, Rc=0, sur_den=0,ion_depth=0):
         """
         Calculates X-ray reflectivity from a system of multiple layers using Parratt formalism
 
@@ -36,7 +36,7 @@ class XFNTR: #Please put the class name same as the function name
         yscale  : a scale factor for the fluorescence intensity in unit of 1E-3 /AA
         int_bg  : the background fluorescence intensity from the secondary scattering from the primary beam, should be zero for air/water interface
         Rc : the radius of the interfacial curvature in unit of meter; 0 means it's flat
-        sur_cov : the surface coverage of target element in unit of per \AA^-2
+        sur_den : the surface density of target element in unit of number per \AA^-2
         ion_depth : the monolayer thickness in unit of \AA where doesn't have any ions
         """
         if type(x)==list:
@@ -57,7 +57,7 @@ class XFNTR: #Please put the class name same as the function name
         self.yscale = yscale
         self.int_bg = int_bg
         self.Rc = Rc
-        self.sur_cov = sur_cov
+        self.sur_den = sur_den
         self.ion_depth = ion_depth
         elelist = xdb.atomic_symbols
         linelist = list(xdb.xray_lines(98).keys())
@@ -78,7 +78,7 @@ class XFNTR: #Please put the class name same as the function name
         self.params.add('yscale', self.yscale, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('int_bg', self.int_bg, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('Rc', self.Rc, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
-        self.params.add('sur_cov', self.sur_cov, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
+        self.params.add('sur_den', self.sur_den, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('ion_depth', self.ion_depth, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
 
     def parseFormula(self, chemfor):
@@ -159,7 +159,7 @@ class XFNTR: #Please put the class name same as the function name
                     tempf1 = np.exp(- alpha[i] * (fprint[i] + detlen)/ 2 /effd + fprint[i]/ 2 / topd)
                     tempf2 = np.exp(- alpha[i] * (detlen - fprint[i]) / 2 / effd - fprint[i] / 2 / topd)
                     effv = 2 * topd * effd * np.sinh(fprint[i]/ 2 / topd) + topd * effd * effd * (tempf1 - tempf2) / (topd * alpha[i] - effd)
-                int_sur = self.sur_cov * topd * (np.exp(detlen / 2 / topd) - np.exp(-detlen / 2 / topd))  # surface intensity
+                int_sur = self.sur_den * topd * (np.exp(detlen / 2 / topd) - np.exp(-detlen / 2 / topd))  # surface intensity
                 int_bulk =  effv * self.__avoganum__ * conbulk / 1e27  # bluk intensity
                 int_tot = np.exp(-self.ion_depth/effd) * self.yscale * 1e-3 * trans * (int_sur + int_bulk) + self.int_bg
                 flu.append(int_tot)
@@ -184,7 +184,7 @@ class XFNTR: #Please put the class name same as the function name
                         bsum = bsum + np.exp(-self.ion_depth/effd) * np.exp(-x[j] / topd) * trans * effd * (np.exp(-y1 * alpha[i] / effd) - np.exp(
                             -y2 * alpha[i] / effd))  # surface has no contribution at this region
                 int_bulk = bsum * stepsize * self.__avoganum__ * conbulk / 1e27
-                int_sur = ssum * stepsize * self.sur_cov
+                int_sur = ssum * stepsize * self.sur_den
                 int_tot =  self.yscale * 1e-3 * (int_bulk + int_sur) + self.int_bg
                 flu.append(int_tot)
         return flu
