@@ -20,7 +20,7 @@ sys.path.append(os.path.abspath('./Fortran_rountines'))
 class XFNTR_ADV: #Please put the class name same as the function name
     def __init__(self,x=0.1,E=20.0, mpar={'Top':{'Components':['Sr'],'Concentration':[0],'Radius':[1.25]}, 'Bottom':{'Components':['SrCl2'],'Concentration':[50.0],'Radius':[2.388]}},
                  topchem='C12H26', topden=0.75, botchem='H2O', botden=0.997, element='Sr', line='Ka1', beam_profile='Uniform',
-                 x_axis = 'Qz', beamwid = 0.02, detlen=12.7, gl2=1238.0, qz=0.01, samplesize=76, stepsize=100, qoff=0.0, shoff=0.0, gl2off=0.0, detoff=0.0, yscale=1, int_bg=0, Rc=300, sur_cov=0, topextra=0.0, botextra=0.0):
+                 x_axis = 'Qz', beamwid = 0.02, detlen=12.7, gl2=1238.0, qz=0.01, samplesize=76, stepsize=100, qoff=0.0, shoff=0.0, gl2off=0.0, detoff=0.0, yscale=1, int_bg=0, Rc=300, sur_den=0, topextra=0.0, botextra=0.0):
         """
         Calculates X-ray reflectivity from a system of multiple layers using Parratt formalism
 
@@ -47,9 +47,9 @@ class XFNTR_ADV: #Please put the class name same as the function name
         yscale  : a scale factor for the fluorescence intensity
         int_bg  : the background fluorescence intensity from the secondary scattering from the primary beam, should be zero for air/water interface
         Rc : the radius of the interfacial curvature in unit of meter
-        sur_cov : the surface coverage of target element in unit of per \AA^-2
-        topextra : extra target ion concentration (mM) in the top phase on the top of the vaule listed in mpar
-        botextra : extra target ion concentration (mM) in the bottom phase on the top of the vaule listed in mpar
+        sur_den : the surface density of target element in unit of number per \AA^-2
+        topextra : extra target ion concentration (mM) in the top phase on the top of the vaule listed in mpar 
+        botextra : extra target ion concentration (mM) in the bottom phase on the top of the vaule listed in mpar 
         mpar:   : components with unknown concentrations(mM) and radius (\AA) in the top and bottom phase
 
         """
@@ -80,7 +80,7 @@ class XFNTR_ADV: #Please put the class name same as the function name
         self.yscale = yscale
         self.int_bg = int_bg
         self.Rc = Rc
-        self.sur_cov = sur_cov
+        self.sur_den = sur_den
         self.topextra = topextra
         self.botextra = botextra
         #self.ion_depth = ion_depth
@@ -106,7 +106,7 @@ class XFNTR_ADV: #Please put the class name same as the function name
         self.params.add('yscale', self.yscale, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('int_bg', self.int_bg, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('Rc', self.Rc, vary=0, min=10, max=np.inf, expr=None, brute_step=0.1)
-        self.params.add('sur_cov', self.sur_cov, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
+        self.params.add('sur_den', self.sur_den, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('detoff', self.detoff, vary=0, min=0, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('topextra', self.topextra, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
         self.params.add('botextra', self.botextra, vary=0, min=-np.inf, max=np.inf, expr=None, brute_step=0.1)
@@ -263,7 +263,7 @@ class XFNTR_ADV: #Please put the class name same as the function name
 
             tot_top = self.yscale * stepsize * (contop+self.topextra*1e-3) * np.sum(np.where(xprime > -self.samplesize * 1e7 / 2, int_top * weighthit, 0)) * self.__avoganum__ / 1e27
             tot_bot = self.yscale * stepsize * (conbot+self.botextra*1e-3) * np.sum(np.where(xprime > -self.samplesize * 1e7 / 2, int_bot * weighthit, 0)) * self.__avoganum__ / 1e27
-            tot_sur = self.yscale * stepsize * np.sum(int_sur * weighthit) * self.sur_cov
+            tot_sur = self.yscale * stepsize * np.sum(int_sur * weighthit) * self.sur_den
 
 
             if len(x0miss)!=0:    # for the ray missing the interface, (all of them from the downsteam side)
