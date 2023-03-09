@@ -265,11 +265,11 @@ class Sphere_Uniform_2_Edep: #Please put the class name same as the function nam
 
             tsqf, Rl, rdist = self.new_sphere(tuple(self.x), self.__R__, self.__Rsig__, tuple(rho),
                                                       tuple(eirho), tuple(adensity), dist=self.dist, Np=self.Np,tol=self.tol)
-
+            sqf=6.022e20 * self.norm * 1e-9 * np.array(tsqf) * struct + self.bkg
             if not self.__fit__:
                 for i, j in combinations(range(len(self.__R__[:-1])),2):
                     self.output_params['R_%d_%d' % (i+1,j+1)] = {'x': Rl[:, i], 'y': Rl[:,j], 'names':['R_%d'%(i+1),'R_%d'%(j+1)]}
-                signal = 6.022e20 * self.norm * 1e-9 * np.array(tsqf) * struct + self.bkg
+                signal = sqf
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
                 norm = np.random.normal(self.norm, scale = self.norm_err / 100.0)
@@ -290,7 +290,6 @@ class Sphere_Uniform_2_Edep: #Please put the class name same as the function nam
                 self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1]}
                 self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
-            sqf = tsqf
         return sqf
 
 

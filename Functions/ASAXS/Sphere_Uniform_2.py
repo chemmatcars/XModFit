@@ -305,14 +305,14 @@ class Sphere_Uniform_2: #Please put the class name same as the function name
                                                    tuple(rho), tuple(eirho),
                                                    tuple(adensity), dist=self.dist,
                                                    Np=self.Np,tol=self.tol,keys=tuple(self.choices['term']))
-
+            absnorm = self.norm * 1e-9 * 6.022e20 * struct
             if not self.__fit__:
                 for i, j in combinations(range(len(self.__R__[:-1])),2):
                     self.output_params['R_%d_%d' % (i+1,j+1)] = {'x': Rl[:, i], 'y': Rl[:,j], 'names':['R_%d'%(i+1),'R_%d'%(j+1)]}
-                signal = 6.022e20 * self.norm * 1e-9 * np.array(tsqf['Total']) * struct + self.sbkg
-                asqf = self.norm * 1e-9 * np.array(tsqf['Resonant-term']) * 6.022e20 * struct + self.abkg  # in cm^-1
-                eisqf = self.norm * 1e-9 * np.array(tsqf['SAXS-term']) * 6.022e20 * struct + self.sbkg  # in cm^-1
-                csqf = self.norm * 1e-9 * np.array(tsqf['Resonant-term']) * 6.022e20 * struct + self.cbkg # in cm^-1
+                signal = absnorm * np.array(tsqf['Total']) + self.sbkg
+                asqf = absnorm * np.array(tsqf['Resonant-term']) + self.abkg  # in cm^-1
+                eisqf = absnorm * np.array(tsqf['SAXS-term']) + self.sbkg  # in cm^-1
+                csqf = absnorm * np.array(tsqf['Resonant-term']) + self.cbkg # in cm^-1
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
                 norm = np.random.normal(self.norm, scale = self.norm_err / 100.0)

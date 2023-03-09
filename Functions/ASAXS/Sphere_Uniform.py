@@ -49,7 +49,7 @@ class Sphere_Uniform: #Please put the class name same as the function name
         relement     : Resonant element of the nanoparticle. Default: 'Au'
         Energy       : Energy of X-rays in keV at which the form-factor is calculated. Default: None
         Np           : No. of points with which the size distribution will be computed. Default: 10
-        NrDep        : Energy dependence of the non-resonant element. Default= 'False' (Energy independent), 'True' (Energy dependent)
+        NrDep        : Energy dependence of the non-resonant element. Default= 'True' (Energy dependent), 'False' (Energy independent)
         dist         : The probability distribution function for the radii of different interfaces in the nanoparticles. Default: Gaussian
         norm         : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
         norm_err     : Percentage of error on normalization to simulated energy dependent SAXS data
@@ -150,7 +150,7 @@ class Sphere_Uniform: #Please put the class name same as the function name
         eiform = np.zeros_like(q)
         aform = np.zeros_like(q)
         cform = np.zeros_like(q)
-        pfac = (4 * np.pi * 2.818e-5 * 1.0e-8) ** 2
+        pfac = 1.254e-23 #(4 * np.pi * 2.818e-5 * 1.0e-8) ** 2
         for i in range(len(dr)):
             r = np.array(R) * (1 + (dr[i] - totalR) / totalR)
             ff, mff = ff_sphere_ml(q, r, rho)
@@ -263,14 +263,15 @@ class Sphere_Uniform: #Please put the class name same as the function name
 
             tsqf, eisqf, asqf, csqf = self.new_sphere(tuple(self.x), tuple(self.__R__), self.Rsig, tuple(rho),
                                                       tuple(eirho), tuple(adensity),dist=self.dist,Np=self.Np)
-            sqf = self.norm*1e-9 * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
+            absnorm = self.norm * 1e-9 * 6.022e20 * struct
+            sqf = absnorm * np.array(tsqf) + self.sbkg  # in cm^-1
             if not self.__fit__: #Generate all the quantities below while not fitting
-                asqf = self.norm*1e-9 * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
-                eisqf = self.norm*1e-9 * np.array(eisqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
-                csqf = self.norm*1e-9 * np.array(csqf) * 6.022e20 * struct + self.cbkg  # in cm^-1
+                asqf = absnorm * np.array(asqf) + self.abkg  # in cm^-1
+                eisqf = absnorm * np.array(eisqf) + self.sbkg  # in cm^-1
+                csqf = absnorm * np.array(csqf) + self.cbkg  # in cm^-1
                 # sqerr = np.sqrt(6.020e20*self.flux *self.norm*tsqf*struct*svol+self.sbkg)
                 # sqwerr = (6.022e20*tsqf * svol * self.flux*self.norm*struct + self.sbkg + 2 * (0.5 - np.random.rand(len(tsqf))) * sqerr)
-                signal = 6.022e20 * self.norm*1e-9 * np.array(tsqf) * struct + self.sbkg
+                signal = sqf
                 minsignal=np.min(signal)
                 normsignal=signal/minsignal
                 norm = np.random.normal(self.norm, scale = self.norm_err / 100.0)
