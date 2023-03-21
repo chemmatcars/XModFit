@@ -46,6 +46,8 @@ import xraydb
 from ConsoleWidget import ConsoleWidget
 from collections import OrderedDict
 import datetime
+from emcee import backends
+os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 
 
@@ -263,7 +265,7 @@ class XModFit(QWidget):
         self.mainDock=DockArea(self,parent)
         self.vblayout.addWidget(self.mainDock,5)
 
-        self.emcee_walker = 100
+        self.emcee_walkers = 100
         self.emcee_steps = 100
         self.emcee_burn = 0
         self.emcee_thin = 1
@@ -306,6 +308,7 @@ class XModFit(QWidget):
         self.fchanged=True
         self.chisqr='None'
         self.format='%.6e'
+        self.backend=None
         self.gen_param_items=[]
         self.doubleValidator=QDoubleValidator()
         self.intValidator=QIntValidator()
@@ -871,7 +874,7 @@ class XModFit(QWidget):
         self.update_plot()
 
 
-    # def doFit(self, fit_method=None, emcee_walker=100, emcee_steps=100,
+    # def doFit(self, fit_method=None, emcee_walkers=100, emcee_steps=100,
     #                    emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):
     #     self.fchanged=False
     #     self.tchisqr=1e30
@@ -947,8 +950,8 @@ class XModFit(QWidget):
     #         if self.fit.params['__mpar__']!={}:
     #             self.oldmpar=copy.deepcopy(self.mfitParamData)
     #         try:
-    #             self.showFitInfoDlg(emcee_walker=emcee_walker,emcee_steps=emcee_steps, emcee_burn = emcee_burn)
-    #             self.runFit(emcee_walker=emcee_walker, emcee_steps=emcee_steps, emcee_burn=emcee_burn,
+    #             self.showFitInfoDlg(emcee_walkers=emcee_walkers,emcee_steps=emcee_steps, emcee_burn = emcee_burn)
+    #             self.runFit(emcee_walkers=emcee_walkers, emcee_steps=emcee_steps, emcee_burn=emcee_burn,
     #                         emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_thin=emcee_thin)
     #             if self.fit_stopped:
     #                 self.fit.result.params = self.temp_params
@@ -1115,8 +1118,8 @@ class XModFit(QWidget):
     #     except:
     #         pass
 
-    def doFit(self, fit_method=None, emcee_walker=100, emcee_steps=100,
-                       emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):#, backendFile=None):
+    def doFit(self, fit_method=None, emcee_walkers=100, emcee_steps=100,
+                       emcee_cores=1, reuse_sampler=False, emcee_burn=0, emcee_thin=1, backend=None):
         self.fchanged=False
         self.tchisqr=1e30
         # self.xminmaxChanged()
@@ -1215,14 +1218,16 @@ class XModFit(QWidget):
                     self.fit.functionCalled.connect(self.fitCallback)
                 else:
                     self.fit.functionCalled.connect(self.fitErrorCallback)
-                self.showFitInfoDlg(emcee_walker=emcee_walker,emcee_steps=emcee_steps, emcee_burn = emcee_burn)
-                self.runFit(emcee_walker=emcee_walker, emcee_steps=emcee_steps, emcee_burn=emcee_burn,
-                            emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_thin=emcee_thin)#, backendFile=backendFile)
+                self.showFitInfoDlg(emcee_walkers=emcee_walkers,emcee_steps=emcee_steps, emcee_burn = emcee_burn)
+                self.runFit(emcee_walkers=emcee_walkers, emcee_steps=emcee_steps, emcee_burn=emcee_burn,
+                            emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_thin=emcee_thin,
+                            backend=backend)
                 if self.fit_stopped:
-                    self.fit.result.params = self.temp_params
+                    self.fit.result.params = copy.copy(self.temp_params)
                 #self.fit_report,self.fit_message=self.fit.perform_fit(self.xmin,self.xmax,fit_scale=self.fit_scale,\
                 # fit_method=self.fit_method,callback=self.fitCallback)
-
+                if self.fit_method != 'emcee':
+                    self.final_fit_params=copy.copy(self.fit.result.params)
                 self.fit_info='Fit Message: %s\n'%self.fit_message
 
                 self.closeFitInfoDlg()
@@ -1364,7 +1369,7 @@ class XModFit(QWidget):
                     self.emceeConfIntervalWidget.reuseSamplerCheckBox.setCheckState(Qt.Checked)
                     self.disconnect_fit_function()
                     self.perform_post_sampling_tasks()
-                    # self.showConfIntervalButton.setEnabled(True)
+                    self.showConfIntervalButton.setEnabled(True)
             except:
                 try:
                     self.closeFitInfoDlg()
@@ -1778,18 +1783,22 @@ class XModFit(QWidget):
         """
         self.fit_method = self.fitMethods[self.fitMethodComboBox.currentText()]
         if not self.errorAvailable:
-             self.emcee_walker=(self.fit.result.nvarys+1)*2
+             self.emcee_walkers=(self.fit.result.nvarys+1)*2
         else:
         #     # try:
-             tnum=len(self.fit.result.flatchain[self.fit.result.var_names[0]])/self.emcee_walker
+             tnum=len(self.fit.result.flatchain[self.fit.result.var_names[0]])/self.emcee_walkers
              self.emcee_frac=self.emcee_burn/(tnum/(1.0-self.emcee_frac))
              emcee_burn=tnum*self.emcee_frac/(1.0-self.emcee_frac)
              self.emcee_burn=int(emcee_burn+self.emcee_steps*self.emcee_frac)
         self.emceeConfIntervalWidget = QWidget()
-        self.emceeConfIntervalWidget.setWindowModality(Qt.ApplicationModal)
+        # self.emceeConfIntervalWidget.setWindowModality(Qt.ApplicationModal)
         uic.loadUi('./UI_Forms/EMCEE_ConfInterval_Widget.ui', self.emceeConfIntervalWidget)
         self.emceeConfIntervalWidget.setWindowTitle('MCMC Confidence Interval Caclulator')
-        self.emceeConfIntervalWidget.MCMCWalkerLineEdit.setText(str(self.emcee_walker))
+        self.MCMCBackendFile='./mcmc_chain.h5'
+        self.emceeConfIntervalWidget.MCMCFileLineEdit.setText(self.MCMCBackendFile)
+        self.emceeConfIntervalWidget.loadMCMCFilePushButton.clicked.connect(self.openMCMCBackendFile)
+        self.emceeConfIntervalWidget.startMCMCFilePushButton.clicked.connect(self.startMCMCBackendFile)
+        self.emceeConfIntervalWidget.MCMCWalkerLineEdit.setText(str(self.emcee_walkers))
         self.emceeConfIntervalWidget.MCMCStepsLineEdit.setText(str(self.emcee_steps))
         self.emceeConfIntervalWidget.MCMCBurnLineEdit.setText(str(self.emcee_burn))
         self.emceeConfIntervalWidget.MCMCThinLineEdit.setText(str(self.emcee_thin))
@@ -1823,8 +1832,74 @@ class XModFit(QWidget):
         if self.errorAvailable:
             self.update_emcee_parameters()
             self.perform_post_sampling_tasks()
-            self.cornerPlot()
-            self.emceeConfIntervalWidget.tabWidget.setCurrentIndex=(4)
+            #self.cornerPlot()
+            #self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(4)
+
+    def openMCMCBackendFile(self):
+        file=QFileDialog.getOpenFileName(self, 'Select a MCMC file', directory=self.curDir,filter='MCMC Files (*.h5)')[0]
+        self.iterations = 0
+        if file != '':
+            self.MCMCBackendFile=file
+            self.emceeConfIntervalWidget.MCMCFileLineEdit.setText(self.MCMCBackendFile)
+            self.backend=backends.HDFBackend(self.MCMCBackendFile)
+            self.fit.result.chain=self.backend.get_chain()[..., :, :]
+            self.autoCorrTime=np.array([[self.fit.result.chain.shape[0],np.mean(self.backend.get_autocorr_time(tol=0))]])
+            self.MCMC_starting_step=self.autoCorrTime[-1,0]
+            self.emceeConfIntervalWidget.autoCorrTimeTextEdit.clear()
+            self.emceeConfIntervalWidget.autoCorrTimeTextEdit.append('#MCMC_steps\tCorr_Time')
+            self.emceeConfIntervalWidget.autoCorrTimeTextEdit.append('%d\t%.3f'%(self.autoCorrTime[-1,0],self.autoCorrTime[-1,1]))
+            self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.clear()
+            self.autoCorrPlot_ax1 = self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.add_subplot(1, 1, 1)
+            self.autoCorrPlot_sp, =self.autoCorrPlot_ax1.plot(self.autoCorrTime[:,0],self.autoCorrTime[:,1],'.')
+            self.autoCorrPlot_ax1.set_xlabel('Iterations')
+            self.autoCorrPlot_ax1.set_ylabel('correlation_time')
+            self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.draw()
+            self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.flush_events()
+            self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(3)
+            if self.fit.result.chain.shape[-1]==len(self.fit.result.var_names)+1:
+                if '__lnsigma' not in self.fit.result.var_names:
+                    self.fit.result.var_names.append('__lnsigma')
+                    self.fit.result.nvarys+=1
+                #self.fit.result.flatchain=self.fit.result.flatchain()
+                self.perform_post_sampling_tasks()
+                self.emceeConfIntervalWidget.reuseSamplerCheckBox.setEnabled(True)
+                self.emceeConfIntervalWidget.reuseSamplerCheckBox.setChecked(True)
+                self.update_emcee_parameters()
+            else:
+                QMessageBox.warning(self,'Backend Error','The number of parameters in the imported backend file '
+                                                         'is not same as the current fitting parameters',
+                                    QMessageBox.Ok)
+                self.backend=None
+
+
+    def startMCMCBackendFile(self):
+        file=QFileDialog.getSaveFileName(self, 'Start MCMC file as',directory=self.curDir,filter='MCMC Files (*.h5)')[0]
+        self.iterations=0
+        if file != '':
+            if os.path.exists(file):
+                os.remove(file)
+            self.MCMCBackendFile=file
+            self.emceeConfIntervalWidget.MCMCFileLineEdit.setText(self.MCMCBackendFile)
+            self.backend = backends.HDFBackend(self.MCMCBackendFile)
+            self.autoCorrTime=np.array([[0,1.0]])
+            self.MCMC_starting_step = self.autoCorrTime[-1, 0]
+            self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.clear()
+            self.autoCorrPlot_ax1 = self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.add_subplot(1, 1, 1)
+            self.autoCorrPlot_sp, = self.autoCorrPlot_ax1.plot(self.autoCorrTime[:,0],self.autoCorrTime[:,1],'.')
+            self.autoCorrPlot_ax1.set_xlabel('Iterations')
+            self.autoCorrPlot_ax1.set_ylabel('correlation_time')
+            self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.draw()
+            self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.flush_events()
+            self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(3)
+            self.emceeConfIntervalWidget.reuseSamplerCheckBox.setChecked(False)
+            self.emceeConfIntervalWidget.autoCorrTimeTextEdit.clear()
+            self.emceeConfIntervalWidget.autoCorrTimeTextEdit.append('#MCMC_steps\tCorr_Time')
+            self.emceeConfIntervalWidget.autoCorrTimeTextEdit.append(
+                '%d\t%.3f' % (self.autoCorrTime[-1, 0], self.autoCorrTime[-1, 1]))
+
+            #print(self.autoCorrPlot_sp)
+        else:
+            self.backend=None
 
     def EnableUserDefinedParameterButtons(self,enable=False):
         self.emceeConfIntervalWidget.addUserDefinedParamPushButton.setEnabled(enable)
@@ -1995,7 +2070,7 @@ class XModFit(QWidget):
 
 
     def update_emcee_parameters(self):
-        self.emcee_walker=int(self.emceeConfIntervalWidget.MCMCWalkerLineEdit.text())
+        self.emcee_walkers=int(self.emceeConfIntervalWidget.MCMCWalkerLineEdit.text())
         self.emcee_steps=int(self.emceeConfIntervalWidget.MCMCStepsLineEdit.text())
         self.emcee_burn=int(self.emceeConfIntervalWidget.MCMCBurnLineEdit.text())
         self.emcee_thin = int(self.emceeConfIntervalWidget.MCMCThinLineEdit.text())
@@ -2018,26 +2093,29 @@ class XModFit(QWidget):
         self.update_emcee_parameters()
         if not self.errorAvailable:
             self.emcee_frac=self.emcee_burn/self.emcee_steps
-        self.doFit(fit_method='emcee', emcee_walker=self.emcee_walker, emcee_steps=self.emcee_steps,
+        self.doFit(fit_method='emcee', emcee_walkers=self.emcee_walkers, emcee_steps=self.emcee_steps,
                        emcee_cores=self.emcee_cores, reuse_sampler=self.reuse_sampler, emcee_burn=self.emcee_burn,
-                   emcee_thin=self.emcee_thin)#,backendFile='mcmc_chains.h5')
+                   emcee_thin=self.emcee_thin, backend=self.backend)
 
 
     def conf_interv_status(self,params,iterations,residual,fit_scale):
         self.confIntervalStatus.setText(self.confIntervalStatus.text().split('\n')[0]+'\n\n {:^s} = {:10d}'.format('Iteration',iterations))            
         QApplication.processEvents()
         
-    def runFit(self,  emcee_walker=100, emcee_steps=100, emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1):#, backendFile=None):
+    def runFit(self,  emcee_walkers=100, emcee_steps=100, emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1, backend=None):
         self.start_time=time.time()
+        if self.fit_method=='emcee':
+            self.iterations = 0
+            self.MCMC_starting_step=self.autoCorrTime[-1,0]
         xmin, xmax = self.xmin[self.sfnames[-1]], self.xmax[self.sfnames[-1]]
         self.fit_report,self.fit_message=self.fit.perform_fit(xmin,xmax,fit_scale=self.fit_scale, fit_method=self.fit_method,
                                                               maxiter=int(self.fitIterationLineEdit.text()),
-                                                              emcee_walker=emcee_walker, emcee_steps=emcee_steps,
+                                                              emcee_walkers=emcee_walkers, emcee_steps=emcee_steps,
                                                               emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_burn=emcee_burn,
-                                                              emcee_thin=emcee_thin)#, backendFile=backendFile)
+                                                              emcee_thin=emcee_thin, backend=backend)
         
     
-    def showFitInfoDlg(self, emcee_walker=100, emcee_steps=100, emcee_burn=30):
+    def showFitInfoDlg(self, emcee_walkers=100, emcee_steps=100, emcee_burn=30):
         if self.fit_method!='emcee':
             self.fitInfoDlg=QDialog(self)
             vblayout=QVBoxLayout(self.fitInfoDlg)
@@ -2052,7 +2130,7 @@ class XModFit(QWidget):
                 self.fitInfoDlg.show()
         else:
             self.emceeConfIntervalWidget.fitIterLabel.setText('Time left (hh:mm:ss): %s'%('N.A.'))
-            self.emceeConfIntervalWidget.progressBar.setMaximum(emcee_walker*emcee_steps)
+            self.emceeConfIntervalWidget.progressBar.setMaximum(emcee_walkers*emcee_steps)
             self.emceeConfIntervalWidget.progressBar.setMinimum(0)
             self.emceeConfIntervalWidget.progressBar.setValue(0)
             self.emceeConfIntervalWidget.stopSamplingPushButton.clicked.connect(self.stopFit)
@@ -2097,15 +2175,31 @@ class XModFit(QWidget):
 
     def fitErrorCallback(self, params, iterations, residual, fit_scale):
         time_taken=time.time()-self.start_time
-        frac=iterations/(self.emcee_walker*self.emcee_steps+self.emcee_walker)
-        time_left=time_taken*(self.emcee_walker*self.emcee_steps+self.emcee_walker-iterations)/iterations
-        self.emceeConfIntervalWidget.fitIterLabel.setText('Time left (hh:mm:ss): %s'%(time.strftime('%H:%M:%S',time.gmtime(time_left))))
+        frac=iterations/(self.emcee_walkers*self.emcee_steps+self.emcee_walkers)
+        time_left=time_taken*(self.emcee_walkers*self.emcee_steps+self.emcee_walkers-iterations)/iterations
+        self.emceeConfIntervalWidget.fitIterLabel.setText('MCMC Step=%d, Time left (hh:mm:ss): %s'
+                                                          %(self.MCMC_starting_step+int(iterations/self.emcee_walkers), time.strftime('%H:%M:%S',time.gmtime(time_left))))
         self.emceeConfIntervalWidget.progressBar.setValue(iterations)
+        if (iterations-self.iterations)>self.emcee_walkers and (self.MCMC_starting_step+int(iterations/self.emcee_walkers))%100==0:
+            data=[self.MCMC_starting_step+int(iterations/self.emcee_walkers),np.mean(self.backend.get_autocorr_time(tol=0))]
+            self.autoCorrTime=np.vstack([self.autoCorrTime,data])
+            self.emceeConfIntervalWidget.autoCorrTimeTextEdit.append(
+                '%d\t%.3f' % (self.autoCorrTime[-1, 0], self.autoCorrTime[-1, 1]))
+
+            self.autoCorrPlot_sp.set_data(self.autoCorrTime[:,0],self.autoCorrTime[:,1])
+            self.autoCorrPlot_ax1.set_xlim(0.98 * self.autoCorrTime[0,0], 1.02 * self.autoCorrTime[-1,0])
+            self.autoCorrPlot_ax1.set_ylim(0.98 * self.autoCorrTime[0, 1], 1.02 * self.autoCorrTime[-1, 1])
+            self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.draw()
+            self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.flush_events()
+            self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(3)
+            self.iterations = copy.copy(iterations)
+            if self.autoCorrTime[-1,1]*50<(self.MCMC_starting_step+int(iterations/self.emcee_walkers)):
+                self.stopFit()
         QApplication.processEvents()
 
     def perform_post_sampling_tasks(self):
-        self.emceeConfIntervalWidget.progressBar.setValue(self.emcee_walker*self.emcee_steps)
-        self.emceeConfIntervalWidget.fitIterLabel.setText('Time left (hh:mm:ss): 00:00:00' )
+        self.emceeConfIntervalWidget.progressBar.setValue(self.emcee_walkers*self.emcee_steps)
+        self.emceeConfIntervalWidget.fitIterLabel.setText('MCMC Step=%d, Time left (hh:mm:ss): 00:00:00'%(self.MCMC_starting_step+int(self.iterations/self.emcee_walkers)))
         self.chain=self.fit.result.chain
         self.chain_shape=self.chain.shape
         self.param_chain=OrderedDict()
@@ -2125,7 +2219,10 @@ class XModFit(QWidget):
         self.emceeConfIntervalWidget.correlationMPLWidget.clear()
         ax1 = self.emceeConfIntervalWidget.correlationMPLWidget.fig.add_subplot(1, 1, 1)
         corr_time=[]
-        acor_mcmc=self.fit.fitter.sampler.get_autocorr_time(quiet=True)
+        try:
+            acor_mcmc=self.fit.fitter.sampler.get_autocorr_time(quiet=True) #Calculates from newly generated samples
+        except:
+            acor_mcmc=self.backend.get_autocorr_time(quiet=True) #Calculates from the existing backend file
         for i,key in enumerate(self.param_chain.keys()):
             tcor=[]
             for ikey in self.param_chain[key].keys():
@@ -2150,14 +2247,16 @@ class XModFit(QWidget):
         #Plotting Acceptance Ratio
         self.emceeConfIntervalWidget.acceptFracMPLWidget.clear()
         ax2=self.emceeConfIntervalWidget.acceptFracMPLWidget.fig.add_subplot(1,1,1)
-        ax2.plot(self.fit.result.acceptance_fraction,'-')
+        try:
+            ax2.plot(self.fit.result.acceptance_fraction,'-')
+        except:
+            ax2.plot(self.backend.accepted,'-')
         ax2.set_xlabel('Walkers')
         ax2.set_ylabel('Acceptance Ratio')
         self.emceeConfIntervalWidget.acceptFracMPLWidget.draw()
 
         self.emceeConfIntervalWidget.calcConfIntervPushButton.clicked.connect(self.cornerPlot)
         self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(2)
-        self.reset_cornerplot=True
 
         #Calculating User-Defined parameters
         self.EnableUserDefinedParameterButtons(enable=True)
@@ -2176,24 +2275,25 @@ class XModFit(QWidget):
     def cornerPlot(self):
         percentile = self.emceeConfIntervalWidget.percentileDoubleSpinBox.value()
         first = int(self.emceeConfIntervalWidget.MCMCBurnLineEdit.text())
-        if self.reset_cornerplot:
-            self.emceeConfIntervalWidget.cornerPlotMPLWidget.clear()
-            names = self.fit.result.var_names#[name for name in self.fit.result.var_names if name != '__lnsigma']
-            values = [self.fit.result.params[name].value for name in names]
-            ndim = len(names)
-            quantiles=[1.0-percentile/100,0.5,percentile/100]
-            corner.corner(self.fit.result.flatchain[names][first:], labels=names, bins=50, levels=(percentile/100,),
-                          truths=values, quantiles=quantiles, show_titles=True, title_fmt='.6f',
-                          use_math_text=True, title_kwargs={'fontsize': 3 * 12 / ndim},
-                          label_kwargs={'fontsize': 3 * 12 / ndim}, fig=self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig)
-            for ax3 in self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig.get_axes():
-                ax3.set_xlabel('')
-                ax3.set_ylabel('')
-                ax3.tick_params(axis='y', labelsize=3 * 12 / ndim, rotation=0)
-                ax3.tick_params(axis='x', labelsize=3 * 12 / ndim)
-            self.emceeConfIntervalWidget.cornerPlotMPLWidget.draw()
-            self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(4)
-            self.reset_cornerplot=False
+        bins = self.emceeConfIntervalWidget.MCMCHistogramBinSpinBox.value()
+        self.emceeConfIntervalWidget.cornerPlotMPLWidget.clear()
+        names = [name for name in self.fit.result.var_names if name != '__lnsigma']#self.fit.result.var_names
+        values = [self.final_fit_params[name].value for name in names]
+        ndim = len(names)
+        quantiles=[(100-percentile)/100,0.5,percentile/100]
+        corner.corner(self.fit.result.flatchain[names][first:], labels=names, bins=bins, levels=(percentile/100,),
+                      truths=values, quantiles=quantiles, show_titles=True, title_fmt='.3e',
+                      use_math_text=True, title_kwargs={'fontsize': 3 * 12 / ndim},
+                      label_kwargs={'fontsize': 3 * 12 / ndim}, fig=self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig)
+        for ax3 in self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig.get_axes():
+            ax3.set_xlabel('')
+            ax3.set_ylabel('')
+            ax3.tick_params(axis='y', labelsize=3 * 12 / ndim, rotation=0)
+            ax3.tick_params(axis='x', labelsize=3 * 12 / ndim, rotation=90)
+        self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(5)
+        self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95,
+                                                                             wspace=0, hspace=0)
+        self.emceeConfIntervalWidget.cornerPlotMPLWidget.draw()
         self.calcMCMCerrorbars(burn=first,percentile=percentile)
         # err_quantiles={}
         # mesg = [['Parameters', 'Value(50%)', 'Left-error(%.3f)'%(100-percentile), 'Right-error(%.3f)'%percentile]]
@@ -2209,16 +2309,27 @@ class XModFit(QWidget):
 
 
     def calcMCMCerrorbars(self,burn=0,percentile=85):
-        mesg = [['Parameters', 'Value(50%)', 'Left-error(%.3f%s)' % (100 - percentile,'%'), 'Right-error(%.3f%s)' % (percentile,'%')]]
-        for key in self.param_chain.keys():
-            for chain in self.param_chain[key].keys():
-                try:
-                    pardata=np.vstack((pardata,self.param_chain[key][chain][burn:]))
-                except:
-                    pardata=[self.param_chain[key][chain][burn:]]
-            pardata=np.ndarray.flatten(pardata)
-            errors=np.quantile(pardata,[(100-percentile)/100,50/100,percentile/100])
-            mesg.append([key, errors[1], errors[1]-errors[0], errors[2]-errors[1]])
+        mesg = [['Parameters', 'Fit-Value', 'Value(50%)', 'Left-error(%.3f%s)' % (100 - percentile,'%'), 'Right-error(%.3f%s)' % (percentile,'%')]]
+        ndim=len(self.fit.result.var_names)-1
+        axes = np.array(self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig.axes).reshape((ndim, ndim))
+        for i, key in enumerate(self.param_chain.keys()):
+            if key!='__lnsigma':
+            # for chain in self.param_chain[key].keys():
+            #     try:
+            #         pardata=np.vstack((pardata,self.param_chain[key][chain][burn:]))
+            #     except:
+            #         pardata=[self.param_chain[key][chain][burn:]]
+            # pardata=np.ndarray.flatten(pardata)
+                errors=corner.quantile(self.fit.result.flatchain[key][burn:],[(100-percentile)/100,50/100,percentile/100])
+                mesg.append([key, self.final_fit_params[key].value, errors[1], errors[1]-errors[0], errors[2]-errors[1]])
+                val='%.3e'%errors[1]
+                neger='%.3e'%(errors[1]-errors[0])
+                poser='%.3e'%(errors[2]-errors[1])
+                if i<ndim:
+                    ax = axes[i, i]
+                    ax.set_title(r'%s' '\n' r'$%s_{%s}^{%s}$'%(self.fit.result.var_names[i].center(24),val,neger,poser),
+                                 fontsize=3 * 12 / ndim)
+        self.emceeConfIntervalWidget.cornerPlotMPLWidget.draw()
         self.emceeConfIntervalWidget.confIntervalTextEdit.clear()
         self.emceeConfIntervalWidget.confIntervalTextEdit.setFont(QFont("Courier", 10))
         txt = tabulate(mesg, headers='firstrow', stralign='left', numalign='left', tablefmt='simple')
@@ -2335,6 +2446,8 @@ class XModFit(QWidget):
         if fnames is None:
             tfnames,_=QFileDialog.getOpenFileNames(self,caption='Open data/macro files',directory=self.curDir,\
                                                   filter='Data/Macro files (*.txt *.dat *.chi *.rrf *.macro)')
+        else:
+            tfnames=copy.copy(fnames)
         fnames=[]
         for fname in tfnames:
             if os.path.splitext(fname)[1]=='.macro':

@@ -9,7 +9,7 @@ class MplWidget(QWidget):
 
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
-        self.fig=Figure(tight_layout=True)
+        self.fig=Figure()
         self.canvas = FigureCanvas(self.fig)
         self.navi_toolbar = NavigationToolbar(self.canvas, self)
 

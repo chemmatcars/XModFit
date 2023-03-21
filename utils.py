@@ -156,7 +156,6 @@ def calc_rho(R=(1.0, 0.0), material=('Au', 'H2O'), relement='Au', density=(19.3,
                 for ele in solvent_mole_ratio.keys():
                     comb_material += '%s%.10f' % (ele, solvent_mole_ratio[ele] * solvent_mole_fraction)
                 density[i] = density[i] + sol_density[i] * (1 - solute_mv * density[i] / solute_mw)
-                print(solute_mv)
                 # self.output_params['scaler_parameters']['density[%s]' % material[i]]=tdensity
             else:
                 element_adjust = None

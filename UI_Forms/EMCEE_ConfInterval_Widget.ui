@@ -21,7 +21,125 @@
      </property>
      <widget class="QWidget" name="layoutWidget">
       <layout class="QGridLayout" name="gridLayout">
-       <item row="7" column="0" colspan="2">
+       <item row="0" column="0">
+        <widget class="QPushButton" name="loadMCMCFilePushButton">
+         <property name="text">
+          <string>Load MCMC File</string>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="0" colspan="2">
+        <widget class="QCheckBox" name="reuseSamplerCheckBox">
+         <property name="text">
+          <string>Re-use Sampler</string>
+         </property>
+        </widget>
+       </item>
+       <item row="22" column="0">
+        <widget class="QPushButton" name="addUserDefinedParamPushButton">
+         <property name="text">
+          <string>Add Parameter</string>
+         </property>
+        </widget>
+       </item>
+       <item row="18" column="0">
+        <widget class="QPushButton" name="stopSamplingPushButton">
+         <property name="text">
+          <string>Stop Sampling</string>
+         </property>
+        </widget>
+       </item>
+       <item row="27" column="1">
+        <widget class="QDoubleSpinBox" name="percentileDoubleSpinBox">
+         <property name="decimals">
+          <number>3</number>
+         </property>
+         <property name="value">
+          <double>84.135000000000005</double>
+         </property>
+        </widget>
+       </item>
+       <item row="27" column="0">
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>Percentile</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="0">
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>Parallel Cores</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>MCMC Steps</string>
+         </property>
+        </widget>
+       </item>
+       <item row="25" column="0">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>MCMC Burn</string>
+         </property>
+        </widget>
+       </item>
+       <item row="25" column="1">
+        <widget class="QLineEdit" name="MCMCBurnLineEdit">
+         <property name="text">
+          <string>0</string>
+         </property>
+        </widget>
+       </item>
+       <item row="18" column="1">
+        <widget class="QPushButton" name="startSamplingPushButton">
+         <property name="text">
+          <string>Start Sampling</string>
+         </property>
+        </widget>
+       </item>
+       <item row="23" column="0">
+        <widget class="QPushButton" name="saveUserDefinedParamPushButton">
+         <property name="text">
+          <string>Save Parameters</string>
+         </property>
+        </widget>
+       </item>
+       <item row="23" column="1">
+        <widget class="QPushButton" name="loadUserDefinedParamPushButton">
+         <property name="text">
+          <string>Load Parameters</string>
+         </property>
+        </widget>
+       </item>
+       <item row="22" column="1">
+        <widget class="QPushButton" name="removeUserDefinedParamPushButton">
+         <property name="text">
+          <string>Remove Parameter</string>
+         </property>
+        </widget>
+       </item>
+       <item row="21" column="0">
+        <widget class="QLabel" name="userDefinedParamChainLabel">
+         <property name="text">
+          <string>User-Defined Parameter Chains</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QPushButton" name="startMCMCFilePushButton">
+         <property name="text">
+          <string>Start MCMC File</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0" colspan="2">
+        <widget class="QLineEdit" name="MCMCFileLineEdit"/>
+       </item>
+       <item row="15" column="0" colspan="2">
         <widget class="QLabel" name="fitIterLabel">
          <property name="text">
           <string/>
@@ -31,70 +149,70 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="7" column="0">
         <widget class="QLabel" name="label_5">
          <property name="text">
           <string>MCMC Thin</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
+       <item row="2" column="1">
         <widget class="QLineEdit" name="MCMCWalkerLineEdit">
          <property name="text">
           <string>10</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
+       <item row="3" column="1">
         <widget class="QLineEdit" name="MCMCStepsLineEdit">
          <property name="text">
-          <string>100</string>
+          <string>1000000</string>
          </property>
         </widget>
        </item>
-       <item row="11" column="0">
+       <item row="19" column="0">
         <widget class="QLabel" name="label_7">
          <property name="text">
           <string>Parameter Chains</string>
          </property>
         </widget>
        </item>
-       <item row="8" column="0" colspan="2">
+       <item row="16" column="0" colspan="2">
         <widget class="QProgressBar" name="progressBar">
          <property name="value">
           <number>24</number>
          </property>
         </widget>
        </item>
-       <item row="2" column="1">
+       <item row="7" column="1">
         <widget class="QLineEdit" name="MCMCThinLineEdit">
          <property name="text">
           <string>1</string>
          </property>
         </widget>
        </item>
-       <item row="4" column="1">
+       <item row="9" column="1">
         <widget class="QLineEdit" name="ParallelCoresLineEdit">
          <property name="text">
           <string>1</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
+       <item row="2" column="0">
         <widget class="QLabel" name="label">
          <property name="text">
           <string>MCMC Walkers</string>
          </property>
         </widget>
        </item>
-       <item row="19" column="0" colspan="2">
+       <item row="28" column="0" colspan="2">
         <widget class="QPushButton" name="calcConfIntervPushButton">
          <property name="text">
           <string>Calculate Confidence Interval</string>
          </property>
         </widget>
        </item>
-       <item row="12" column="0" colspan="2">
+       <item row="20" column="0" colspan="2">
         <widget class="QTreeWidget" name="parameterTreeWidget">
          <property name="selectionMode">
           <enum>QAbstractItemView::ExtendedSelection</enum>
@@ -106,94 +224,7 @@
          </column>
         </widget>
        </item>
-       <item row="10" column="1">
-        <widget class="QPushButton" name="startSamplingPushButton">
-         <property name="text">
-          <string>Start Sampling</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0" colspan="2">
-        <widget class="QCheckBox" name="reuseSamplerCheckBox">
-         <property name="text">
-          <string>Re-use Sampler</string>
-         </property>
-        </widget>
-       </item>
-       <item row="10" column="0">
-        <widget class="QPushButton" name="stopSamplingPushButton">
-         <property name="text">
-          <string>Stop Sampling</string>
-         </property>
-        </widget>
-       </item>
-       <item row="18" column="1">
-        <widget class="QDoubleSpinBox" name="percentileDoubleSpinBox">
-         <property name="decimals">
-          <number>3</number>
-         </property>
-         <property name="value">
-          <double>84.135000000000005</double>
-         </property>
-        </widget>
-       </item>
-       <item row="18" column="0">
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string>Percentile</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>Parallel Cores</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>MCMC Steps</string>
-         </property>
-        </widget>
-       </item>
-       <item row="17" column="0">
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>MCMC Burn</string>
-         </property>
-        </widget>
-       </item>
-       <item row="17" column="1">
-        <widget class="QLineEdit" name="MCMCBurnLineEdit">
-         <property name="text">
-          <string>0</string>
-         </property>
-        </widget>
-       </item>
-       <item row="14" column="1">
-        <widget class="QPushButton" name="removeUserDefinedParamPushButton">
-         <property name="text">
-          <string>Remove Parameter</string>
-         </property>
-        </widget>
-       </item>
-       <item row="13" column="0">
-        <widget class="QLabel" name="userDefinedParamChainLabel">
-         <property name="text">
-          <string>User-Defined Parameter Chains</string>
-         </property>
-        </widget>
-       </item>
-       <item row="14" column="0">
-        <widget class="QPushButton" name="addUserDefinedParamPushButton">
-         <property name="text">
-          <string>Add Parameter</string>
-         </property>
-        </widget>
-       </item>
-       <item row="16" column="0" colspan="2">
+       <item row="24" column="0" colspan="2">
         <widget class="QTreeWidget" name="userDefinedParamTreeWidget">
          <property name="selectionMode">
           <enum>QAbstractItemView::ContiguousSelection</enum>
@@ -205,17 +236,20 @@
          </column>
         </widget>
        </item>
-       <item row="15" column="0">
-        <widget class="QPushButton" name="saveUserDefinedParamPushButton">
+       <item row="26" column="0">
+        <widget class="QLabel" name="label_9">
          <property name="text">
-          <string>Save Parameters</string>
+          <string>Histogram Bins</string>
          </property>
         </widget>
        </item>
-       <item row="15" column="1">
-        <widget class="QPushButton" name="loadUserDefinedParamPushButton">
-         <property name="text">
-          <string>Load Parameters</string>
+       <item row="26" column="1">
+        <widget class="QSpinBox" name="MCMCHistogramBinSpinBox">
+         <property name="maximum">
+          <number>1000</number>
+         </property>
+         <property name="value">
+          <number>50</number>
          </property>
         </widget>
        </item>
@@ -223,7 +257,7 @@
      </widget>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="chainTab">
        <attribute name="title">
@@ -275,6 +309,55 @@
            </size>
           </property>
          </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="autoCorrTimeTab">
+       <attribute name="title">
+        <string>AutoCorrelation Time</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="MplWidget" name="autoCorrTimeMPLWidget" native="true"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_10">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Average Autocorrelation Time</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTextEdit" name="autoCorrTimeTextEdit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>100</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>200</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>

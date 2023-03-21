@@ -3,6 +3,7 @@ from lmfit import fit_report, Minimizer, conf_interval, printfuncs
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QMessageBox
 import traceback
+import os
 
 class Fit(QObject):
     functionCalled=pyqtSignal(dict,int,np.ndarray,str)
@@ -132,8 +133,8 @@ class Fit(QObject):
             return None
     
     
-    def perform_fit(self,xmin,xmax,fit_scale='Linear',fit_method='leastsq',maxiter=1,emcee_walker=100, emcee_steps=100,
-                    emcee_burn=30, emcee_cores=1, reuse_sampler=False, emcee_thin=1):
+    def perform_fit(self,xmin,xmax,fit_scale='Linear',fit_method='leastsq',maxiter=1,emcee_walkers=100, emcee_steps=100,
+                    emcee_burn=0, emcee_cores=1, reuse_sampler=False, emcee_thin=1,backend=None):
         self.Niter=0
         #self.sync_param()
         self.fit_abort=False
@@ -151,20 +152,10 @@ class Fit(QObject):
                                   nan_policy='raise', calc_covar=True, max_nfev=maxiter, popsize=300, updating='immediate')
         elif fit_method=='brute':
             self.fitter=Minimizer(self.residual,self.fit_params,fcn_args=(fit_scale,),iter_cb=self.callback,nan_policy='raise')
-        elif fit_method == 'emcee':
-            if not reuse_sampler:
-                self.emcee_params = self.result.params.copy()
-                self.emcee_params.add('__lnsigma', value=-1.0, vary=True, min=np.log(0.001), max=np.log(2.0))
-                if 'w/o' in fit_scale:
-                    self.fitter = Minimizer(self.residual, self.emcee_params, fcn_args=(fit_scale,),
-                                            iter_cb=self.callback,
-                                            nan_policy='raise', burn=0, steps=emcee_steps, thin=emcee_thin,
-                                            is_weighted=False,
-                                            nwalkers=emcee_walker, workers=emcee_cores, reuse_sampler=reuse_sampler)
-                else:
-                    self.fitter = Minimizer(self.residual, self.emcee_params, fcn_args=(fit_scale,), iter_cb=self.callback,
-                                    nan_policy='raise', burn=0, steps=emcee_steps, thin=1, is_weighted=True,
-                                        nwalkers=emcee_walker, workers=emcee_cores, reuse_sampler=reuse_sampler)
+        elif fit_method =='emcee':
+            self.fitter=self.set_emcee_minimizer(fit_scale=fit_scale,emcee_walkers=emcee_walkers,emcee_steps=emcee_steps,
+                                     emcee_cores=emcee_cores,emcee_burn=emcee_burn,reuse_sampler=reuse_sampler,
+                                     emcee_thin=emcee_thin,backend=backend)
         else:
             self.fitter = Minimizer(self.residual, self.fit_params, fcn_args=(fit_scale,), iter_cb=self.callback,
                                     nan_policy='raise',max_nfev=maxiter)
@@ -173,8 +164,40 @@ class Fit(QObject):
             return fit_report(self.result),self.result.message
         else:
             self.result = self.fitter.minimize(method=fit_method,burn=0, steps=emcee_steps, thin=emcee_thin, is_weighted=True,
-                                        nwalkers=emcee_walker, workers=emcee_cores, reuse_sampler=reuse_sampler)
+                                        nwalkers=emcee_walkers, workers=emcee_cores, reuse_sampler=reuse_sampler)
             return fit_report(self.result), 'None'
+
+
+    def set_emcee_minimizer(self,fit_scale='Linear',emcee_walkers=100, emcee_steps=100, emcee_cores=1,
+                            emcee_burn=0, reuse_sampler=False, emcee_thin=1,backend=None):
+
+        self.emcee_params = self.result.params.copy()
+        self.emcee_params.add('__lnsigma', value=-1.0, vary=True, min=np.log(0.001), max=np.log(2.0))
+        if not reuse_sampler:
+            # if backendFile is not None and os.path.isfile(backendFile):
+            #     os.remove(backendFile)
+            # self.emcee_params = self.result.params.copy()
+            # self.emcee_params.add('__lnsigma', value=-1.0, vary=True, min=np.log(0.001), max=np.log(2.0))
+            #if 'w/o' in fit_scale:
+            fitter = Minimizer(self.residual, self.emcee_params, fcn_args=(fit_scale,),
+                                    iter_cb=self.callback,
+                                    nan_policy='raise', burn=emcee_burn, steps=emcee_steps, thin=emcee_thin,
+                                    is_weighted=False, backend=backend,
+                                    nwalkers=emcee_walkers, workers=emcee_cores, reuse_sampler=reuse_sampler)
+        else:
+            fitter = Minimizer(self.residual, self.emcee_params, fcn_args=(fit_scale,), iter_cb=self.callback,
+                                    nan_policy='raise', burn=emcee_burn, steps=emcee_steps, thin=1, is_weighted=True,
+                                    backend=backend,
+                                    nwalkers=emcee_walkers, workers=emcee_cores, reuse_sampler=reuse_sampler)
+        return fitter
+
+    def perform_pymc(self):
+        pass
+
+
+
+    def perform_emcee(self):
+        pass
 
 
 
