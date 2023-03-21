@@ -266,7 +266,7 @@ class XModFit(QWidget):
         self.vblayout.addWidget(self.mainDock,5)
 
         self.emcee_walkers = 100
-        self.emcee_steps = 100
+        self.emcee_steps = 100000
         self.emcee_burn = 0
         self.emcee_thin = 1
         self.emcee_cores = 1
