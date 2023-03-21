@@ -1234,7 +1234,7 @@ class XModFit(QWidget):
                 if self.fit_method != 'emcee':
                     self.errorAvailable=False
                     self.emcee_burn=0
-                    self.emcee_steps=100
+                    self.emcee_steps=100000
                     self.emcee_frac=self.emcee_burn/self.emcee_steps
                     self.showConfIntervalButton.setDisabled(True)
                     self.disconnect_fit_function()
