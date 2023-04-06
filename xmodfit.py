@@ -1836,6 +1836,10 @@ class XModFit(QWidget):
             #self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(4)
 
     def openMCMCBackendFile(self):
+        """
+        Open an existing backend file
+        :return:
+        """
         file=QFileDialog.getOpenFileName(self, 'Select a MCMC file', directory=self.curDir,filter='MCMC Files (*.h5)')[0]
         self.iterations = 0
         if file != '':
@@ -1873,6 +1877,10 @@ class XModFit(QWidget):
 
 
     def startMCMCBackendFile(self):
+        """
+        Create a new backend file to save the MCMC
+        :return:
+        """
         file=QFileDialog.getSaveFileName(self, 'Start MCMC file as',directory=self.curDir,filter='MCMC Files (*.h5)')[0]
         self.iterations=0
         if file != '':
@@ -1894,10 +1902,7 @@ class XModFit(QWidget):
             self.emceeConfIntervalWidget.reuseSamplerCheckBox.setChecked(False)
             self.emceeConfIntervalWidget.autoCorrTimeTextEdit.clear()
             self.emceeConfIntervalWidget.autoCorrTimeTextEdit.append('#MCMC_steps\tCorr_Time')
-            self.emceeConfIntervalWidget.autoCorrTimeTextEdit.append(
-                '%d\t%.3f' % (self.autoCorrTime[-1, 0], self.autoCorrTime[-1, 1]))
-
-            #print(self.autoCorrPlot_sp)
+            self.emceeConfIntervalWidget.autoCorrTimeTextEdit.append('%d\t%.3f' % (self.autoCorrTime[-1, 0], self.autoCorrTime[-1, 1]))
         else:
             self.backend=None
 
@@ -4307,6 +4312,7 @@ class XModFit(QWidget):
                 #     self.fit.params['output_params']['Residuals'] = {'x': self.fit.x[self.fit.imin:self.fit.imax + 1],
                 #                                                      'y':np.zeros_like(self.fit.x[self.fit.imin:self.fit.imax + 1])}
                 pfnames=pfnames+[self.funcListWidget.currentItem().text()]
+            self.consoleWidget.push_vars({'fit': self.fit})
         self.plotWidget.Plot(pfnames)
         # QApplication.processEvents()
         QApplication.processEvents()
@@ -4380,7 +4386,6 @@ class XModFit(QWidget):
                     fdata.append(txt)
         self.extra_param_1DplotWidget.Plot(fdata)
         self.gen_param_items=[item.text() for item in self.genParamListWidget.selectedItems()]
-        # QApplication.processEvents()
         QApplication.processEvents()
 
 if __name__=='__main__':

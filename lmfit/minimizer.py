@@ -1342,7 +1342,12 @@ class Minimizer:
             else:
                 # Steps to check the used backend file is created from same data, fitting parameters and fitting function
                 with backend.open("a") as f:
-                    print(f[self.backend.name].attrs.keys())
+                    for key in tparams.keys():
+                        if key in f[backend.name].attrs.keys():
+                            pass
+                        else:
+                            raise ValueError("The current parameters are different from  "
+                                             "parameters in the stored backend file")
 
         result = self.prepare_fit(params=tparams)
         params = result.params
@@ -2596,3 +2601,5 @@ def minimize(fcn, params, method='leastsq', args=None, kws=None, iter_cb=None,
                        nan_policy=nan_policy, reduce_fcn=reduce_fcn,
                        calc_covar=calc_covar, max_nfev=max_nfev, **fit_kws)
     return fitter.minimize(method=method)
+
+

@@ -142,7 +142,7 @@ class Fit(QObject):
             self.imin = {}
             self.imax = {}
             for key in self.x.keys():
-                self.imin[key],self.imax[key]=np.where(self.x[key]>=xmin)[0][0],np.where(self.x[key]<=xmax)[0][-1]
+                self.imin[key],self.imax[key]=np.where(self.x[key]>=0.99*xmin)[0][0],np.where(self.x[key]<=xmax)[0][-1]
         else:
             self.imin, self.imax = np.where(self.x >= xmin)[0][0], np.where(self.x <= xmax)[0][-1]
         if fit_method=='leastsq':
@@ -160,10 +160,10 @@ class Fit(QObject):
             self.fitter = Minimizer(self.residual, self.fit_params, fcn_args=(fit_scale,), iter_cb=self.callback,
                                     nan_policy='raise',max_nfev=maxiter)
         if fit_method!='emcee':
-            self.result = self.fitter.minimize(method=fit_method)
+            self.result = self.fitter.minimize(method=fit_method, params=self.fit_params)
             return fit_report(self.result),self.result.message
         else:
-            self.result = self.fitter.minimize(method=fit_method,burn=0, steps=emcee_steps, thin=emcee_thin, is_weighted=True,
+            self.result = self.fitter.minimize(method=fit_method, params=self.emcee_params, burn=0, steps=emcee_steps, thin=emcee_thin, is_weighted=True,
                                         nwalkers=emcee_walkers, workers=emcee_cores, reuse_sampler=reuse_sampler)
             return fit_report(self.result), 'None'
 
