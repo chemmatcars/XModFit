@@ -160,8 +160,8 @@ class XFNTR: #Please put the class name same as the function name
                     tempf2 = np.exp(- alpha[i] * (detlen - fprint[i]) / 2 / effd - fprint[i] / 2 / topd)
                     effv = 2 * topd * effd * np.sinh(fprint[i]/ 2 / topd) + topd * effd * effd * (tempf1 - tempf2) / (topd * alpha[i] - effd)
                 int_sur = self.sur_den * topd * (np.exp(min(detlen, fprint[i]) / 2 / topd) - np.exp(-min(detlen, fprint[i]) / 2 / topd))  # surface intensity
-                print(x[i],topd*1e-10, detlen*1e-10, np.exp(detlen / 2 / topd) - np.exp(-detlen / 2 / topd))
-                print(topd*1e-10, fprint[i]*1e-10, np.exp(fprint[i] / 2 / topd) - np.exp(-fprint[i] / 2 / topd))
+                #print(x[i],topd*1e-10, detlen*1e-10, np.exp(detlen / 2 / topd) - np.exp(-detlen / 2 / topd))
+                #print(topd*1e-10, fprint[i]*1e-10, np.exp(fprint[i] / 2 / topd) - np.exp(-fprint[i] / 2 / topd))
                 int_bulk =  effv * self.__avoganum__ * conbulk / 1e27  # bluk intensity
                 int_tot = np.exp(-self.ion_depth/effd) * self.yscale * 1e-3 * trans * (int_sur + int_bulk) + self.int_bg
                 flu.append(int_tot)
