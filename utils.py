@@ -6,6 +6,7 @@ from Chemical_Formula import Chemical_Formula
 import copy
 from Bio import PDB
 import string
+import os
 
 cf=Chemical_Formula(formula='Au')
 
@@ -110,6 +111,7 @@ def calc_rho(R=(1.0, 0.0), material=('Au', 'H2O'), relement='Au', density=(19.3,
         rhor = []
         eirhor = []
         adensityr = []
+        cdensityr = []
         for i in range(Nl):
             mat = material[i].split(':')
             if len(mat) == 2:
@@ -136,12 +138,14 @@ def calc_rho(R=(1.0, 0.0), material=('Au', 'H2O'), relement='Au', density=(19.3,
                 density[i] = fac * density[i]
                 solute_elements = cf.elements()
                 solute_mw = cf.molecular_weight()
-                solute_mv = cf.molar_volume()*0.6
+                solute_mv = cf.molar_volume(radius='cov_radius')
+                # solute_mv = cf.molar_volume(radius='vdw_radius')*0.6
                 solute_mole_ratio = cf.element_mole_ratio()
 
                 solvent_formula = cf.parse(solvent)
                 solvent_elements = cf.elements()
-                solvent_mv = cf.molar_volume()*0.6
+                solvent_mv = cf.molar_volume(radius='cov_radius')
+                # solvent_mv = cf.molar_volume(radius='vdw_radius')*0.6
                 solvent_mw = cf.molecular_weight()
                 solvent_mole_ratio = cf.element_mole_ratio()
 
@@ -206,22 +210,25 @@ def calc_rho(R=(1.0, 0.0), material=('Au', 'H2O'), relement='Au', density=(19.3,
                         f2 = cf.xdb.f2_chantler(element=elements[j], energy=Energy * 1e3, smoothing=0)
                         felectrons = felectrons + moles[j] * complex(f1, f2)
                 if elements[j] == relement:
-                    aden += 0.6023 * moles[j] * tdensity / molwt
-            adensity.append(aden)
-            eirho.append(0.6023 * (nelectrons) * tdensity / molwt)
-            rho.append(0.6023 * (nelectrons + felectrons) * tdensity / molwt)
+                    aden += moles[j]
+            adensity.append(0.6023 * aden * tdensity / molwt) # In element/Angs^3
+            eirho.append(0.6023 * (nelectrons) * tdensity / molwt) # in el/Angs^3
+            rho.append(0.6023 * (nelectrons + felectrons) * tdensity / molwt) # in el/Angs^3
             rhor.append([r, np.real(rho[-1])])
             eirhor.append([r, np.real(eirho[-1])])
             adensityr.append([r, np.real(adensity[-1])])
+            cdensityr.append([r, tdensity])
             r = r + R[i]
             rhor.append([r, np.real(rho[-1])])
             eirhor.append([r, np.real(eirho[-1])])
             adensityr.append([r, np.real(adensity[-1])])
-        rhor, eirhor, adensityr = np.array(rhor), np.array(eirhor), np.array(adensityr)
+            cdensityr.append([r, tdensity])
+        rhor, eirhor, adensityr, cdensityr = np.array(rhor), np.array(eirhor), np.array(adensityr), np.array(cdensityr)
         rhor[-1, 0] = rhor[-1, 0] + R[-2]
         eirhor[-1, 0] = eirhor[-1, 0] + R[-2]
         adensityr[-1, 0] = adensityr[-1, 0] + R[-2]
-        return np.array(rho), np.array(eirho), np.array(adensity), np.array(rhor), np.array(eirhor), np.array(adensityr)
+        cdensityr[-1, 0] = cdensityr[-1, 0] + R[-2]
+        return np.array(rho), np.array(eirho), np.array(adensity), rhor, eirhor, adensityr, cdensityr
 
 def create_steps(x=[1],y=[1]):
     x1=copy.copy(x)
@@ -257,7 +264,37 @@ def pdb2xyz(pdbfname, xyzfname):
         fh.write('%s %.5f %.5f %.5f\n'%(string.capwords(atoms[i]['element']),atoms[i]['X'],atoms[i]['Y'],atoms[i]['Z']))
     fh.close()
 
-
+def xyz2pdb(xyzfname, pdbfname):
+    assert os.path.isfile(xyzfname), "Unable to find given xyz file '%s'"%xyzfname
+    with open(xyzfname, 'r') as fd:
+        lines = [l.strip() for l in fd.readlines()]
+    #natoms = int(lines[0])
+    # skip first 2 lines and build records
+    records = []
+    for l in lines[2:]:
+        el, x, y, z = l.split()
+        records.append( { "record_name"       : 'ATOM',
+                          "serial_number"     : len(records)+1,
+                          "atom_name"         : el,
+                          "location_indicator": '',
+                          "residue_name"      : 'XYZ',
+                          "chain_identifier"  : '',
+                          "sequence_number"   : len(records)+1,
+                          "code_of_insertion" : '',
+                          "coordinates_x"     : float(x),
+                          "coordinates_y"     : float(y),
+                          "coordinates_z"     : float(z),
+                          "occupancy"         : 1.0,
+                          "temperature_factor": 0.0,
+                          "segment_identifier": '',
+                          "element_symbol"    : el,
+                          "charge"            : '',
+                          } )
+    # create and return pdb
+    pdb = pdbparser(filePath = None)
+    pdb.records = records
+    pdb.export_pdb(pdbfname)
+    return pdb
 
 
 
