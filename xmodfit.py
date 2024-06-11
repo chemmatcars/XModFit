@@ -1218,6 +1218,7 @@ class XModFit(QWidget):
                     self.fit.functionCalled.connect(self.fitCallback)
                 else:
                     self.fit.functionCalled.connect(self.fitErrorCallback)
+                self.fitData=[]
                 self.showFitInfoDlg(emcee_walkers=emcee_walkers,emcee_steps=emcee_steps, emcee_burn = emcee_burn)
                 self.runFit(emcee_walkers=emcee_walkers, emcee_steps=emcee_steps, emcee_burn=emcee_burn,
                             emcee_cores=emcee_cores, reuse_sampler=reuse_sampler, emcee_thin=emcee_thin,
@@ -1841,7 +1842,7 @@ class XModFit(QWidget):
         :return:
         """
         file=QFileDialog.getOpenFileName(self, 'Select a MCMC file', directory=self.curDir,filter='MCMC Files (*.h5)')[0]
-        self.iterations = 0
+        # self.iterations = 0
         if file != '':
             self.MCMCBackendFile=file
             self.emceeConfIntervalWidget.MCMCFileLineEdit.setText(self.MCMCBackendFile)
@@ -1882,7 +1883,7 @@ class XModFit(QWidget):
         :return:
         """
         file=QFileDialog.getSaveFileName(self, 'Start MCMC file as',directory=self.curDir,filter='MCMC Files (*.h5)')[0]
-        self.iterations=0
+        # self.iterations=0
         if file != '':
             if os.path.exists(file):
                 os.remove(file)
@@ -2110,8 +2111,17 @@ class XModFit(QWidget):
     def runFit(self,  emcee_walkers=100, emcee_steps=100, emcee_cores=1, reuse_sampler=False, emcee_burn=30, emcee_thin=1, backend=None):
         self.start_time=time.time()
         if self.fit_method=='emcee':
-            self.iterations = 0
-            self.MCMC_starting_step=self.autoCorrTime[-1,0]
+            # self.iterations = 0
+            if os.path.exists(self.MCMCBackendFile):
+                self.fit.result.chain = self.backend.get_chain()[..., :, :]
+                data = np.array(
+                    [[self.fit.result.chain.shape[0], np.mean(self.backend.get_autocorr_time(tol=0))]])
+                self.autoCorrTime = np.vstack([self.autoCorrTime, data])
+                # self.MCMC_starting_step = copy.copy(self.fit.fitter.sampler.iteration)
+                self.MCMC_starting_step=self.autoCorrTime[-1,0]
+            else:
+                self.MCMC_starting_step=0
+                self.autoCorrTime=np.array([[0,1]])
         xmin, xmax = self.xmin[self.sfnames[-1]], self.xmax[self.sfnames[-1]]
         self.fit_report,self.fit_message=self.fit.perform_fit(xmin,xmax,fit_scale=self.fit_scale, fit_method=self.fit_method,
                                                               maxiter=int(self.fitIterationLineEdit.text()),
@@ -2126,6 +2136,8 @@ class XModFit(QWidget):
             vblayout=QVBoxLayout(self.fitInfoDlg)
             self.fitIterLabel=QLabel('Iteration: 0,\t Chi-Sqr: Not Available',self.fitInfoDlg)
             vblayout.addWidget(self.fitIterLabel)
+            self.fitPlotWidget = PlotWidget()
+            vblayout.addWidget(self.fitPlotWidget)
             self.stopFitPushButton=QPushButton('Stop')
             vblayout.addWidget(self.stopFitPushButton)
             self.stopFitPushButton.clicked.connect(self.stopFit)
@@ -2134,10 +2146,10 @@ class XModFit(QWidget):
                 self.fitInfoDlg.setModal(True)
                 self.fitInfoDlg.show()
         else:
-            self.emceeConfIntervalWidget.fitIterLabel.setText('Time left (hh:mm:ss): %s'%('N.A.'))
-            self.emceeConfIntervalWidget.progressBar.setMaximum(emcee_walkers*emcee_steps)
+            #self.emceeConfIntervalWidget.fitIterLabel.setText('Time left (hh:mm:ss): %s'%('N.A.'))
+            self.emceeConfIntervalWidget.progressBar.setMaximum(emcee_steps+self.MCMC_starting_step)
             self.emceeConfIntervalWidget.progressBar.setMinimum(0)
-            self.emceeConfIntervalWidget.progressBar.setValue(0)
+            self.emceeConfIntervalWidget.progressBar.setValue(self.MCMC_starting_step)
             self.emceeConfIntervalWidget.stopSamplingPushButton.clicked.connect(self.stopFit)
 
     def stopFit(self):
@@ -2157,7 +2169,9 @@ class XModFit(QWidget):
         # if np.any(self.fit.yfit):
         chisqr=np.sum(residual**2)
         if chisqr<self.tchisqr:
-            self.fitIterLabel.setText('Iteration=%d,\t Chi-Sqr=%.5e' % (iterations,chisqr))
+            self.fitData.append([iterations,chisqr])
+            self.fitIterLabel.setText('Iteration=%d,\t Chi-Sqr=%.5e' % (iterations, chisqr))
+            self.fitPlotWidget.add_data(x=np.array(self.fitData)[:,0],y=np.array(self.fitData)[:,1])
             self.temp_params=copy.copy(params)
             if type(self.fit.x)==dict:
                 for key in self.fit.x.keys():
@@ -2179,32 +2193,43 @@ class XModFit(QWidget):
 
 
     def fitErrorCallback(self, params, iterations, residual, fit_scale):
-        time_taken=time.time()-self.start_time
-        frac=iterations/(self.emcee_walkers*self.emcee_steps+self.emcee_walkers)
-        time_left=time_taken*(self.emcee_walkers*self.emcee_steps+self.emcee_walkers-iterations)/iterations
-        self.emceeConfIntervalWidget.fitIterLabel.setText('MCMC Step=%d, Time left (hh:mm:ss): %s'
-                                                          %(self.MCMC_starting_step+int(iterations/self.emcee_walkers), time.strftime('%H:%M:%S',time.gmtime(time_left))))
-        self.emceeConfIntervalWidget.progressBar.setValue(iterations)
-        if (iterations-self.iterations)>self.emcee_walkers and (self.MCMC_starting_step+int(iterations/self.emcee_walkers))%100==0:
-            data=[self.MCMC_starting_step+int(iterations/self.emcee_walkers),np.mean(self.backend.get_autocorr_time(tol=0))]
-            self.autoCorrTime=np.vstack([self.autoCorrTime,data])
-            self.emceeConfIntervalWidget.autoCorrTimeTextEdit.append(
-                '%d\t%.3f' % (self.autoCorrTime[-1, 0], self.autoCorrTime[-1, 1]))
+        if self.fit.fitter.sampler.iteration>self.MCMC_starting_step:
+            self.MCMC_starting_step=copy.copy(self.fit.fitter.sampler.iteration)
+            time_taken=time.time()-self.start_time
+        #frac=iterations/(self.emcee_walkers*self.emcee_steps+self.emcee_walkers)
+            #time_left=time_taken*(self.emcee_walkers*self.emcee_steps+self.emcee_walkers-iterations)/iterations
+            time_left=time_taken*(self.emcee_steps-self.MCMC_starting_step)
 
-            self.autoCorrPlot_sp.set_data(self.autoCorrTime[:,0],self.autoCorrTime[:,1])
-            self.autoCorrPlot_ax1.set_xlim(0.98 * self.autoCorrTime[0,0], 1.02 * self.autoCorrTime[-1,0])
-            self.autoCorrPlot_ax1.set_ylim(0.98 * self.autoCorrTime[0, 1], 1.02 * self.autoCorrTime[-1, 1])
-            self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.draw()
-            self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.flush_events()
-            self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(3)
-            self.iterations = copy.copy(iterations)
-            if self.autoCorrTime[-1,1]*50<(self.MCMC_starting_step+int(iterations/self.emcee_walkers)):
-                self.stopFit()
+            self.emceeConfIntervalWidget.fitIterLabel.setText('MCMC Step=%d, Time left (hh:mm:ss): %s'
+                                                          %(self.MCMC_starting_step, time.strftime('%H:%M:%S',time.gmtime(time_left))))
+            self.emceeConfIntervalWidget.progressBar.setValue(self.MCMC_starting_step)
+            #print(iterations, self.fit.fitter.sampler.iteration)
+            # if (iterations-self.iterations)>self.emcee_walkers and (self.MCMC_starting_step+int(iterations/self.emcee_walkers))%100==0:
+            if self.MCMC_starting_step % 100 == 0:
+                data = np.array(
+                    [[self.MCMC_starting_step, np.mean(self.backend.get_autocorr_time(tol=0))]])
+                self.autoCorrTime=np.vstack([self.autoCorrTime, data])
+                self.emceeConfIntervalWidget.autoCorrTimeTextEdit.append(
+                    '%d\t%.3f' % (self.autoCorrTime[-1, 0], self.autoCorrTime[-1, 1]))
+
+                self.autoCorrPlot_sp.set_data(self.autoCorrTime[:,0],self.autoCorrTime[:,1])
+                self.autoCorrPlot_ax1.set_xlim(0.98 * self.autoCorrTime[0,0], 1.02 * self.autoCorrTime[-1,0])
+                self.autoCorrPlot_ax1.set_ylim(0.98 * self.autoCorrTime[0, 1], 1.02 * self.autoCorrTime[-1, 1])
+                self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.draw()
+                self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.flush_events()
+                self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(3)
+                if self.autoCorrTime[-1,1]*50<(self.MCMC_starting_step+int(iterations/self.emcee_walkers)):
+                    self.stopFit()
+            self.start_time=time.time()
+        # self.iterations = copy.copy(iterations)
         QApplication.processEvents()
 
     def perform_post_sampling_tasks(self):
-        self.emceeConfIntervalWidget.progressBar.setValue(self.emcee_walkers*self.emcee_steps)
-        self.emceeConfIntervalWidget.fitIterLabel.setText('MCMC Step=%d, Time left (hh:mm:ss): 00:00:00'%(self.MCMC_starting_step+int(self.iterations/self.emcee_walkers)))
+        #self.emceeConfIntervalWidget.progressBar.setValue(self.emcee_steps)
+        data = np.array(
+            [[self.MCMC_starting_step, np.mean(self.backend.get_autocorr_time(tol=0))]])
+        self.autoCorrTime = np.vstack([self.autoCorrTime, data])
+        self.emceeConfIntervalWidget.fitIterLabel.setText('MCMC Step=%d, Time left (hh:mm:ss): 00:00:00'%self.MCMC_starting_step)
         self.chain=self.fit.result.chain
         self.chain_shape=self.chain.shape
         self.param_chain=OrderedDict()
@@ -2970,7 +2995,6 @@ class XModFit(QWidget):
         self.calcConfInterButton.setDisabled(True)
         
     def add_uncoupled_mpar(self):
-
         cur_index = self.mfitParamTabWidget.currentIndex()
         mkey=self.mfitParamTabWidget.tabText(self.mfitParamTabWidget.currentIndex())
         try:
@@ -3027,7 +3051,7 @@ class XModFit(QWidget):
                     item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable)
                 self.fit.params['__mpar__'][mkey][pkey].insert(curRow, self.mfitParamData[mkey][curRow][col])
             self.update_mfit_parameters_new()
-            self.update_plot()
+            #self.update_plot()
             self.errorAvailable = False
             self.reuse_sampler = False
             self.calcConfInterButton.setDisabled(True)
@@ -3369,14 +3393,12 @@ class XModFit(QWidget):
                                     self.fit.params['__mpar__'][mkey][pkey].insert(num, float(parval))
                             else:
                                 parname,parval=tlist
-
                                 mkey,pkey,num=parname[2:].split('_')
                                 num=int(num)
                                 try:
                                     self.fit.params['__mpar__'][mkey][pkey][num]=parval
                                 except:
                                     self.fit.params['__mpar__'][mkey][pkey].insert(num,parval)
-
                         for parname in val.keys(): #Here is the expr is put into the parameters
                             try:
                                 self.fit.fit_params[parname].set(value=val[parname], vary=pfit[parname], min=pmin[parname],
