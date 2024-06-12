@@ -7,6 +7,10 @@ def hard_sphere_sf(Q, D=1.0, phi=0.02):
     :param D: Hard-Sphere Diameter of particles in Angstroms
     :param phi: Volume Fraction of particles
     :return: Structure factor
+
+    References
+    ----------
+    1) David J. Kinning and Edwin L. Thomas, Macromolecules, 17, 1712 (1984)
     """
     if phi > 0.00001:
         lam1 = (1 + 2 * phi) ** 2 / (1 - phi) ** 4
@@ -25,12 +29,19 @@ def hard_sphere_sf(Q, D=1.0, phi=0.02):
 def sticky_sphere_sf(Q, D = 1.0, phi = 0.01, U = -1.0, delta = 0.01):
     """
     Computes Sticky-Sphere structure Factor
+    Reference ()
+    Reference ()
     :param Q: Array of reciprocal space vectors in inv-Angstroms
     :param D: Hard-Sphere Diameter of particles in Angstroms
     :param phi: Volume Fraction of particles
     :param U: Sticky sphere interaction energy
     :param delta: Width of the sticky sphere interactions
     :return: Structure factor
+
+    References
+    ----------
+    1) C. Erlinger, L. Belloni, Th. Zemb, and C. Madic, Langmuir, 15, 2290 (1999)
+    2) S. V. G. Menon; C. Manohar; K. Srinivasa Rao, J. Chem. Phys. 95, 9186 (1991)
     """
     tau = np.exp(U) * (D+delta) / 12.0 / delta
     a = (1 + phi / 2) / (1 - phi)**2
@@ -40,7 +51,7 @@ def sticky_sphere_sf(Q, D = 1.0, phi = 0.01, U = -1.0, delta = 0.01):
         lam = (b + tau - np.sqrt((b+tau)**2 - 4 * a * c)) / 2 / c
     else:
         lam=0.0
-        raise RuntimeWarning("Negative number obtained within  np.sqrt function")
+        # raise RuntimeWarning("Negative number obtained within  np.sqrt function")
     q = Q * D
     mu = lam * phi / (1 - phi)
     alf = (1 + 2 * phi - mu)/(1 - phi)**2
