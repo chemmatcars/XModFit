@@ -4284,30 +4284,6 @@ class XModFit(QWidget):
             self.fit.params['output_params']['scaler_parameters']['Exec-time (sec)'] = exectime
             self.fit.params['output_params']['scaler_parameters']['Chi-Sqr'] = self.chisqr
             self.fit.params['output_params']['scaler_parameters']['Red_Chi_Sqr'] = self.red_chisqr
-            if len(self.fit.params['output_params'])>0:
-                row=0
-                for key in self.fit.params['output_params'].keys():
-                    if key=='scaler_parameters':
-                        for k in self.fit.params['output_params'][key].keys():
-                            self.genParamListWidget.addItem(k + ' : ' + str(self.fit.params['output_params'][key][k]))
-                            it=self.genParamListWidget.item(row)
-                            it.setFlags(it.flags() & ~Qt.ItemIsSelectable)
-                            row+=1
-                    else:
-                        var = []
-                        for k in self.fit.params['output_params'][key].keys():
-                            if k != 'names' and k != 'plotType':
-                                var.append(k)
-                        self.genParamListWidget.addItem(
-                            str(key) + ' : ' + str(var))
-                        row+=1
-                if not self.fchanged:
-                    for i in range(self.genParamListWidget.count()):
-                        item = self.genParamListWidget.item(i)
-                        if item.text() in self.gen_param_items:
-                            item.setSelected(True)
-            self.plot_extra_param()
-            self.genParamListWidget.itemSelectionChanged.connect(self.plot_extra_param)
             if type(self.fit.x)==dict:
                 for key in self.fit.x.keys():
                     self.plotWidget.add_data(x=self.fit.x[key][self.fit.imin[key]:self.fit.imax[key] + 1], y=self.fit.yfit[key],
@@ -4334,6 +4310,31 @@ class XModFit(QWidget):
                 #     self.fit.params['output_params']['Residuals'] = {'x': self.fit.x[self.fit.imin:self.fit.imax + 1],
                 #                                                      'y':np.zeros_like(self.fit.x[self.fit.imin:self.fit.imax + 1])}
                 pfnames=pfnames+[self.funcListWidget.currentItem().text()]
+            if len(self.fit.params['output_params'])>0:
+                row=0
+                for key in self.fit.params['output_params'].keys():
+                    if key=='scaler_parameters':
+                        for k in self.fit.params['output_params'][key].keys():
+                            self.genParamListWidget.addItem(k + ' : ' + str(self.fit.params['output_params'][key][k]))
+                            it=self.genParamListWidget.item(row)
+                            it.setFlags(it.flags() & ~Qt.ItemIsSelectable)
+                            row+=1
+                    else:
+                        var = []
+                        for k in self.fit.params['output_params'][key].keys():
+                            if k != 'names' and k != 'plotType':
+                                var.append(k)
+                        self.genParamListWidget.addItem(
+                            str(key) + ' : ' + str(var))
+                        row+=1
+                if not self.fchanged:
+                    for i in range(self.genParamListWidget.count()):
+                        item = self.genParamListWidget.item(i)
+                        if item.text() in self.gen_param_items:
+                            item.setSelected(True)
+            self.plot_extra_param()
+            self.genParamListWidget.itemSelectionChanged.connect(self.plot_extra_param)
+
             self.consoleWidget.push_vars({'fit': self.fit})
         self.plotWidget.Plot(pfnames)
         # QApplication.processEvents()
