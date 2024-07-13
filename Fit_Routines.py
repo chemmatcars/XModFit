@@ -178,18 +178,18 @@ class Fit(QObject):
             #     os.remove(backendFile)
             # self.emcee_params = self.result.params.copy()
             # self.emcee_params.add('__lnsigma', value=-1.0, vary=True, min=np.log(0.001), max=np.log(2.0))
-            #if 'w/o' in fit_scale:
-            fitter = Minimizer(self.residual, self.emcee_params, fcn_args=(fit_scale,),
-                                    iter_cb=self.callback,
-                                    nan_policy='raise', burn=emcee_burn, steps=emcee_steps, thin=emcee_thin,
-                                    is_weighted=False, backend=backend,
-                                    nwalkers=emcee_walkers, workers=emcee_cores, reuse_sampler=reuse_sampler,
+            if 'w/o' in fit_scale:
+                fitter = Minimizer(self.residual, self.emcee_params, fcn_args=(fit_scale,),
+                               iter_cb=self.callback,
+                               nan_policy='raise', burn=emcee_burn, steps=emcee_steps, thin=emcee_thin,
+                               is_weighted=False, backend=backend,
+                               nwalkers=emcee_walkers, workers=emcee_cores, reuse_sampler=reuse_sampler,
                                run_mcmc_kwargs={'store':True})
-        else:
-            fitter = Minimizer(self.residual, self.emcee_params, fcn_args=(fit_scale,), iter_cb=self.callback,
-                                    nan_policy='raise', burn=emcee_burn, steps=emcee_steps, thin=1, is_weighted=True,
-                                    backend=backend,
-                                    nwalkers=emcee_walkers, workers=emcee_cores, reuse_sampler=reuse_sampler,
+            else:
+                fitter = Minimizer(self.residual, self.emcee_params, fcn_args=(fit_scale,), iter_cb=self.callback,
+                               nan_policy='raise', burn=emcee_burn, steps=emcee_steps, thin=1,
+                               is_weighted=True, backend=backend,
+                               nwalkers=emcee_walkers, workers=emcee_cores, reuse_sampler=reuse_sampler,
                                run_mcmc_kwargs={'store':True})
         return fitter
 
