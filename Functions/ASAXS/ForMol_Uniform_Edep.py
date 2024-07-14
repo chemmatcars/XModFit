@@ -14,6 +14,7 @@ import copy
 from xraydb import XrayDB
 from itertools import combinations
 import os
+import mendeleev
 from Bio.PDB import PDBParser
 from Bio.PDB.SASA import ShrakeRupley
 
@@ -22,7 +23,7 @@ from Bio.PDB.SASA import ShrakeRupley
 class ForMol_Uniform_Edep: #Please put the class name same as the function name
     re=2.818e-5 #Classical electron radius in Angstroms
     No=6.023e23 #Avagadro's number
-    def __init__(self,x=0, relement='Pr', Rmoles=1.0, Energy=12.0,fname1='./Data/Pr4.xyz',eta1=1.0,fname2='None',eta2=0.0,sol=0.0,sig=0.0,
+    def __init__(self,x=0, relement='Pr', Rmoles=1.0, Energy=12.0,fname1='./Data/Pr4.pdb',eta1=1.0,fname2='None',eta2=0.0,sol=0.0,sig=0.0,
                  scale=1.0, norm=1, norm_err=0.01, bkg=0.0,mpar={},error_factor=1.0):
         """
         Calculates the form factor for two different kinds of  molecules in cm^-1 for which the XYZ coordinates of the all the atoms composing the molecules are known
@@ -159,7 +160,7 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
             contrast.append(sol_fac[element])
         return unique_elements, atom_ff, hydration, contrast
 
-    @lru_cache(maxsize=10)
+    #@lru_cache(maxsize=10)
     def get_pairs(self, Natoms, pos):
         pairs = []
         distances = []
@@ -198,8 +199,8 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
     @lru_cache(maxsize=10)
     def calc_form(self, q, fname, sol, scale, relement, Rmoles, energy=None):
         Natoms, elements, pos, sasa = self.readPDB(fname)
-        unique_elements, atom_ff, hydration, contrast = self.get_ff(q, elements, sasa, energy = energy)
-        atom_pairs, atom_dist = self.get_pairs(Natoms, tuple(elements), tuple(pos), tuple(unique_elements))
+        unique_elements, atom_ff, hydration, contrast = self.get_ff(q, tuple(elements), tuple(sasa), energy = energy)
+        atom_pairs, atom_dist = self.get_pairs(Natoms, pos)
         return self.calc_formol(np.array(q), atom_ff, atom_pairs, scale*atom_dist, atom_vol, sol, unique_elements, relement, Rmoles)
 
 

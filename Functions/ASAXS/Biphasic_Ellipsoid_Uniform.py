@@ -270,7 +270,7 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
         mkey='Solvent'
         sol_density=tuple(np.ones_like(self.__Density__[mkey]))
         R=self.__R__[mkey]
-        rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(R),
+        rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=tuple(R),
                                                                  material=tuple(self.__material__[mkey]),
                                                                  relement=self.relement,
                                                                  density=tuple(self.__Density__[mkey]),
@@ -284,7 +284,7 @@ class Biphasic_Ellipsoid_Uniform: #Please put the class name same as the functio
         adensity = vf * adensity
         for mkey in self.__mkeys__:
             if mkey!='Solvent':
-                trho, teirho, tadensity, trhor, teirhor, tadensityr = calc_rho(R=tuple(self.__R__[mkey]),
+                trho, teirho, tadensity, trhor, teirhor, tadensityr, tcdensityr= calc_rho(R=tuple(self.__R__[mkey]),
                                                                            material=tuple(self.__material__[mkey]),
                                                                            relement=self.relement,
                                                                            density=tuple(self.__Density__[mkey]),

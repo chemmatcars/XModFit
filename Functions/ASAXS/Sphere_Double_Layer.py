@@ -18,6 +18,8 @@ from PeakFunctions import LogNormal, Gaussian
 from utils import find_minmax, calc_rho
 import time
 from functools import lru_cache
+from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
+# import jscatter as js
 
 from numba import njit, prange
 @njit(parallel=True,cache=True)
@@ -40,7 +42,7 @@ def ff_sphere_ml(q,R,rho):
 class Sphere_Double_Layer: #Please put the class name same as the function name
     def __init__(self, x=0, Np=20, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep=False, norm=1.0,
                  norm_err=0.01, sbkg=0.0, cbkg=0.0, abkg=0.0, nearIon='Rb', farIon='Cl', ionDensity=0.0, stThickness=1.0,
-                 stDensity=0.0, dbLength=1.0, dbDensity=0.0,Ndb=20,Rsig=0.0,D=0.0,phi=0.1,U=-1.0,SF=None,term='Total',
+                 stDensity=0.0, dbLength=1.0, dbDensity=0.0,Ndb=20,Rsig=0.0,D=1.0,phi=0.1,U=-1.0,SF=None,term='Total',
                  mpar={'Layers':{'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                       'Rmoles': [1.0, 1.0], 'R': [1.0, 0.0]}}):
         """
@@ -389,17 +391,18 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
                 tRmoles.append(1.0)
             else:
                 tRmoles.append(1.0)
-        rhon, eirhon, adensityn, rhorn, eirhorn, adensityrn = calc_rho(R=tuple(tR), material=tuple(tnmaterial),relement=self.relement,
+        rhon, eirhon, adensityn, rhorn, eirhorn, adensityrn, cdensityrn = calc_rho(R=tuple(tR), material=tuple(tnmaterial),relement=self.relement,
                                                                             density=tuple(tndensity), sol_density=tuple(tsoldensity),
                                                                             Energy=self.Energy, Rmoles=tuple(tRmoles), NrDep=self.NrDep)
-        rhof, eirhof, adensityf, rhorf, eirhorf, adensityrf = calc_rho(R=tuple(tR), material=tuple(tfmaterial),relement=self.relement,
+        rhof, eirhof, adensityf, rhorf, eirhorf, adensityrf, cdensityrf = calc_rho(R=tuple(tR), material=tuple(tfmaterial),relement=self.relement,
                                                                             density=tuple(tfdensity), sol_density=tuple(tsoldensity),
                                                                             Energy=self.Energy, Rmoles=tuple(tRmoles), NrDep=self.NrDep)
         rho, eirho, adensity = (rhon+rhof)/2, (eirhon+eirhof)/2, (adensityn+adensityf)/2
-        rhor,eirhor, adensityr = rhorn, eirhorn, adensityrn
+        rhor,eirhor, adensityr, cdensityr= rhorn, eirhorn, adensityrn, cdensityrn
         rhor[:,1]=(rhor[:,1]+rhorf[:,1])/2
         eirhor[:, 1] = (eirhor[:, 1] + eirhorf[:, 1])/2
-        adensityr[:,1]=(adensityr[:,1]+ adensityrf[:,1])/2
+        adensityr[:,1]=(adensityr[:,1] + adensityrf[:,1])/2
+        cdensityr[:,1]=(cdensityr[:,1] + cdensityrf[:,1])/2
 
         if type(self.x) == dict:
             sqf = {}
@@ -412,8 +415,12 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
                     struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
                 elif self.SF == 'Hard-Sphere':
                     struct = hard_sphere_sf(self.x[key], D=self.D, phi=self.phi)
-                else:
+                    # struct = js.sf.PercusYevick(self.x[key], self.D / 2, eta=self.phi)[1]
+                elif self.SF == 'Sticky-Sphere':
                     struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
+                    # struct = js.sf.stickyHardSphere(self.x[key],self.D,0.01,self.U,phi=self.phi)[1]
+                    # tau = np.exp(self.U) * (self.D + 0.01) / 12.0 / 0.01
+                    # struct = js.sf.adhesiveHardSphere(self.x[key], self.D / 2, tau, 0.01, eta=self.phi).array[1, :]
                 if key == 'SAXS-term':
                     sqf[key] = sqf[key] * struct + self.sbkg
                 if key == 'Cross-term':
@@ -447,23 +454,29 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
                 self.output_params['Total'] = {'x': self.x[key], 'y': total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
-                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-                self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]*scale,'names':['r (Angs)','Density (Molar)']}# in Molar
-                self.output_params['rhon_r'] = {'x': rhorn[:, 0], 'y': rhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-                self.output_params['eirhon_r'] = {'x': eirhorn[:, 0], 'y': eirhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
+                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs<sup>3</sup>)']}
+                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs<sup>3</sup>)']}
+                self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1] * scale,
+                                                    'names':['r (Angs)','Density (Molar)']}# in Molar
+                self.output_params['cdensity_r'] = {'x': cdensityr[:, 0], 'y': cdensityr[:, 1],
+                                                    'names': ['r (Angs)', 'Density (g/cm<sup>3</sup>)']}  # in Molar
+                self.output_params['rhon_r'] = {'x': rhorn[:, 0], 'y': rhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs<sup>3</sup>)']}
+                self.output_params['eirhon_r'] = {'x': eirhorn[:, 0], 'y': eirhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs<sup>3</sup>)']}
                 self.output_params['adensityn_r'] = {'x': adensityrn[:, 0], 'y': adensityrn[:, 1]*scale,'names':['r (Angs)','Density (Molar)']}# in Molar
-                self.output_params['rhof_r'] = {'x': rhorf[:, 0], 'y': rhorf[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-                self.output_params['eirhof_r'] = {'x': eirhorf[:, 0], 'y': eirhorf[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
+                self.output_params['rhof_r'] = {'x': rhorf[:, 0], 'y': rhorf[:, 1],'names':['r (Angs)','Electron Density (el/Angs<sup>3</sup>)']}
+                self.output_params['eirhof_r'] = {'x': eirhorf[:, 0], 'y': eirhorf[:, 1],'names':['r (Angs)','Electron Density (el/Angs<sup>3</sup>)']}
                 self.output_params['adensityf_r'] = {'x': adensityrf[:, 0], 'y': adensityrf[:, 1]*scale,'names':['r (Angs)','Density (Molar)']}# in Molar
-                self.output_params['Structure_Factor']={'x':self.x[key],'y':struct}
+                self.output_params['Structure_Factor']={'x':self.x[key],'y':struct,'names':['q (Angs)', 'S(q)']}
         else:
             if self.SF is None:
                 struct = np.ones_like(self.x)
             elif self.SF == 'Hard-Sphere':
                 struct = hard_sphere_sf(self.x, D=self.D, phi=self.phi)
-            else:
+                # struct = js.sf.PercusYevick(self.x, self.D / 2, eta=self.phi)[1]
+            elif self.SF == 'Sticky-Sphere':
                 struct = sticky_sphere_sf(self.x, D=self.D, phi=self.phi, U=self.U, delta=0.01)
+                # tau = np.exp(self.U) * (self.D + 0.01) / 12.0 / 0.01
+                # struct = js.sf.adhesiveHardSphere(self.x, self.D / 2, tau, 0.01, eta=self.phi).array[1, :]
 
             tsqf, eisqf, asqf, csqf = self.new_sphere(tuple(self.x), tuple(tR), self.Rsig, tuple(rho),
                                                       tuple(eirho), tuple(adensity), dist=self.dist, Np=self.Np)
@@ -497,16 +510,18 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
                 self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
                 self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
                 self.output_params['Resontant-term'] = {'x': self.x, 'y': asqf}
-                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
+                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs<sup>3</sup>)']}
+                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1],'names':['r (Angs)','Electron Density (el/Angs<sup>3</sup>)']}
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]*scale, 'names':['r (Angs)','Density (Molar)']} # in Molar
-                self.output_params['rhon_r'] = {'x': rhorn[:, 0], 'y': rhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-                self.output_params['eirhon_r'] = {'x': eirhorn[:, 0], 'y': eirhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
+                self.output_params['rhon_r'] = {'x': rhorn[:, 0], 'y': rhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs<sup>3</sup>)']}
+                self.output_params['eirhon_r'] = {'x': eirhorn[:, 0], 'y': eirhorn[:, 1],'names':['r (Angs)','Electron Density (el/Angs<sup>3</sup>)']}
                 self.output_params['adensityn_r'] = {'x': adensityrn[:, 0], 'y': adensityrn[:, 1]*scale,'names':['r (Angs)','Density (Molar)']} # in Molar
-                self.output_params['rhof_r'] = {'x': rhorf[:, 0], 'y': rhorf[:, 1],'names':['r (Angs)','Electron Density (el/Angs^3)']}
-                self.output_params['eirhof_r'] = {'x': eirhorf[:, 0], 'y': eirhorf[:, 1],'names':['r(Angs)','Electron Density (el/Angs^3)']}
+                self.output_params['cdensity_r'] = {'x': cdensityr[:, 0], 'y': cdensityr[:, 1],
+                                                    'names': ['r (Angs)', 'Density (g/cm<sup>3</sup>)']}
+                self.output_params['rhof_r'] = {'x': rhorf[:, 0], 'y': rhorf[:, 1],'names':['r (Angs)','Electron Density (el/Angs<sup>3</sup>)']}
+                self.output_params['eirhof_r'] = {'x': eirhorf[:, 0], 'y': eirhorf[:, 1],'names':['r(Angs)','Electron Density (el/Angs<sup>3</sup>)']}
                 self.output_params['adensityf_r'] = {'x': adensityrf[:, 0], 'y': adensityrf[:, 1]*scale,'names':['r (Angs)','Density (Molar)']} # in Molar
-                self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
+                self.output_params['Structure_Factor']={'x':self.x,'y':struct,'names':['q (Angs)', 'S(q)']}
             sqf=self.output_params[self.term]['y']
         return sqf
 

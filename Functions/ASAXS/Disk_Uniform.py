@@ -230,7 +230,7 @@ class Disk_Uniform: #Please put the class name same as the function name
             RvvgtH=1.0
         else:
             RvvgtH=0.0
-        rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(self.__H__), material=tuple(self.__material__),
+        rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=tuple(self.__H__), material=tuple(self.__material__),
                                                                  relement=self.relement,
                                                                  density=tuple(self.__density__),
                                                                  sol_density=tuple(self.__solDensity__),

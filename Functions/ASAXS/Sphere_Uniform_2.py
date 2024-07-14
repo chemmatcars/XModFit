@@ -17,6 +17,7 @@ from itertools import combinations
 from PeakFunctions import LogNormal, Gaussian
 from utils import find_minmax, calc_rho
 from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
+# import jscatter as js
 
 from numba import njit, prange
 
@@ -239,8 +240,9 @@ class Sphere_Uniform_2: #Please put the class name same as the function name
         """
         Define the function in terms of x to return some value
         """
+        scale = 1e27 / 6.022e23
         self.update_params()
-        rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=self.__R__, material=self.__material__,
+        rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=self.__R__, material=self.__material__,
                                                                  relement=self.relement,
                                                                  density=self.__density__,
                                                                  sol_density=self.__solDensity__,
@@ -260,23 +262,30 @@ class Sphere_Uniform_2: #Please put the class name same as the function name
                     struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
                 elif self.SF == 'Hard-Sphere':
                     struct = hard_sphere_sf(self.x[key], D=self.D, phi=self.phi)
-                else:
+                    # struct = js.sf.PercusYevick(self.x[key], self.D / 2, eta=self.phi)[1]
+                elif self.SF == 'Sticky-Sphere':
                     struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
+                    # struct = js.sf.stickyHardSphere(self.x[key],self.D,0.01,self.U,phi=self.phi)[1]
+                    # tau = np.exp(self.U) * (self.D + 0.01) / 12.0 / 0.01
+                    # struct = js.sf.adhesiveHardSphere(self.x[key], self.D / 2, tau, 0.01, eta=self.phi).array[1, :]
                 sqf[key]=sqf[key]*struct+self.__bkg__[key]
 
             if not self.__fit__:
                 for i, j in combinations(range(len(self.__R__[:-1])), 2):
                     self.output_params['R_%d_%d' % (i+1, j+1)] = {'x': Rl[:, i], 'y': Rl[:, j], 'names':['R_%d'%(i+1),'R_%d'%(j+1)]}
-                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1]}
-                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
-                self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
-                self.output_params['Structure_Factor']={'x':self.x[key],'y':struct}
+                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1], 'names': ['r (Angs)', 'rho (el/Angs<sup>3</sup>)']}
+                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1], 'names': ['r (Angs)', 'rho (el/Angs<sup>3</sup>)']}
+                self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]*scale,
+                                                    'names': ['r (Angs)', 'Density (Molar)']}
+                self.output_params['cdensity_r'] = {'x': cdensityr[:, 0], 'y': cdensityr[:, 1],
+                                                    'names':['r (Angs)', 'Density (g/cm<sup>3</sup>>)']}
+                self.output_params['Structure_Factor']={'x':self.x[key],'y':struct, 'names':['q (Angs<sup>-1</sup>)', 'S(q)']}
                 tkeys = list(self.output_params.keys())
                 for key in tkeys:
                     if 'simulated_w_err' in key:
                         del self.output_params[key]
                 for key in xkeys:
-                    self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
+                    self.output_params[key] = {'x': self.x[key], 'y': sqf[key], 'names': ['q (Angs<sup>-1</sup> `)', 'I (cm<sup>-1</sup>)']}
                 signal = self.norm * 1e-9 * 6.022e20 * sphere['Total']*struct+self.__bkg__['Total']
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
@@ -288,18 +297,25 @@ class Sphere_Uniform_2: #Please put the class name same as the function name
                                                                                    'y': sqerr * minsignal,
                                                                                    'yerr': np.sqrt(
                                                                                        normsignal) * minsignal * self.error_factor,
-                                                                                   'meta': meta}
+                                                                                   'meta': meta,
+                                                                                   'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)']}
                 else:
                     self.output_params['simulated_w_err'] = {'x': self.x[key], 'y': sqerr * minsignal,
-                                                             'yerr': np.sqrt(normsignal) * minsignal}
-                self.output_params['Total'] = {'x': self.x[key], 'y': signal}
+                                                             'yerr': np.sqrt(normsignal) * minsignal,
+                                                             'meta': meta,
+                                                             'names':['q (Angs<sup>-1</sup>)','I (cm<sup>-1</sup>)']}
+                self.output_params['Total'] = {'x': self.x[key], 'y': signal, 'meta':meta,
+                                               'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)']}
         else:
             if self.SF is None:
                 struct = np.ones_like(self.x)
             elif self.SF == 'Hard-Sphere':
                 struct = hard_sphere_sf(self.x, D=self.D, phi=self.phi)
-            else:
+                # struct = js.sf.PercusYevick(self.x, self.D / 2, eta=self.phi)[1]
+            elif self.SF == 'Sticky-Sphere':
                 struct = sticky_sphere_sf(self.x, D=self.D, phi=self.phi, U=self.U, delta=0.01)
+                # tau = np.exp(self.U) * (self.D + 0.01) / 12.0 / 0.01
+                # struct = js.sf.adhesiveHardSphere(self.x, self.D / 2, tau, 0.01, eta=self.phi).array[1, :]
 
             tsqf, Rl, rdist = self.new_sphere_dict(tuple(self.x), self.__R__, self.__Rsig__,
                                                    tuple(rho), tuple(eirho),
@@ -324,19 +340,23 @@ class Sphere_Uniform_2: #Please put the class name same as the function name
                         del self.output_params[key]
                 if self.Energy is not None:
                     self.output_params['simulated_w_err_%.3fkeV'%self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
-                                                                                 'yerr': np.sqrt(normsignal) * minsignal*self.error_factor,'meta':meta}
+                                                                                 'yerr': np.sqrt(normsignal) * minsignal*self.error_factor,
+                                                                                 'meta':meta,
+                                                                                 'names': ['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)']}
                 else:
                     self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
-                                                             'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,'meta':meta}
-
-                self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
-                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1]}
-                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1]}
-                self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]}
-                self.output_params['Total'] = {'x': self.x, 'y': signal}
-                self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
-                self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}
-                self.output_params['Cross-term'] = {'x': self.x, 'y': csqf}
+                                                             'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
+                                                             'meta': meta,
+                                                             'names': ['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)']}
+                self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct,'names': ['q (Angs<sup>-1</sup>)', 'S(q)']}
+                self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1], 'names': ['r (Angs)', 'rho (el/Angs<sup>3</sup>)']}
+                self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1], 'names': ['r (Angs)', 'eirho (el/Angs<sup>3</sup>)']}
+                self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1]*scale, 'names': ['r (Angs)', 'adensity (Molar)']}
+                self.output_params['cdensity_r'] = {'x': cdensityr[:, 0], 'y': cdensityr[:, 1], 'names': ['r (Angs)', 'density (g/cm<sup>3</sup>)']}
+                self.output_params['Total'] = {'x': self.x, 'y': signal, 'names': ['q (Angs)', 'I (cm<sup>-1</sup>)']}
+                self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf, 'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)']}
+                self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf, 'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)']}
+                self.output_params['Cross-term'] = {'x': self.x, 'y': csqf, 'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)']}
             sqf = self.output_params[self.term]['y']
         return sqf
 

@@ -236,7 +236,7 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
         mkey = 'Solvent'
         sol_density = tuple(np.ones_like(self.__Density__[mkey]))
         R = self.__R__[mkey]
-        rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(R),
+        rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=tuple(R),
                                                                  material=tuple(self.__material__[mkey]),
                                                                  relement=self.relement,
                                                                  density=tuple(self.__Density__[mkey]),
@@ -250,7 +250,7 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
         adensity = vf * adensity
         for mkey in self.__mkeys__:
             if mkey != 'Solvent':
-                trho, teirho, tadensity, trhor, teirhor, tadensityr = calc_rho(R=tuple(self.__R__[mkey]),
+                trho, teirho, tadensity, trhor, teirhor, tadensityr, tcdensityr= calc_rho(R=tuple(self.__R__[mkey]),
                                                                                material=tuple(self.__material__[mkey]),
                                                                                relement=self.relement,
                                                                                density=tuple(self.__Density__[mkey]),
@@ -259,6 +259,7 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
                                                                                Rmoles=tuple(self.__Rmoles__[mkey]),
                                                                                NrDep=self.NrDep)
                 vf = np.array(self.__VolFrac__[mkey])
+                print('rho',len(rho),'vf',len(vf),'teirho',len(teirho))
                 rho = rho + vf * trho
                 eirho = eirho + vf * teirho
                 adensity = adensity + vf * tadensity
@@ -305,7 +306,6 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
                 self.output_params['Total'] = {'x': self.x[key], 'y': total}
                 for key in self.x.keys():
                     self.output_params[key] = {'x': self.x[key], 'y': sqf[key]}
-                print(self.__R__[self.__mkeys__[0]], eirho)
                 xtmp, ytmp = create_steps(x=self.__R__[self.__mkeys__[0]], y=rho)
                 self.output_params['rho_r'] = {'x': xtmp, 'y': ytmp}
                 xtmp, ytmp = create_steps(x=self.__R__[self.__mkeys__[0]], y=eirho)
@@ -313,7 +313,6 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
                 xtmp, ytmp = create_steps(x=self.__R__[self.__mkeys__[0]],y=adensity)
                 self.output_params['adensity_r'] = {'x': xtmp, 'y': ytmp}
                 self.output_params['Structure_Factor'] = {'x': self.x[key], 'y': struct}
-
         else:
             if self.SF is None:
                 struct = np.ones_like(self.x)

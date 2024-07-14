@@ -227,7 +227,7 @@ class Cylinder_Uniform: #Please put the class name same as the function name
             HvvgtR=1.0
         else:
             HvvgtR=0.0
-        rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(self.__R__), material=tuple(self.__material__),
+        rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=tuple(self.__R__), material=tuple(self.__material__),
                                                                  relement=self.relement,
                                                                  density=tuple(self.__density__),
                                                                  sol_density=tuple(self.__solDensity__),
@@ -284,6 +284,8 @@ class Cylinder_Uniform: #Please put the class name same as the function name
                                                  'names': ['r (Angs)', 'Electron Density (el/Angs^3)']}
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1] * scale,
                                                     'names': ['r (Angs)', 'Density (Molar)']}
+                self.output_params['cdensity_r'] = {'x': cdensityr[:, 0], 'y': cdensityr[:, 1],
+                                                    'names': ['r (Angs)', 'Density (g/cm<sup>3</sup>)']}
                 self.output_params['Structure_Factor'] = {'x': self.x[key], 'y': struct}
                 xtmp,ytmp=create_steps(x=self.__R__[:-1],y=self.__Rmoles__[:-1])
                 self.output_params['Rmoles_radial']={'x':xtmp,'y':ytmp}
@@ -333,6 +335,8 @@ class Cylinder_Uniform: #Please put the class name same as the function name
                                                  'names': ['r (Angs)', 'Electron Density (el/Angs^3)']}
                 self.output_params['adensity_r'] = {'x': adensityr[:, 0], 'y': adensityr[:, 1] * scale,
                                                     'names': ['r (Angs)', 'Density (Molar)']}  # in Molar
+                self.output_params['cdensity_r'] = {'x': cdensityr[:, 0], 'y': cdensityr[:, 1],
+                                                    'names': ['r (Angs)', 'Density (g/cm<sup>3</sup>)']}
                 self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct}
                 xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__Rmoles__[:-1])
                 self.output_params['Rmoles_radial'] = {'x':xtmp , 'y': ytmp}

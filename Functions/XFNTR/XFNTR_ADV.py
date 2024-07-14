@@ -324,7 +324,7 @@ class XFNTR_ADV: #Please put the class name same as the function name
         conbot = self.getBulkCon(self.element, newbotchem, newbotden)  # get the bottom bulk concentration of the target element
         contop = self.getBulkCon(self.element, newtopchem, newtopden)  # get the top bulk concentration of the target element
 
-        print(conbot, contop)
+        #print(conbot, contop)
 
         fluene = xdb.xray_lines(self.element)[self.line].energy / 1000  # get the fluorescence energy in KeV
 

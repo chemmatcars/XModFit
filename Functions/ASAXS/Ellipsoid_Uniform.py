@@ -167,7 +167,7 @@ class Ellipsoid_Uniform: #Please put the class name same as the function name
                 rmin, rmax = max(0.001, totalR - 5 * Rsig), totalR + 5 * Rsig
                 dr = np.linspace(rmin, rmax, N)
             else:
-                rmin, rmax = max(0.001, np.exp(np.log(totalR) - 5 * Rsig)), np.exp(np.log(totalR) + 5 * Rsig)
+                rmin, rmax = max(-3, np.log(totalR) - 5 * Rsig), np.log(totalR) + 5 * Rsig
                 dr = np.logspace(rmin, rmax, N, base=np.exp(1.0))
             fdist.x = dr
             rdist = fdist.y()
@@ -223,7 +223,7 @@ class Ellipsoid_Uniform: #Please put the class name same as the function name
         """
         svol = 1.5 * 0.0172 ** 2 / 370 ** 2  # scattering volume in cm^3
         self.update_params()
-        rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(self.__R__), material=tuple(self.__material__),
+        rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=tuple(self.__R__), material=tuple(self.__material__),
                                                                       relement=self.relement,
                                                                       density=tuple(self.__density__),
                                                                       sol_density=tuple(self.__solDensity__),
