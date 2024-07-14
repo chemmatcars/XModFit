@@ -63,9 +63,9 @@ def parallelopiped_ml(q, L, B, H, rho, Nphi, Npsi, HggtLB=True):
     fft*=dphidpsi
     return fft*tfac
 
-class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the function name
+class Parallelepiped_Uniform_Edep_2: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, dist='LogNormal', Energy=None, relement='Au', NrDep='True',# L=1.0, B=1.0,
-                 H=1.0, norm=1.0, norm_err=0.01, bkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=200,Npsi=400, tol=1e-3,HggtLB=True,
+                 H=1.0, norm=1.0, norm_err=0.01, normQ=0, bkg=0.0, D=1.0, phi=0.1, U=-1.0, SF='None',Nphi=200,Npsi=400, tol=1e-3,HggtLB=True,
                  mpar={'Layers': {'Material': ['Au', 'H2O'], 'Density': [19.32, 1.0], 'SolDensity': [1.0, 1.0],
                                   'Rmoles': [1.0, 1.0], 'L': [1.0, 0.0],'Lsig':[1.0,0.0],'B':[1.0,0.0],'Bsig':[1.0,0.0]}}):
         """
@@ -84,6 +84,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
         Npsi        : Number of azimuthal angle for angular averaging
         norm        : The density of the nanoparticles in nanoMolar (nanoMoles/Liter)
         norm_err    : Percentage of error on normalization to simulated energy dependent SAXS data
+        normQ       : power of 'Q' to normalize the Intensity such as [Q^0, Q^1, Q^2, Q^3, Q^4]
         bkg         : Constant incoherent background
         tol         : Tolerence for Monte-Carlo Integration
         error_factor: Error-factor to simulate the error-bars
@@ -106,6 +107,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
             self.x=x
         self.norm=norm
         self.norm_err = norm_err
+        self.normQ = normQ
         self.bkg=bkg
         self.dist=dist
         self.Np=Np
@@ -126,6 +128,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
         self.choices={'dist':['Gaussian','LogNormal'],'NrDep':['True','False'],
                       'SF':['None','Hard-Sphere', 'Sticky-Sphere'],
                       'HggtLB':['False','True'],
+                      'normQ': [0, 1, 2, 3, 4]
                       } #If there are choices available for any fixed parameters
         self.__cf__=Chemical_Formula()
         self.__fit__=False
@@ -182,8 +185,8 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
             mnormB = multivariate_normal(np.log(B[:-1]), covB,allow_singular=True)
             Bt = np.exp(mnormB.rvs(N, random_state=seed))
             Bdist = mnormB.pdf(np.log(Bt))
-        Lt = np.cumsum(np.vstack((Lt.T, np.zeros(Lt.shape[0]))).T,axis=1)
-        Bt = np.cumsum(np.vstack((Bt.T, np.zeros(Bt.shape[0]))).T,axis=1)
+        Lt = np.vstack((Lt.T, np.zeros(Lt.shape[0]))).T
+        Bt = np.vstack((Bt.T, np.zeros(Bt.shape[0]))).T
         return Lt, Bt, Ldist, Bdist
 
     @lru_cache(maxsize=10)
@@ -231,8 +234,10 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
         scale = 1e27 / 6.022e23
         svol = 1.5*0.0172**2/370**2  # scattering volume in cm^3
         self.update_params()
-        self.__L__=np.array(self.__L__)
-        self.__B__=np.array(self.__B__)
+        tL=np.array(self.__L__)
+        tB=np.array(self.__B__)
+        self.__L__[1:]= 2*tL[1:] #This is done to convert thickness of the layer to the total Length of the parallelopiped
+        self.__B__[1:] = 2*tB[1:] #This is done to convert thickness of the layer to the total Breadth of the parallelopiped
         self.__Lsig__ = np.array(self.__Lsig__)
         self.__Bsig__ = np.array(self.__Bsig__)
         # self.__L__[0]=self.L
@@ -242,7 +247,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
             for key in self.x.keys():
                 sq = []
                 Energy = float(key.split('_')[1].split('@')[1])
-                rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(self.__L__),
+                rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=tuple(self.__L__),
                                                                          material=self.__material__,
                                                                          relement=self.relement,
                                                                          density=self.__density__,
@@ -260,7 +265,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                 struct = hard_sphere_sf(self.x[key], D=self.D, phi=self.phi)
             else:
                 struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
-            sqf[key] = sqf[key] * struct + self.bkg
+            sqf[key] = (sqf[key] * struct + self.bkg) * self.x[key]**self.normQ
             if not self.__fit__:
                 keys = list(self.output_params.keys())
                 for key1 in keys:
@@ -293,7 +298,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                     Energy = key.split('_')[1].split('@')[1]
                     # sqerr = np.sqrt(self.flux * sqf[key] * svol)
                     # sqwerr = sqf[key] * svol * self.flux + 2 * (0.5 - np.random.rand(len(sqerr))) * sqerr
-                    signal = sqf[key]
+                    signal = sqf[key]/self.x[key]**self.normQ
                     minsignal = np.min(signal)
                     normsignal = signal / minsignal
                     norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
@@ -304,7 +309,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                                                                                    normsignal) * minsignal * self.error_factor,
                                                                                'meta': meta}
         else:
-            rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(self.__L__), material=self.__material__,
+            rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=tuple(self.__L__), material=self.__material__,
                                                                      relement=self.relement,
                                                                      density=self.__density__,
                                                                      sol_density=self.__solDensity__,
@@ -322,7 +327,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                                                          self.H, tuple(rho),
                                                          dist=self.dist, Np=self.Np, Nphi=self.Nphi, Npsi=self.Npsi,
                                                          tol=self.tol,HggtLB=self.HggtLB)
-            sqf = self.norm * 1e-9 * np.array(sq) * 6.022e20 * struct + self.sbkg  # in cm^-1
+            sqf = (self.norm * 1e-9 * np.array(sq) * 6.022e20 * struct + self.bkg)*self.x**self.normQ  # in cm^-1 if not normalized by q
             if not self.__fit__:
                 keys = list(self.output_params.keys())
                 for key in keys:
@@ -343,7 +348,7 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
                     iBsort=np.argsort(B[:,0])
                     self.output_params['L_1']={'x':L[iLsort,0],'y':Ldist[iLsort]}
                     self.output_params['B_1'] = {'x': B[iBsort, 0], 'y': Bdist[iBsort]}
-                signal = sqf[0:]
+                signal = sqf[0:]/self.x**self.normQ
                 minsignal = np.min(signal)
                 normsignal = signal / minsignal
                 norm = np.random.normal(self.norm, scale=self.norm_err / 100.0)
@@ -373,5 +378,5 @@ class Parallelopiped_Uniform_Edep_2: #Please put the class name same as the func
 
 if __name__=='__main__':
     x = {'Total_E@11.919': np.logspace(np.log10(0.003), np.log10(0.15), 500),}
-    fun=Parallelopiped_Uniform_Edep_2(x=x)
+    fun=Parallelepiped_Uniform_Edep_2(x=x)
     print(fun.y())

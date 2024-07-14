@@ -20,18 +20,17 @@ from numba import njit, prange
 from scipy.special import j1
 import numba_scipy.special
 
-@njit(parallel=True,cache=True, fastmath=True)
+@njit(parallel=True, cache=True, fastmath=True)
 def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi, HggtLB):
     if HggtLB:
         tfac=2*np.pi/q/H
         Nphi=1
-        dphi=1.0
+        dphi=np.pi
         Nqt=-1.0
     else:
         tfac=np.ones_like(q)
         dphi=np.pi/Nphi
         Nqt=1.0
-    dphi=np.pi/Nphi
     dpsi=2.0*np.pi/Npsi
     fft = np.zeros_like(q)
     ffs = np.zeros_like(q)
@@ -76,7 +75,7 @@ def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi, HggtLB
     ffr*=dphidpsi
     return fft*tfac,ffs*tfac,ffc*tfac,ffr*tfac
 
-class Parallelopiped_Uniform: #Please put the class name same as the function name
+class Parallelepiped_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, dist='Gaussian', Energy=None, relement='Au', NrDep='False', L=1.0, B=1.0, H=1.0,
                  HggtLB=True, sig=0.0, norm=1.0, norm_err=0.01, sbkg=0.0, cbkg=0.0, abkg=0.0, D=1.0, phi=0.1, U=-1.0,
                  SF='None',Nphi=180,Npsi=360, term='Total',
@@ -147,8 +146,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         self.SF=SF
         self.choices={'dist':['Gaussian','LogNormal'],'NrDep':['True','False'],
                       'SF':['None','Hard-Sphere', 'Sticky-Sphere'],
-                      'term': ['SAXS-term', 'Cross-term', 'Resonant-term',
-                               'Total'],
+                      'term': ['SAXS-term', 'Cross-term', 'Resonant-term', 'Total'],
                       'HggtLB':['True','False']
                       } #If there are choices available for any fixed parameters
         self.__cf__=Chemical_Formula()
@@ -221,7 +219,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
             l = np.array(L) * (1 + (dL[i] - totalL) / totalL)
             b = np.array(B) * (1 + (dB[i] - totalB) / totalB)
             # fft, ffs, ffc, ffr = ff_cylinder_ml_asaxs(q, H, r, rho, eirho, adensity, Nalf)
-            fft, ffs, ffc, ffr = parallelopiped_ml_asaxs(q, l, b, H, rho, eirho, adensity, Nphi, Npsi,HggtLB=HggtLB)
+            fft, ffs, ffc, ffr = parallelopiped_ml_asaxs(q, l, b, H, rho, eirho, adensity, Nphi, Npsi, HggtLB=HggtLB)
             form += dist[i] * fft/sumL
             eiform += dist[i] * ffs/sumL
             aform += dist[i] * ffr/sumL
@@ -256,11 +254,12 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
         scale = 1e27 / 6.022e23
         svol = 1.5*0.0172**2/370**2  # scattering volume in cm^3
         self.update_params()
-        self.__L__=np.array(self.__Thickness__)
-        self.__B__=np.array(self.__Thickness__)
+        self.__L__=np.array(self.__Thickness__)*2 #This is done to convert thickness of the layer to the total Length of the parallelopiped
+        self.__B__=np.array(self.__Thickness__)*2 #This is done to convert thickness of the layer to the total Breadth of the parallelopiped
         self.__L__[0]=self.L
         self.__B__[0]=self.B
-        rho, eirho, adensity, rhor, eirhor, adensityr = calc_rho(R=tuple(self.__L__), material=tuple(self.__material__),
+        print(self.__L__,self.__B__)
+        rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=tuple(self.__L__), material=tuple(self.__material__),
                                                                  relement=self.relement,
                                                                  density=tuple(self.__density__),
                                                                  sol_density=tuple(self.__solDensity__),
@@ -341,7 +340,7 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
 
             tsqf, eisqf, asqf, csqf = self.parallelopiped(tuple(self.x), tuple(self.__L__), tuple(self.__B__), self.H, self.sig,
                                                           tuple(rho), tuple(eirho),tuple(adensity), dist=self.dist,
-                                                          Np=self.Np, Nphi=self.Nphi, Npsi=self.Npsi,HggtLB=self.HggtLB)
+                                                          Np=self.Np, Nphi=self.Nphi, Npsi=self.Npsi, HggtLB=self.HggtLB)
             sqf = self.norm * 1e-9 * np.array(tsqf) * 6.022e20 * struct + self.sbkg  # in cm^-1
             if not self.__fit__: #Generate all the quantities below while not fitting
                 asqf = self.norm * 1e-9 * np.array(asqf) * 6.022e20 * struct + self.abkg  # in cm^-1
@@ -396,5 +395,5 @@ class Parallelopiped_Uniform: #Please put the class name same as the function na
 
 if __name__=='__main__':
     x=np.logspace(-3,0,200)
-    fun=Parallelopiped_Uniform(x=x)
+    fun=Parallelepiped_Uniform(x=x)
     print(fun.y())
