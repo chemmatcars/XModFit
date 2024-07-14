@@ -1365,7 +1365,7 @@ class XModFit(QWidget):
                                 bfname=os.path.join(os.path.dirname(ofname), 'genParam_' + os.path.basename(ofname)))
                 else:
                     self.errorAvailable = True
-                    self.reuse_sampler = True
+                    #self.reuse_sampler = True
                     self.emceeConfIntervalWidget.reuseSamplerCheckBox.setEnabled(True)
                     self.emceeConfIntervalWidget.reuseSamplerCheckBox.setCheckState(Qt.Checked)
                     self.disconnect_fit_function()
@@ -1811,6 +1811,7 @@ class XModFit(QWidget):
         else:
             self.emceeConfIntervalWidget.reuseSamplerCheckBox.setChecked(True)
             self.emceeConfIntervalWidget.reuseSamplerCheckBox.setDisabled(True)
+            self.reuse_sampler=True
 
         if self.reuse_sampler:
             self.emceeConfIntervalWidget.reuseSamplerCheckBox.setEnabled(True)
@@ -1861,10 +1862,10 @@ class XModFit(QWidget):
             self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.draw()
             self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.flush_events()
             self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(3)
-            if self.fit.result.chain.shape[-1]==len(self.fit.result.var_names)+1:
-                if '__lnsigma' not in self.fit.result.var_names:
-                    self.fit.result.var_names.append('__lnsigma')
-                    self.fit.result.nvarys+=1
+            if self.fit.result.chain.shape[-1]==len(self.fit.result.var_names):
+                # if '__lnsigma' not in self.fit.result.var_names:
+                #     self.fit.result.var_names.append('__lnsigma')
+                #     self.fit.result.nvarys+=1
                 #self.fit.result.flatchain=self.fit.result.flatchain()
                 self.perform_post_sampling_tasks()
                 self.emceeConfIntervalWidget.reuseSamplerCheckBox.setEnabled(True)
@@ -2155,8 +2156,8 @@ class XModFit(QWidget):
     def stopFit(self):
         self.fit.fit_abort=True
         self.fit_stopped=True
-        self.reuse_sampler=False
         if self.fit_method=='emcee':
+            self.reuse_sampler = True
             self.emceeConfIntervalWidget.stopSamplingPushButton.clicked.disconnect()
 
     def closeFitInfoDlg(self):
@@ -2213,8 +2214,8 @@ class XModFit(QWidget):
                     '%d\t%.3f' % (self.autoCorrTime[-1, 0], self.autoCorrTime[-1, 1]))
 
                 self.autoCorrPlot_sp.set_data(self.autoCorrTime[:,0],self.autoCorrTime[:,1])
-                self.autoCorrPlot_ax1.set_xlim(0.98 * self.autoCorrTime[0,0], 1.02 * self.autoCorrTime[-1,0])
-                self.autoCorrPlot_ax1.set_ylim(0.98 * self.autoCorrTime[0, 1], 1.02 * self.autoCorrTime[-1, 1])
+                self.autoCorrPlot_ax1.set_xlim(0.98 * min(self.autoCorrTime[:,0]), 1.02 * max(self.autoCorrTime[:,0]))
+                self.autoCorrPlot_ax1.set_ylim(0.98 * min(self.autoCorrTime[:, 1]), 1.02 * max(self.autoCorrTime[:, 1]))
                 self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.draw()
                 self.emceeConfIntervalWidget.autoCorrTimeMPLWidget.fig.canvas.flush_events()
                 self.emceeConfIntervalWidget.tabWidget.setCurrentIndex(3)
@@ -2301,6 +2302,7 @@ class XModFit(QWidget):
                     for name in self.fit.result.var_names:
                         ttxt = ttxt.replace(name, "self.param_chain['%s'][%d]" % (name, j))
                     self.param_chain[parname][j] = eval(ttxt)
+        self.reuse_sampler = True
 
     def cornerPlot(self):
         percentile = self.emceeConfIntervalWidget.percentileDoubleSpinBox.value()
@@ -2340,7 +2342,7 @@ class XModFit(QWidget):
 
     def calcMCMCerrorbars(self,burn=0,percentile=85):
         mesg = [['Parameters', 'Fit-Value', 'Value(50%)', 'Left-error(%.3f%s)' % (100 - percentile,'%'), 'Right-error(%.3f%s)' % (percentile,'%')]]
-        ndim=len(self.fit.result.var_names)-1
+        ndim=len(self.fit.result.var_names)
         axes = np.array(self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig.axes).reshape((ndim, ndim))
         for i, key in enumerate(self.param_chain.keys()):
             if key!='__lnsigma':
