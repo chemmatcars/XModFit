@@ -1973,8 +1973,12 @@ class XModFit(QWidget):
                 else:
                     self.emceeConfIntervalWidget.userDefinedParamTreeWidget.currentItem().setText(0,parname+'='+txt)
                 self.param_chain[parname] = {}
+                ttxt1=copy.copy(txt[0:])
+                for name in self.fit.result.var_names:
+                    ttxt1 = ttxt1.replace(name, "self.final_fit_params['%s'].value" % name)
+                self.final_fit_params.add(parname, value=eval(ttxt1))
                 for i in range(self.chain_shape[1]):
-                    ttxt=txt[0:]
+                    ttxt = copy.copy(txt[0:])
                     for name in self.fit.result.var_names:
                         ttxt=ttxt.replace(name,"self.param_chain['%s'][%d]"%(name,i))
                     try:
@@ -1993,7 +1997,6 @@ class XModFit(QWidget):
                         return
                 self.emceeConfIntervalWidget.userDefinedParamTreeWidget.itemSelectionChanged.connect(
                     self.userDefinedParameterTreeSelectionChanged)
-
             else:
                 self.MCMCUserDefinedParamWidget.close()
 
@@ -2005,6 +2008,7 @@ class XModFit(QWidget):
         for item in self.emceeConfIntervalWidget.userDefinedParamTreeWidget.selectedItems():
             parname=item.text(0).split('=')[0]
             del self.param_chain[parname]
+            self.final_fit_params.pop(parname)
             index=self.emceeConfIntervalWidget.userDefinedParamTreeWidget.indexOfTopLevelItem(item)
             self.emceeConfIntervalWidget.userDefinedParamTreeWidget.takeTopLevelItem(index)
         self.emceeConfIntervalWidget.userDefinedParamTreeWidget.itemSelectionChanged.connect(self.userDefinedParameterTreeSelectionChanged)
@@ -2297,11 +2301,17 @@ class XModFit(QWidget):
             for i in range(child_count):
                 parname, expression = root.child(i).text(0).split('=')
                 self.param_chain[parname]={}
+                ttxt = expression[0:]
+                ttxt1 = copy.copy(ttxt)
+                for name in self.fit.result.var_names:
+                    ttxt1 = ttxt1.replace(name, "self.final_fit_params['%s'].value" % name)
+                self.final_fit_params.add(parname, value=eval(ttxt1))
                 for j in range(self.chain_shape[1]):
-                    ttxt = expression[0:]
+                    ttxt2 = copy.copy(ttxt)
                     for name in self.fit.result.var_names:
-                        ttxt = ttxt.replace(name, "self.param_chain['%s'][%d]" % (name, j))
-                    self.param_chain[parname][j] = eval(ttxt)
+                        ttxt2 = ttxt2.replace(name, "self.param_chain['%s'][%d]" % (name, j))
+                    self.param_chain[parname][j] = eval(ttxt2)
+
         self.reuse_sampler = True
 
     def cornerPlot(self):
@@ -2309,11 +2319,16 @@ class XModFit(QWidget):
         first = int(self.emceeConfIntervalWidget.MCMCBurnLineEdit.text())
         bins = self.emceeConfIntervalWidget.MCMCHistogramBinSpinBox.value()
         self.emceeConfIntervalWidget.cornerPlotMPLWidget.clear()
-        names = [name for name in self.fit.result.var_names if name != '__lnsigma']#self.fit.result.var_names
-        values = [self.final_fit_params[name].value for name in names]
+        self.pardata=np.empty((self.chain_shape[0]*self.chain_shape[1],len(self.param_chain.keys())))
+        for i, key in enumerate(self.param_chain.keys()):
+            for j in self.param_chain[key].keys():
+                self.pardata[j*self.chain_shape[0]:(j+1)*self.chain_shape[0],i]=self.param_chain[key][j]
+        #self.pardata = np.ndarray.flatten(self.pardata)
+        names = [name for name in self.param_chain.keys() if name != '__lnsigma']#self.fit.result.var_names
+        values=[self.final_fit_params[name].value for name in names]
         ndim = len(names)
         quantiles=[(100-percentile)/100,0.5,percentile/100]
-        corner.corner(self.fit.result.flatchain[names][first:], labels=names, bins=bins, levels=(percentile/100,),
+        corner.corner(self.pardata, labels=names, bins=bins, levels=(percentile/100,),
                       truths=values, quantiles=quantiles, show_titles=True, title_fmt='.3e',
                       use_math_text=True, title_kwargs={'fontsize': 3 * 12 / ndim},
                       label_kwargs={'fontsize': 3 * 12 / ndim}, fig=self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig)
@@ -2342,25 +2357,26 @@ class XModFit(QWidget):
 
     def calcMCMCerrorbars(self,burn=0,percentile=85):
         mesg = [['Parameters', 'Fit-Value', 'Value(50%)', 'Left-error(%.3f%s)' % (100 - percentile,'%'), 'Right-error(%.3f%s)' % (percentile,'%')]]
-        ndim=len(self.fit.result.var_names)
+        ndim=len(self.param_chain.keys())
         axes = np.array(self.emceeConfIntervalWidget.cornerPlotMPLWidget.fig.axes).reshape((ndim, ndim))
         for i, key in enumerate(self.param_chain.keys()):
-            if key!='__lnsigma':
+            #if key!='__lnsigma':
             # for chain in self.param_chain[key].keys():
             #     try:
             #         pardata=np.vstack((pardata,self.param_chain[key][chain][burn:]))
             #     except:
             #         pardata=[self.param_chain[key][chain][burn:]]
             # pardata=np.ndarray.flatten(pardata)
-                errors=corner.quantile(self.fit.result.flatchain[key][burn:],[(100-percentile)/100,50/100,percentile/100])
+            errors=corner.quantile(self.pardata[:,i],[(100-percentile)/100, 50/100, percentile/100])
+            if key in self.final_fit_params.keys():
                 mesg.append([key, self.final_fit_params[key].value, errors[1], errors[1]-errors[0], errors[2]-errors[1]])
-                val='%.3e'%errors[1]
-                neger='%.3e'%(errors[1]-errors[0])
-                poser='%.3e'%(errors[2]-errors[1])
-                if i<ndim:
-                    ax = axes[i, i]
-                    ax.set_title(r'%s' '\n' r'$%s_{%s}^{%s}$'%(self.fit.result.var_names[i].center(24),val,neger,poser),
-                                 fontsize=3 * 12 / ndim)
+            val='%.3e'%errors[1]
+            neger='%.3e'%(errors[1]-errors[0])
+            poser='%.3e'%(errors[2]-errors[1])
+            if i<ndim:
+                ax = axes[i, i]
+                ax.set_title(r'%s' '\n' r'$%s_{%s}^{%s}$'%(key.center(24),val,neger,poser),
+                             fontsize=3 * 12 / ndim)
         self.emceeConfIntervalWidget.cornerPlotMPLWidget.draw()
         self.emceeConfIntervalWidget.confIntervalTextEdit.clear()
         self.emceeConfIntervalWidget.confIntervalTextEdit.setFont(QFont("Courier", 10))
