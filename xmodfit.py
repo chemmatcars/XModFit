@@ -2319,6 +2319,7 @@ class XModFit(QWidget):
         first = int(self.emceeConfIntervalWidget.MCMCBurnLineEdit.text())
         bins = self.emceeConfIntervalWidget.MCMCHistogramBinSpinBox.value()
         self.emceeConfIntervalWidget.cornerPlotMPLWidget.clear()
+        #self.pardata will have all the first points removed from the chains
         self.pardata=np.empty(((self.chain_shape[0]-first)*self.chain_shape[1],len(self.param_chain.keys())))
         for i, key in enumerate(self.param_chain.keys()):
             for j in self.param_chain[key].keys():
@@ -2328,7 +2329,6 @@ class XModFit(QWidget):
         values=[self.final_fit_params[name].value for name in names]
         ndim = len(names)
         quantiles=[(100-percentile)/100,0.5,percentile/100]
-        print(self.chain_shape,list(self.param_chain.keys()))
         corner.corner(self.pardata, labels=names, bins=bins, levels=(percentile/100,),
                       truths=values, quantiles=quantiles, show_titles=True, title_fmt='.3e',
                       use_math_text=True, title_kwargs={'fontsize': 3 * 12 / ndim},
