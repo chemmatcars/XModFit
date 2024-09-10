@@ -2319,15 +2319,16 @@ class XModFit(QWidget):
         first = int(self.emceeConfIntervalWidget.MCMCBurnLineEdit.text())
         bins = self.emceeConfIntervalWidget.MCMCHistogramBinSpinBox.value()
         self.emceeConfIntervalWidget.cornerPlotMPLWidget.clear()
-        self.pardata=np.empty((self.chain_shape[0]*self.chain_shape[1],len(self.param_chain.keys())))
+        self.pardata=np.empty(((self.chain_shape[0]-first)*self.chain_shape[1],len(self.param_chain.keys())))
         for i, key in enumerate(self.param_chain.keys()):
             for j in self.param_chain[key].keys():
-                self.pardata[j*self.chain_shape[0]:(j+1)*self.chain_shape[0],i]=self.param_chain[key][j]
+                self.pardata[j*(self.chain_shape[0]-first):(j+1)*(self.chain_shape[0]-first),i]=self.param_chain[key][j][first:]
         #self.pardata = np.ndarray.flatten(self.pardata)
         names = [name for name in self.param_chain.keys() if name != '__lnsigma']#self.fit.result.var_names
         values=[self.final_fit_params[name].value for name in names]
         ndim = len(names)
         quantiles=[(100-percentile)/100,0.5,percentile/100]
+        print(self.chain_shape,list(self.param_chain.keys()))
         corner.corner(self.pardata, labels=names, bins=bins, levels=(percentile/100,),
                       truths=values, quantiles=quantiles, show_titles=True, title_fmt='.3e',
                       use_math_text=True, title_kwargs={'fontsize': 3 * 12 / ndim},
