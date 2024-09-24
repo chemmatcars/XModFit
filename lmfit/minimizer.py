@@ -37,6 +37,7 @@ from scipy.stats import cauchy as cauchy_dist
 from scipy.stats import norm as norm_dist
 import uncertainties
 
+import lmfit
 from ._ampgo import ampgo
 from .parameter import Parameter, Parameters
 from .printfuncs import fitreport_html_table
@@ -1054,7 +1055,7 @@ class Minimizer:
 
     def _lnprob(self, theta, userfcn, params, var_names, bounds, userargs=(),
                 userkws=None, float_behavior='posterior', is_weighted=True,
-                nan_policy='raise'):
+                funcname='', nan_policy='raise'):
         """Calculate the log-posterior probability.
 
         See the `Minimizer.emcee` method for more details.
@@ -1137,7 +1138,10 @@ class Minimizer:
             # objective function returns a single value.
             # use float_behaviour to figure out if the value is posterior or chi2
             if float_behavior == 'posterior':
-                pass
+                if funcname == 'XLayersPDB':
+                    angleind = np.where(var_names == 'theta')[0]
+                    lnprior = np.log(np.sin(theta(angleind) * np.pi / 180) / 2)
+                    lnprob += lnprior
             elif float_behavior == 'chi2':
                 lnprob *= -0.5
             else:
@@ -1148,7 +1152,7 @@ class Minimizer:
     def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1,
               ntemps=1, pos=None, reuse_sampler=False, workers=1,
               float_behavior='posterior', is_weighted=True, seed=None,
-              progress=True, backend=None, run_mcmc_kwargs={}):
+              progress=True, backend=None, fiterr=0, funcname='', run_mcmc_kwargs={}):
         r"""Bayesian sampling of the posterior distribution.
 
         The method uses the ``emcee`` Markov Chain Monte Carlo package and
@@ -1434,6 +1438,27 @@ class Minimizer:
                 raise ValueError("You cannot reuse the sampler if the number "
                                  "of varying parameters has changed")
 
+        elif funcname == 'XLayersPDB':
+            ind = 0
+            angleindex = np.zeros(len(result.var_names))
+            p0 = np.zeros((nwalkers, self.nvarys))
+            for var_name in result.var_names:
+                if var_name == 'theta':
+                    p0[:, ind] = np.arccos(2*rng.rand(nwalkers) - 1)*180/np.pi
+                    angleindex[ind] = 1
+                elif var_name == 'phi':
+                    p0[:, ind] = rng.rand(nwalkers) * 360
+                    angleindex[ind] = 2
+                else:
+                    p0[:, ind] = (1 + rng.randn(nwalkers)*fiterr[ind])*var_arr[ind]
+                    angleindex[ind] = 0
+                ind += 1
+
+
+            sampler_kwargs.setdefault('moves', [(emcee.moves.StretchMove(), 0.3), (emcee.moves.KDEMove(), 0.3), (emcee.moves.DEMove(), 0.25), (emcee.moves.DESnookerMove(), 0.15)])
+            sampler_kwargs.setdefault('pool', auto_pool)
+            self.backend.reset(nwalkers, self.nvarys)
+
         else:
             p0 = 1 + rng.randn(nwalkers, self.nvarys) * 1.e-4
             p0 *= var_arr
@@ -1443,7 +1468,11 @@ class Minimizer:
             #Adding data, fitting function and fitting parameters to the backend file
             with self.backend.open("a") as f:
                 f[self.backend.name].attrs.update(result.params)
-        self.sampler = emcee.EnsembleSampler(nwalkers, self.nvarys,
+        if funcname == 'XLayersPDB':
+            self.sampler = lmfit.customsampler.CustomSampler(nwalkers, self.nvarys,
+                                                             self._lnprob, **sampler_kwargs)
+        else:
+            self.sampler = emcee.EnsembleSampler(nwalkers, self.nvarys,
                                                  self._lnprob, **sampler_kwargs)
         # user supplies an initialisation position for the chain
         # If you try to run the sampler with p0 of a wrong size then you'll get
@@ -1469,7 +1498,10 @@ class Minimizer:
 
         # now do a production run, sampling all the time
         try:
-            output = self.sampler.run_mcmc(p0, steps, progress=progress, **run_mcmc_kwargs)
+            if funcname == 'XLayersPDB':
+                output = self.sampler.custom_run_mcmc(p0, steps, angleindex, progress=progress, **run_mcmc_kwargs)
+            else:
+                output = self.sampler.run_mcmc(p0, steps, progress=progress, **run_mcmc_kwargs)
             self._lastpos = output.coords
         except AbortFitException:
             result.aborted = True

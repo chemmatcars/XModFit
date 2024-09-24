@@ -316,9 +316,9 @@ class XModFit(QWidget):
         self.tModules={}
         self.fitMethods={'Levenberg-Marquardt':'leastsq',
                          'Scipy-Least-Squares':'least_squares',
-                         'Differential-Evolution': 'differential_evolution'}
+                         'Differential-Evolution': 'differential_evolution',
                          # 'Brute-Force-Method':'brute',
-                         # 'Nelder-Mead':'nelder',
+                         'Nelder-Mead':'nelder'}
                          # 'L-BFGS-B':'lbfgsb',
                          # 'Powell':'powell',
                          # 'Congugate-Gradient':'cg',
@@ -1150,7 +1150,7 @@ class XModFit(QWidget):
             self.fit_method=self.fitMethods[self.fitMethodComboBox.currentText()]
         else:
             self.fit_method=fit_method
-        if self.fit_method not in ['leastsq','brute','differential_evolution','least_squares','emcee']:
+        if self.fit_method not in ['leastsq','brute','differential_evolution','least_squares','emcee','nelder']:
             QMessageBox.warning(self,'Fit Method Warning','This method is under development and will be available '
                                                           'later.', QMessageBox.Ok)
             return
