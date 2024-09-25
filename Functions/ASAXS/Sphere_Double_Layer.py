@@ -115,6 +115,7 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
         self.__mpar__ = mpar  # If there is any multivalued parameter
         self.choices = {'dist': ['Gaussian', 'LogNormal'],'SF':['None','Hard-Sphere', 'Sticky-Sphere'],
                         'term':['SAXS-term','Cross-term','Resonant-term','Total'], 'NrDep': [True, False],'term':{'Total','SAXS-term','Cross-term','Resonant-term'}}  # If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__cf__ = Chemical_Formula()
         self.__fit__ = False
         self.output_params={'scaler_parameters':{}}

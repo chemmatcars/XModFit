@@ -20,7 +20,7 @@ import mendeleev
 class ForMol_Uniform: #Please put the class name same as the function name
     re=2.818e-5 #Classical electron radius in Angstroms
     No=6.023e23 #Avagadro's number
-    def __init__(self,x=0,Energy=12.0,fname1='./Data/Pr4.xyz',eta1=1.0,fname2='None',eta2=0.0,sol=0.0,sig=0.0,
+    def __init__(self,x=0,Energy=12.0,fname1='./Data/Pr4.xyz',eta1=1.0,fname2='./Data/Nd9.xyz',eta2=0.0,sol=0.0,sig=0.0,
                  scale=1.0, norm=1, norm_err=0.01, bkg=0.0,mpar={},error_factor=1.0):
         """
         Calculates the form factor for two different kinds of  molecules in cm^-1 for which the XYZ coordinates of the all the atoms composing the molecules are known
@@ -63,6 +63,7 @@ class ForMol_Uniform: #Please put the class name same as the function name
         self.scale = scale
         self.__mpar__ = mpar #If there is any multivalued parameter
         self.choices = {} #If there are choices available for any fixed parameters
+        self.filepaths = {'fname1':self.fname1, 'fname2':self.fname2}  # If a parameter is a filename with path
         self.__fnames__ = [self.fname1,self.fname2]
         self.__xdb__ = XrayDB()
         #if self.fname1 is not None:

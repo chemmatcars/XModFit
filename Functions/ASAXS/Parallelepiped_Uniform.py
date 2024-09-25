@@ -149,6 +149,7 @@ class Parallelepiped_Uniform: #Please put the class name same as the function na
                       'term': ['SAXS-term', 'Cross-term', 'Resonant-term', 'Total'],
                       'HggtLB':['True','False']
                       } #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__cf__=Chemical_Formula()
         self.__fit__=False
         self.output_params={'scaler_parameters':{}}

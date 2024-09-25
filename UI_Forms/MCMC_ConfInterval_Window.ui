@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1404</width>
-    <height>824</height>
+    <height>789</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,8 +19,8 @@
      <rect>
       <x>12</x>
       <y>12</y>
-      <width>1380</width>
-      <height>755</height>
+      <width>1209</width>
+      <height>687</height>
      </rect>
     </property>
     <property name="orientation">
@@ -28,27 +28,10 @@
     </property>
     <widget class="QWidget" name="layoutWidget">
      <layout class="QGridLayout" name="gridLayout">
-      <item row="7" column="0" colspan="2">
-       <widget class="QLabel" name="fitIterLabel">
+      <item row="13" column="0">
+       <widget class="QLabel" name="userDefinedParamChainLabel">
         <property name="text">
-         <string/>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="text">
-         <string>MCMC Thin</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QLineEdit" name="MCMCWalkerLineEdit">
-        <property name="text">
-         <string>10</string>
+         <string>User-Defined Parameter Chains</string>
         </property>
        </widget>
       </item>
@@ -56,48 +39,6 @@
        <widget class="QLineEdit" name="MCMCStepsLineEdit">
         <property name="text">
          <string>100</string>
-        </property>
-       </widget>
-      </item>
-      <item row="11" column="0">
-       <widget class="QLabel" name="label_7">
-        <property name="text">
-         <string>Parameter Chains</string>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="0" colspan="2">
-       <widget class="QProgressBar" name="progressBar">
-        <property name="value">
-         <number>24</number>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLineEdit" name="MCMCThinLineEdit">
-        <property name="text">
-         <string>1</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QLineEdit" name="ParallelCoresLineEdit">
-        <property name="text">
-         <string>1</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>MCMC Walkers</string>
-        </property>
-       </widget>
-      </item>
-      <item row="19" column="0" colspan="2">
-       <widget class="QPushButton" name="calcConfIntervPushButton">
-        <property name="text">
-         <string>Calculate Confidence Interval</string>
         </property>
        </widget>
       </item>
@@ -113,41 +54,10 @@
         </column>
        </widget>
       </item>
-      <item row="10" column="1">
-       <widget class="QPushButton" name="startSamplingPushButton">
+      <item row="14" column="0">
+       <widget class="QPushButton" name="addUserDefinedParamPushButton">
         <property name="text">
-         <string>Start Sampling</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0" colspan="2">
-       <widget class="QCheckBox" name="reuseSamplerCheckBox">
-        <property name="text">
-         <string>Re-use Sampler</string>
-        </property>
-       </widget>
-      </item>
-      <item row="10" column="0">
-       <widget class="QPushButton" name="stopSamplingPushButton">
-        <property name="text">
-         <string>Stop Sampling</string>
-        </property>
-       </widget>
-      </item>
-      <item row="18" column="1">
-       <widget class="QDoubleSpinBox" name="percentileDoubleSpinBox">
-        <property name="decimals">
-         <number>3</number>
-        </property>
-        <property name="value">
-         <double>84.135000000000005</double>
-        </property>
-       </widget>
-      </item>
-      <item row="18" column="0">
-       <widget class="QLabel" name="label_6">
-        <property name="text">
-         <string>Percentile</string>
+         <string>Add Parameter</string>
         </property>
        </widget>
       </item>
@@ -155,20 +65,6 @@
        <widget class="QLabel" name="label_4">
         <property name="text">
          <string>Parallel Cores</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>MCMC Steps</string>
-        </property>
-       </widget>
-      </item>
-      <item row="17" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>MCMC Burn</string>
         </property>
        </widget>
       </item>
@@ -186,17 +82,107 @@
         </property>
        </widget>
       </item>
-      <item row="13" column="0">
-       <widget class="QLabel" name="userDefinedParamChainLabel">
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="MCMCThinLineEdit">
         <property name="text">
-         <string>User-Defined Parameter Chains</string>
+         <string>1</string>
         </property>
        </widget>
       </item>
-      <item row="14" column="0">
-       <widget class="QPushButton" name="addUserDefinedParamPushButton">
+      <item row="11" column="0">
+       <widget class="QLabel" name="label_7">
         <property name="text">
-         <string>Add Parameter</string>
+         <string>Parameter Chains</string>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="0">
+       <widget class="QPushButton" name="stopSamplingPushButton">
+        <property name="text">
+         <string>Stop Sampling</string>
+        </property>
+       </widget>
+      </item>
+      <item row="19" column="0" colspan="2">
+       <widget class="QPushButton" name="calcConfIntervPushButton">
+        <property name="text">
+         <string>Calculate Confidence Interval</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0" colspan="2">
+       <widget class="QProgressBar" name="progressBar">
+        <property name="value">
+         <number>24</number>
+        </property>
+       </widget>
+      </item>
+      <item row="18" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>Percentile</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="MCMCWalkerLineEdit">
+        <property name="text">
+         <string>10</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0" colspan="2">
+       <widget class="QCheckBox" name="reuseSamplerCheckBox">
+        <property name="text">
+         <string>Re-use Sampler</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>MCMC Walkers</string>
+        </property>
+       </widget>
+      </item>
+      <item row="17" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>MCMC Burn</string>
+        </property>
+       </widget>
+      </item>
+      <item row="15" column="1">
+       <widget class="QPushButton" name="loadUserDefinedParamPushButton">
+        <property name="text">
+         <string>Load Parameters</string>
+        </property>
+       </widget>
+      </item>
+      <item row="18" column="1">
+       <widget class="QDoubleSpinBox" name="percentileDoubleSpinBox">
+        <property name="decimals">
+         <number>3</number>
+        </property>
+        <property name="value">
+         <double>84.135000000000005</double>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="1">
+       <widget class="QPushButton" name="startSamplingPushButton">
+        <property name="text">
+         <string>Start Sampling</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0" colspan="2">
+       <widget class="QLabel" name="fitIterLabel">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
@@ -212,17 +198,31 @@
         </column>
        </widget>
       </item>
+      <item row="4" column="1">
+       <widget class="QLineEdit" name="ParallelCoresLineEdit">
+        <property name="text">
+         <string>1</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>MCMC Thin</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>MCMC Steps</string>
+        </property>
+       </widget>
+      </item>
       <item row="15" column="0">
        <widget class="QPushButton" name="saveUserDefinedParamPushButton">
         <property name="text">
          <string>Save Parameters</string>
-        </property>
-       </widget>
-      </item>
-      <item row="15" column="1">
-       <widget class="QPushButton" name="loadUserDefinedParamPushButton">
-        <property name="text">
-         <string>Load Parameters</string>
         </property>
        </widget>
       </item>

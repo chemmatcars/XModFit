@@ -147,6 +147,7 @@ class Parallelepiped_Uniform_Edep: #Please put the class name same as the functi
         self.term=term
         self.__mpar__=mpar #If there is any multivalued parameter
         self.SF=SF
+        self.filepaths = {}  # If a parameter is a filename with path
         self.choices={'dist':['Gaussian','LogNormal'],'NrDep':['True','False'],
                       'SF':['None','Hard-Sphere', 'Sticky-Sphere'],
                       'term': ['SAXS-term', 'Cross-term', 'Resonant-term',

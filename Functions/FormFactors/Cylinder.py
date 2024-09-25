@@ -43,6 +43,7 @@ class Cylinder: #Please put the class name same as the function name
         self.Nsample=Nsample
         self.__mpar__=mpar #If there is any multivalued parameter
         self.choices={'dist':['Gaussian','LogNormal']} #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.init_params()
         self.output_params={'scaler_parameters':{}}
 

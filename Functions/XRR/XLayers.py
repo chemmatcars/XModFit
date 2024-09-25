@@ -75,6 +75,7 @@ class XLayers: #Please put the class name same as the function name
         self.bkg = bkg
         self.yscale = yscale
         self.choices = {'rrf': [True, False], 'fix_sig': [True, False]}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__d__ = {}
         self.__rho__ = {}
         self.__mu__ = {}

@@ -80,6 +80,7 @@ class XLayers_Biphasic: #Please put the class name same as the function name
         self.aveed=aveed
         self.cov1=cov1
         self.choices={'rrf':[True,False],'fix_sig': [True,False],'coherrent':[True,False],'aveed':[True,False]}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__d__={}
         self.__rho__={}
         self.__mu__={}

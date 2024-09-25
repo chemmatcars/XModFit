@@ -36,6 +36,7 @@ class Rod_Lipid: #Please put the class name same as the function name
         self.sig=sig
         self.__mpar__=mpar
         self.choices={}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.output_params={'scaler_parameters':{}}
 
 

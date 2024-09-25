@@ -19,7 +19,10 @@ from scipy import special"""
 # from xr_ref import parratt
 import Bio.PDB.Atom
 from scipy.spatial.transform import Rotation as R
-from mendeleev.fetch import fetch_table
+try:
+    from mendeleev.fetch import fetch_table
+except:
+    from mendeleev import get_table
 from numba import njit
 
 
@@ -204,6 +207,8 @@ class XLayersPDB: #Please put the class name same as the function name
         self.protins = protins
         self.cov = cov
         self.choices = {'rrf': [True, False], 'fix_sig': [True, False]}
+        self.filepaths = {'fname': self.fname}
+
         self.__d__ = {}
         self.__rho__ = {}
         self.__mu__ = {}
@@ -245,8 +250,10 @@ class XLayersPDB: #Please put the class name same as the function name
 
     @lru_cache(maxsize=2)
     def pdbread(self, fname):
-
-        ptable = fetch_table('elements')[['symbol', 'atomic_number', 'vdw_radius', 'atomic_weight']]
+        try:
+            ptable = fetch_table('elements')[['symbol', 'atomic_number', 'vdw_radius', 'atomic_weight']]
+        except:
+            ptable = get_table('elements')[['symbol', 'atomic_number', 'vdw_radius', 'atomic_weight']]
         atominfo = ptable.set_index('symbol').T.to_dict('list')
         pdbcode = 'struct'
 

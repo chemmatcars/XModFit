@@ -98,6 +98,7 @@ class AsymSphere: #Please put the class name same as the function name
         self.coherrent=coherrent
         self.qoff=qoff
         self.choices={'rrf' : [True,False] ,'fix_sig' : [True, False],'coherrent':[True, False]}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__mkeys__=list(self.__mpar__.keys())
         self.__fit__=False
         self.output_params = {'scaler_parameters': {}}

@@ -42,6 +42,7 @@ class Ellipsoid:
         self.norm = norm
         self.bkg = bkg
         self.choices = {'dist':['Gaussian', 'LogNormal']}
+        self.filepaths={} #If a parameter is a filename with path
         self.__mpar__=mpar
         self.output_params={'scaler_parameters':{}}
         self.init_params()

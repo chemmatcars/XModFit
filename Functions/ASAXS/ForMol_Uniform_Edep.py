@@ -70,6 +70,7 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
         self.scale = scale
         self.__mpar__ = mpar #If there is any multivalued parameter
         self.choices = {} #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__fnames__ = [self.fname1,self.fname2]
         self.__xdb__ = XrayDB()
         #if self.fname1 is not None:

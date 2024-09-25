@@ -40,7 +40,8 @@ class CoreShellSphere:
         self.bkg=bkg
         self.N=N
         self.__mpar__=mpar
-        self.choices={'dist':['Gaussian','LogNormal']} # Its not implemented yet
+        self.choices={'dist':['Gaussian','LogNormal']}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.output_params={'scaler_parameters':{}}
         self.init_params()
 

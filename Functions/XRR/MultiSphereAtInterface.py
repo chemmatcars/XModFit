@@ -77,6 +77,7 @@ class MultiSphereAtInterface: #Please put the class name same as the function na
         self.rrf=rrf
         self.qoff=qoff
         self.choices={'rrf':[True,False]}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__fit__=False
         self.__mkeys__=list(self.__mpar__.keys())
         self.output_params = {'scaler_parameters': {}}

@@ -22,6 +22,7 @@ class LogNormal:
         self.bkg=bkg
         self.__mpar__=mpar
         self.choices=None
+        self.filepaths = {}  # If a parameter is a filename with path
         self.init_params()
         self.output_params={'scaler_parameters':{}}
 

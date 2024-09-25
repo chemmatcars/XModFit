@@ -79,6 +79,7 @@ class SphereAtInterface: #Please put the class name same as the function name
         self.qoff=qoff
         self.__mpar__ = mpar
         self.choices={'rrf':[True,False]}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__fit__=False
         self.output_params = {'scaler_parameters': {}}
         self.init_params()

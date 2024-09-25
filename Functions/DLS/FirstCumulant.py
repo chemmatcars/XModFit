@@ -39,6 +39,7 @@ class FirstCumulant: #Please put the class name same as the function name
         self.bkg=bkg
         self.__mpar__=mpar #If there is any multivalued parameter
         self.choices={} #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.output_params={'scaler_parameters':{}}
 
     def eta(self,T):

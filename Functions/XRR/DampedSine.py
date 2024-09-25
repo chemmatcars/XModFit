@@ -75,6 +75,7 @@ class DampedSine: #Please put the class name same as the function name
         self.z0= z0
         self.bkg = bkg
         self.choices = {'rrf': [True, False], 'fix_sig': [True, False]}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__d__ = {}
         self.__rho__ = {}
         self.__beta__ = {}

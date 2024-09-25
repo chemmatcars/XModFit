@@ -35,6 +35,7 @@ class Sphere:
         self.N=N
         self.__mpar__=mpar
         self.choices={'dist':['Gaussian','LogNormal'],'integ':['Trapezoid','MonteCarlo']}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.init_params()
         self.output_params = {'scaler_parameters': {}}
 

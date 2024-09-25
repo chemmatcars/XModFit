@@ -62,6 +62,7 @@ class XFNTR: #Please put the class name same as the function name
         elelist = xdb.atomic_symbols
         linelist = list(xdb.xray_lines(98).keys())
         self.choices={'element':elelist,'line': linelist} #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.output_params = {}
         self.init_params()
         self.__fit__=False

@@ -100,6 +100,7 @@ class Sphere_Uniform_Cluster: #Please put the class name same as the function na
         self.Rsig=Rsig
         self.choices={'dist':['Gaussian','LogNormal'],'NrDep':['True','False'],'SF':['None','Hard-Sphere', 'Sticky-Sphere'],
                       'term':['SAXS-term','Cross-term','Resonant-term','Total']} #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__fit__=False
         self.__mkeys__=list(self.__mpar__.keys())
         self.init_params()

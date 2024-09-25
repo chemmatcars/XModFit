@@ -47,6 +47,7 @@ class SphericalShell_expDecay: #Please put the class name same as the function n
         self.bkg=bkg
         self.__mpar__=mpar #If there is any multivalued parameter
         self.choices={} #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__xrdb__=XrayDB()
         self.init_params()
         self.output_params={'scaler_parameters':{}}
