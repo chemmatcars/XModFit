@@ -125,23 +125,21 @@ class Sphere_Uniform: #Please put the class name same as the function name
                     for i in range(len(self.__mpar__[mkey][key])):
                         self.params.add('__%s_%s_%03d'%(mkey, key,i),value=self.__mpar__[mkey][key][i],vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
 
-
     @lru_cache(maxsize=10)
     def calc_Rdist(self, R, Rsig, dist, N):
+        """Calculate the radius distribution."""
         R = np.array(R)
         totalR = np.sum(R[:-1])
         if Rsig > 0.001:
-            fdist = eval(dist + '.' + dist + '(x=0.001, pos=totalR, wid=Rsig)')
             if dist == 'Gaussian':
                 rmin, rmax = max(0.001, totalR - 5 * Rsig), totalR + 5 * Rsig
                 dr = np.linspace(rmin, rmax, N)
             else:
                 rmin, rmax = max(-3, np.log(totalR) - 5 * Rsig), np.log(totalR) + 5 * Rsig
                 dr = np.logspace(rmin, rmax, N, base=np.exp(1.0))
+            fdist = eval(f'{dist}.{dist}(x=0.001, pos=totalR, wid=Rsig)')
             fdist.x = dr
-            rdist = fdist.y()
-            sumdist = np.sum(rdist)
-            rdist = rdist / sumdist
+            rdist = fdist.y() / np.sum(fdist.y())
             return dr, rdist, totalR
         else:
             return [totalR], [1.0], totalR
