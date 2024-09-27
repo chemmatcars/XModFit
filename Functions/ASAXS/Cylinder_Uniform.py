@@ -65,6 +65,7 @@ import numba_scipy.special
 def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
     pi = 3.14159
     dalf = pi / (2 * Nalf)
+    R=np.array(R)
 
     fft = np.zeros_like(q)
     ffs = np.zeros_like(q)
@@ -299,7 +300,7 @@ class Cylinder_Uniform: #Please put the class name same as the function name
             r = R * (1 + (dr[i] - totalR) / totalR)
 
             # Compute the form factors for the current radius
-            fft, ffs, ffc, ffr = cylinder_ml_asaxs(q, H, r, HvvgtR, rho, eirho, adensity, Nalf)
+            fft, ffs, ffc, ffr = cylinder_ml_asaxs(q, H, tuple(r), HvvgtR, rho, eirho, adensity, Nalf)
 
             # Update the accumulated form factors
             form += rdist[i] * fft
