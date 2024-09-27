@@ -63,35 +63,38 @@ import numba_scipy.special
 ##Optimized code
 @njit(parallel=True, cache=True)
 def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
+    # Move global constants inside the function to avoid NumbaWarning
     pi = 3.14159
     dalf = pi / (2 * Nalf)
-    R=np.array(R)
+    R = np.array(R)
 
+    # Preallocate output arrays
     fft = np.zeros_like(q)
     ffs = np.zeros_like(q)
     ffc = np.zeros_like(q)
     ffr = np.zeros_like(q)
 
     Nlayers = len(R)
-    tR = np.cumsum(R)
-    V = pi * tR[:-1] ** 2 * H
+    tR = np.cumsum(R)  # Cumulative sum of layer radii
+    V = pi * tR[:-1] ** 2 * H  # Volumes of the layers
 
+    # Precompute the differences for the layers
     drho = 2.0 * np.diff(np.array(rho)) * V
     deirho = 2.0 * np.diff(np.array(eirho)) * V
     dadensity = 2.0 * np.diff(np.array(adensity)) * V
 
+    # Precompute sin(alf) and cos(alf) values for faster computation
     sin_cache = np.zeros(Nalf)
     cos_cache = np.zeros(Nalf)
     alf_values = np.zeros(Nalf)
 
-    # Precompute sin(alf) and cos(alf) values
     for ialf in range(Nalf):
-        alf = ialf * dalf + 1e-6
+        alf = ialf * dalf + 1e-6  # Prevent alf from being exactly 0
         sin_cache[ialf] = np.sin(alf)
         cos_cache[ialf] = np.cos(alf)
         alf_values[ialf] = alf
 
-    # Loop over q in parallel
+    # Loop over q (parallelized loop)
     for i in prange(len(q)):
         q_i = q[i]
 
@@ -103,32 +106,35 @@ def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
             tfs = 0.0
             tfr = 0.0
 
+            # Loop over layers
             for k in range(Nlayers - 1):
                 qh = q_i * H * cos_alf / 2
                 if np.abs(qh) > 1e-6:
                     fach = ((1.0 - HvvgtR) * np.sin(qh) / qh +
                             HvvgtR * np.cos(qh - pi / 4.0) * np.sqrt(2 / pi / qh))
                 else:
-                    fach = 1.0
+                    fach = 1.0  # When qh is very small
 
                 qr = q_i * tR[k] * sin_alf
                 if np.abs(qr) > 1e-6:
                     facR = j1(qr) / qr
                 else:
-                    facR = 0.5  # limit of j1(qr)/qr as qr -> 0
+                    facR = 0.5  # Limit of j1(qr)/qr as qr -> 0
 
                 fac = fach * facR
 
+                # Accumulate results for current q and angle
                 tft += drho[k] * fac
                 tfs += deirho[k] * fac
                 tfr += dadensity[k] * fac
 
+            # Update fft, ffs, ffc, ffr for this q value and alf angle
             fft[i] += np.abs(tft) ** 2 * sin_alf
             ffs[i] += tfs ** 2 * sin_alf
             ffc[i] += tfs * tfr * sin_alf
             ffr[i] += tfr ** 2 * sin_alf
 
-        # Multiply by dalf once at the end
+        # Multiply by dalf once at the end to complete integration
         fft[i] *= dalf
         ffs[i] *= dalf
         ffc[i] *= dalf
