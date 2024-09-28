@@ -20,21 +20,24 @@ from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 # import jscatter as js
 
 from numba import njit, prange
+from ASAXS.Sphere_Uniform import ff_sphere_ml
 
-@njit(parallel=True,cache=True)
-def ff_sphere_ml(q,R,rho):
-    Nlayers=len(R)
-    aff=np.ones_like(q)*complex(0,0)
-    ff=np.zeros_like(q)
-    for i in prange(len(q)):
-        fact = 0.0
-        rt = 0.0
-        for j in prange(1,Nlayers):
-            rt = rt + R[j - 1]
-            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
-        aff[i] = fact
-        ff[i] = abs(fact) ** 2
-    return ff,aff
+# @njit(parallel=True, cache=True)
+# def ff_sphere_ml(q, R, rho):
+#     Nlayers = len(R)
+#     aff = np.zeros_like(q, dtype=np.complex128)
+#     ff = np.zeros_like(q)
+#
+#     for i in prange(len(q)):
+#         fact = 0.0
+#         rt = 0.0
+#         for j in range(1, Nlayers):
+#             rt += R[j - 1]
+#             q_rt = q[i] * rt
+#             fact += (rho[j - 1] - rho[j]) * (np.sin(q_rt) - q_rt * np.cos(q_rt)) / q[i] ** 3
+#         aff[i] = fact
+#         ff[i] = np.abs(fact) ** 2
+#     return ff, aff
 
 
 class Sphere_Uniform_2: #Please put the class name same as the function name
@@ -125,8 +128,6 @@ class Sphere_Uniform_2: #Please put the class name same as the function name
                     for i in range(len(self.__mpar__[mkey][key])):
                         self.params.add('__%s_%s_%03d'%(mkey,key,i),value=self.__mpar__[mkey][key][i],vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
 
-
-    @lru_cache(maxsize=10)
     def calc_Rdist(self, R, Rsig, dist, N, seed=1):
         R=np.array(R)
         Rsig=np.array(Rsig)
@@ -143,79 +144,116 @@ class Sphere_Uniform_2: #Please put the class name same as the function name
         return Rl, rdist
 
     # @lru_cache(maxsize=10)
-    # def calc_Rdist(self, R, Rsig, dist, N):
-    #     R = np.array(R)
-    #     Rsig = np.array(Rsig)
-    #     cov = np.diag(Rsig[:-1] ** 2)
-    #     if dist == 'Gaussian':
-    #         mnorm = multivariate_normal(R[:-1], cov)
-    #         cmd = 'np.mgrid['
-    #         for i, r in enumerate(R[:-1]):
-    #             Rmin = max(r - 5 * Rsig[i], 0.0)
-    #             Rmax = r + 5 * Rsig[i]
-    #             cmd += '%.3f:%.3f:%dj,' % (Rmin, Rmax, N)
-    #         cmd = cmd[:-1] + '].reshape(%d,-1).T' % len(R[:-1])
-    #         Rl = eval(cmd)
-    #         rdist = mnorm.pdf(Rl)
-    #     else:
-    #         mnorm = multivariate_normal(np.log(R[:-1]), cov)
-    #         cmd = 'np.mgrid['
-    #         for i, r in enumerate(R[:-1]):
-    #             Rmin = max(-3, np.log(r) - 5 * Rsig[i])
-    #             Rmax = np.log(r) + 5 * Rsig[i]
-    #             cmd += '%.3f:%.3f:%dj,' % (Rmin, Rmax, N)
-    #         cmd = cmd[:-1] + '].reshape(%d,-1).T' % len(R[:-1])
-    #         Rl = np.exp(eval(cmd))
-    #         rdist = mnorm.pdf(np.log(Rl))
-    #     Rl = np.vstack((Rl.T, np.zeros(Rl.shape[0]))).T
-    #     rdist = rdist / np.sum(rdist)
-    #     if not self.__fit__:
-    #         Rt = np.sqrt(np.sum(Rl ** 2, axis=1))
-    #         self.output_params['Distribution'] = {'x': np.sort(Rt), 'y': rdist[np.argsort(Rt)]}
-    #     return Rl, rdist
+    # def new_sphere(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, tol=1e-3):
+    #     q = np.array(q)
+    #     Rl, rdist = self.calc_Rdist(R, Rsig, dist, Np)
+    #     form = np.zeros_like(q)
+    #     eiform = np.zeros_like(q)
+    #     aform = np.zeros_like(q)
+    #     cform = np.zeros_like(q)
+    #     pfac = (4 * np.pi * 2.818e-5 * 1.0e-8) ** 2
+    #     last=np.zeros_like(q)
+    #     for i in range(Np):
+    #         ff, mff = ff_sphere_ml(q, Rl[i,:], rho)
+    #         form += rdist[i] * ff
+    #         eiff, meiff = ff_sphere_ml(q, Rl[i,:], eirho)
+    #         eiform += rdist[i] * eiff
+    #         aff, maff = ff_sphere_ml(q, Rl[i,:], adensity)
+    #         aform += rdist[i] * aff
+    #         cform += rdist[i] * (meiff * maff.conjugate() + meiff.conjugate() * maff).real
+    #         if i>10 and i%10==0:
+    #             chisq=np.sum(((form-last)/form)**2)/len(q)
+    #             last=1.0*form
+    #             if chisq<tol:
+    #                 break
+    #     sdist = np.sum(rdist)
+    #     form = pfac * form/sdist
+    #     eiform = pfac * eiform/sdist
+    #     aform =  pfac * aform/sdist
+    #     cform = np.abs(pfac * cform)/2/sdist
+    #     return form, eiform, aform, cform, Rl[:,:-1], rdist
 
+    #optimized code
     @lru_cache(maxsize=10)
     def new_sphere(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, tol=1e-3):
-        q = np.array(q)
-        Rl, rdist = self.calc_Rdist(R, Rsig, dist, Np, seed=1)
+        q = np.asarray(q)  # Convert once
+        Rl, rdist = self.calc_Rdist(R, Rsig, dist, Np)
+
+        # Preallocate arrays
         form = np.zeros_like(q)
         eiform = np.zeros_like(q)
         aform = np.zeros_like(q)
         cform = np.zeros_like(q)
         pfac = (4 * np.pi * 2.818e-5 * 1.0e-8) ** 2
-        last=np.zeros_like(q)
+
+        # To store the last form for chi-square calculation
+        last_form = np.zeros_like(q)
+
+        # Loop over the number of points Np
         for i in range(Np):
-            ff, mff = ff_sphere_ml(q, Rl[i], rho)
+            # Perform form factor calculations for each distribution
+            ff, mff = ff_sphere_ml(q, Rl[i, :], rho)
             form += rdist[i] * ff
-            eiff, meiff = ff_sphere_ml(q, Rl[i], eirho)
+
+            eiff, meiff = ff_sphere_ml(q, Rl[i, :], eirho)
             eiform += rdist[i] * eiff
-            aff, maff = ff_sphere_ml(q, Rl[i], adensity)
+
+            aff, maff = ff_sphere_ml(q, Rl[i, :], adensity)
             aform += rdist[i] * aff
+
+            # Efficient computation for cform
             cform += rdist[i] * (meiff * maff.conjugate() + meiff.conjugate() * maff).real
-            if i>10 and np.mod(i,10)==0:
-                chisq=np.sum(((form-last)/form)**2)/len(q)
-                last=1.0*form
-                if chisq<tol:
+
+            # Early stopping based on chi-square tolerance
+            if i > 10 and i % 10 == 0:
+                chisq = np.sum(((form - last_form) / form) ** 2) / len(q)
+                last_form[:] = form  # Update last form in-place
+                if chisq < tol:
                     break
-        sdist = np.sum(rdist[:i])
-        form = pfac * form/sdist
-        eiform = pfac * eiform/sdist
-        aform =  pfac * aform/sdist
-        cform = np.abs(pfac * cform)/2/sdist
-        return form, eiform, aform, cform, Rl[:i], rdist[:i]
+
+        # Normalize by the sum of rdist
+        sum_rdist = np.sum(rdist[:i + 1])  # Ensure proper slicing based on where loop ended
+        form = pfac * form / sum_rdist
+        eiform = pfac * eiform / sum_rdist
+        aform = pfac * aform / sum_rdist
+        cform = np.abs(pfac * cform) / (2 * sum_rdist)  # Dividing by 2 to match original scaling
+
+        # Return results along with Rl and rdist for the sampled points
+        return form, eiform, aform, cform, Rl[:, :-1], rdist
+
+    # @lru_cache(maxsize=10)
+    # def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, tol=1e-3, keys=('SAXS-term')):
+    #     result={}
+    #     form, eiform, aform, cform, r, rdist = self.new_sphere(q, R, Rsig, rho, eirho, adensity, dist=dist, Np=Np, tol=tol)
+    #     for key in keys:
+    #         if key == 'SAXS-term':
+    #             result[key] = eiform
+    #         elif key == 'Resonant-term':
+    #             result[key] = aform
+    #         elif key == 'Cross-term':
+    #             result[key] = cform
+    #     result['Total'] = form
+    #     return result, r, rdist
 
     @lru_cache(maxsize=10)
-    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, tol=1e-3, keys=('SAXS-term')):
-        result={}
-        form, eiform, aform, cform, r, rdist = self.new_sphere(q, R, Rsig, rho, eirho, adensity, dist=dist, Np=Np, tol=tol)
-        for key in keys:
-            if key == 'SAXS-term':
-                result[key] = eiform
-            elif key == 'Resonant-term':
-                result[key] = aform
-            elif key == 'Cross-term':
-                result[key] = cform
+    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, tol=1e-3, keys=('SAXS-term',)):
+        result = {}
+
+        # Perform the calculation once and only access the required fields based on keys
+        form, eiform, aform, cform, r, rdist = self.new_sphere(q, R, Rsig, rho, eirho, adensity, dist=dist, Np=Np,
+                                                               tol=tol)
+
+        # Build result dict based on requested keys
+        if 'SAXS-term' in keys:
+            result['SAXS-term'] = eiform
+        if 'Resonant-term' in keys:
+            result['Resonant-term'] = aform
+        if 'Cross-term' in keys:
+            result['Cross-term'] = cform
+
+        # Always return the total form
         result['Total'] = form
+
         return result, r, rdist
 
     def update_params(self):
