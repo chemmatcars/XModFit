@@ -20,21 +20,24 @@ from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 # import jscatter as js
 
 from numba import njit, prange
+from ASAXS.Sphere_Uniform import ff_sphere_ml
 
-@njit(parallel=True,cache=True)
-def ff_sphere_ml(q,R,rho):
-    Nlayers=len(R)
-    aff=np.ones_like(q)*complex(0,0)
-    ff=np.zeros_like(q)
+@njit(parallel=True, cache=True)
+def ff_sphere_ml(q, R, rho):
+    Nlayers = len(R)
+    aff = np.zeros_like(q, dtype=np.complex128)
+    ff = np.zeros_like(q)
+
     for i in prange(len(q)):
         fact = 0.0
         rt = 0.0
-        for j in prange(1,Nlayers):
-            rt = rt + R[j - 1]
-            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
+        for j in range(1, Nlayers):
+            rt += R[j - 1]
+            q_rt = q[i] * rt
+            fact += (rho[j - 1] - rho[j]) * (np.sin(q_rt) - q_rt * np.cos(q_rt)) / q[i] ** 3
         aff[i] = fact
-        ff[i] = abs(fact) ** 2
-    return ff,aff
+        ff[i] = np.abs(fact) ** 2
+    return ff, aff
 
 
 class Sphere_Uniform_2_Edep: #Please put the class name same as the function name
@@ -123,8 +126,6 @@ class Sphere_Uniform_2_Edep: #Please put the class name same as the function nam
                     for i in range(len(self.__mpar__[mkey][key])):
                         self.params.add('__%s_%s_%03d'%(mkey,key,i),value=self.__mpar__[mkey][key][i],vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
 
-
-    @lru_cache(maxsize=10)
     def calc_Rdist(self, R, Rsig, dist, N, seed=1):
         R=np.array(R)
         Rsig=np.array(Rsig)
@@ -139,6 +140,7 @@ class Sphere_Uniform_2_Edep: #Please put the class name same as the function nam
             rdist = mnorm.pdf(np.log(Rl))
         Rl = np.vstack((Rl.T, np.zeros(Rl.shape[0]))).T
         return Rl, rdist
+
 
     # @lru_cache(maxsize=10)
     # def calc_Rdist(self, R, Rsig, dist, N):
@@ -185,7 +187,7 @@ class Sphere_Uniform_2_Edep: #Please put the class name same as the function nam
         for i in range(Np):
             ff, mff = ff_sphere_ml(q, Rl[i], rho)
             form += rdist[i] * ff
-            if i>10 and np.mod(i,10)==0:
+            if i>10 and i%10 == 0:
                 chisq=np.sum(((form-last)/form)**2)/len(q)
                 last=1.0*form
                 if chisq<tol:
