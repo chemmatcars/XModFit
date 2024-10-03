@@ -17,9 +17,7 @@ from itertools import combinations
 from PeakFunctions import LogNormal, Gaussian
 from utils import find_minmax, calc_rho
 from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
-# import jscatter as js
 
-from numba import njit, prange
 from ASAXS.Sphere_Uniform import ff_sphere_ml
 
 # @njit(parallel=True, cache=True)

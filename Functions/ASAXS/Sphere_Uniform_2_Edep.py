@@ -17,27 +17,25 @@ from itertools import combinations
 from PeakFunctions import LogNormal, Gaussian
 from utils import find_minmax, calc_rho
 from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
-# import jscatter as js
 
-from numba import njit, prange
 from ASAXS.Sphere_Uniform import ff_sphere_ml
 
-@njit(parallel=True, cache=True)
-def ff_sphere_ml(q, R, rho):
-    Nlayers = len(R)
-    aff = np.zeros_like(q, dtype=np.complex128)
-    ff = np.zeros_like(q)
-
-    for i in prange(len(q)):
-        fact = 0.0
-        rt = 0.0
-        for j in range(1, Nlayers):
-            rt += R[j - 1]
-            q_rt = q[i] * rt
-            fact += (rho[j - 1] - rho[j]) * (np.sin(q_rt) - q_rt * np.cos(q_rt)) / q[i] ** 3
-        aff[i] = fact
-        ff[i] = np.abs(fact) ** 2
-    return ff, aff
+# @njit(parallel=True, cache=True)
+# def ff_sphere_ml(q, R, rho):
+#     Nlayers = len(R)
+#     aff = np.zeros_like(q, dtype=np.complex128)
+#     ff = np.zeros_like(q)
+#
+#     for i in prange(len(q)):
+#         fact = 0.0
+#         rt = 0.0
+#         for j in range(1, Nlayers):
+#             rt += R[j - 1]
+#             q_rt = q[i] * rt
+#             fact += (rho[j - 1] - rho[j]) * (np.sin(q_rt) - q_rt * np.cos(q_rt)) / q[i] ** 3
+#         aff[i] = fact
+#         ff[i] = np.abs(fact) ** 2
+#     return ff, aff
 
 
 class Sphere_Uniform_2_Edep: #Please put the class name same as the function name

@@ -3397,7 +3397,7 @@ class XModFit(QWidget):
         for i in range(self.funcListWidget.count()):
             mname=self.funcListWidget.item(i).text()
             module='Functions.%s.%s'%(self.curr_category,mname)
-            if module not in sys.modules:
+            if module not in sys.modules or module not in self.curr_funcClass.keys():
                 self.curr_funcClass[module]=import_module(module)
             else:
                 self.curr_funcClass[module]=reload(self.curr_funcClass[module])

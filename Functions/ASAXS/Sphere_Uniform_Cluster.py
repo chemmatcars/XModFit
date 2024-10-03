@@ -18,9 +18,6 @@ from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 from utils import find_minmax, calc_rho, create_steps
 from functools import lru_cache
 
-import time
-
-from numba import njit, prange
 from ASAXS.Sphere_Uniform import ff_sphere_ml
 
 # #optimized code
