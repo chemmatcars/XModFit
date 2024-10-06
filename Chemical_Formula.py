@@ -2,7 +2,7 @@ import re
 from xraydb import XrayDB
 import sys
 import numpy as np
-try:
+try: #For compatiblity with older versions
     from mendeleev.fetch import fetch_table
 except:
     from mendeleev import get_table
