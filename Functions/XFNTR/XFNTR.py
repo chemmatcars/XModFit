@@ -14,7 +14,7 @@ sys.path.append(os.path.abspath('./Fortran_rountines'))
 ####Please do not remove lines above####
 
 ####Import your modules below if needed####
-
+import time
 
 
 class XFNTR: #Please put the class name same as the function name
@@ -59,7 +59,10 @@ class XFNTR: #Please put the class name same as the function name
         self.Rc = Rc
         self.sur_cov = sur_cov
         self.ion_depth = ion_depth
-        elelist = xdb.atomic_symbols
+        try:
+            elelist = [xdb.symbol(i) for i in range(1,100)]
+        except: #For campatiblity with older versions
+            elelist = xdb.atomic_symbols
         linelist = list(xdb.xray_lines(98).keys())
         self.choices={'element':elelist,'line': linelist} #If there are choices available for any fixed parameters
         self.filepaths = {}  # If a parameter is a filename with path
