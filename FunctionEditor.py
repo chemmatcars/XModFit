@@ -7,7 +7,10 @@ import tempfile
 import os
 from Highlighter import Highlighter
 import os
-from pylint import epylint as lint
+try: #For compatibility with older versions
+    from pylint import epylint as lint
+except:
+    from pylint import lint
 
 
 class FunctionEditor(QWidget):
