@@ -51,7 +51,7 @@ def parallelopiped_ml(q, L, B, H, rho, Nphi, Npsi, HggtLB=True):
             qt = q[i]*sphi/2.0#((1.0-Nqt)+(1.0+Nqt)*q[i]*np.sin(phi)/2.0)/2.0
             for ipsi in prange(0, Npsi):
                 psi = ipsi*dpsi
-                tft = np.complex(0.0, 0.0)
+                tft = 0.0j
                 sc=qt*np.cos(psi)
                 ss=qt*np.sin(psi)
                 for k in prange(Nlayers-1):

@@ -18,50 +18,9 @@ from utils import find_minmax, calc_rho, create_steps
 
 from numba import njit, prange
 from scipy.special import j1
-import numba_scipy.special
-
-# @njit(parallel=True,cache=True)
-# def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
-#     #HvvgtR: H>>R means infinitely long cylinder
-#     pi = 3.14159
-#     dalf = pi/Nalf/2
-#     fft = np.zeros_like(q)
-#     ffs = np.zeros_like(q)
-#     ffc = np.zeros_like(q)
-#     ffr = np.zeros_like(q)
-#     Nlayers = len(R)
-#     tR = np.cumsum(R)
-#     V = pi*tR[:-1]**2*H
-#     drho = 2.0 * np.diff(np.array(rho))*V
-#     deirho = 2.0 * np.diff(np.array(eirho))*V
-#     dadensity = 2.0 * np.diff(np.array(adensity))*V
-#     for i in prange(len(q)):
-#         for ialf in prange(Nalf):
-#             alf = ialf * dalf + 1e-6
-#             tft = np.complex(0.0, 0.0)
-#             tfs = 0.0
-#             tfr = 0.0
-#             for k in prange(Nlayers-1):
-#                 qh = q[i] * H * np.cos(alf) / 2
-#                 fach = (1.0 - HvvgtR) * np.sin(qh) / qh + HvvgtR * np.cos(qh - pi / 4.0) * np.sqrt(2 / pi / qh)
-#                 qr = q[i] * tR[k] * np.sin(alf)
-#                 facR = j1(qr) / qr
-#                 fac = fach * facR
-#                 tft += drho[k] * fac
-#                 tfs += deirho[k] * fac
-#                 tfr += dadensity[k] * fac
-#             fft[i] += np.abs(tft) ** 2 * np.sin(alf)
-#             ffs[i] += tfs ** 2 * np.sin(alf)
-#             ffc[i] += tfs * tfr * np.sin(alf)
-#             ffr[i] += tfr ** 2 * np.sin(alf)
-#         fft[i] *= dalf
-#         ffs[i] *= dalf
-#         ffc[i] *= dalf
-#         ffr[i] *= dalf
-#     return fft,ffs,ffc,ffr
 
 ##Optimized code
-@njit(parallel=True, cache=True)
+@njit(cache=False)
 def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
     # Move global constants inside the function to avoid NumbaWarning
     pi = 3.14159
@@ -95,17 +54,14 @@ def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
         alf_values[ialf] = alf
 
     # Loop over q (parallelized loop)
-    for i in prange(len(q)):
+    for i in range(len(q)):
         q_i = q[i]
-
         for ialf in range(Nalf):
             sin_alf = sin_cache[ialf]
             cos_alf = cos_cache[ialf]
-
             tft = 0.0j
             tfs = 0.0
             tfr = 0.0
-
             # Loop over layers
             for k in range(Nlayers - 1):
                 qh = q_i * H * cos_alf / 2
@@ -114,32 +70,26 @@ def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
                             HvvgtR * np.cos(qh - pi / 4.0) * np.sqrt(2 / pi / qh))
                 else:
                     fach = 1.0  # When qh is very small
-
                 qr = q_i * tR[k] * sin_alf
                 if np.abs(qr) > 1e-6:
                     facR = j1(qr) / qr
                 else:
                     facR = 0.5  # Limit of j1(qr)/qr as qr -> 0
-
                 fac = fach * facR
-
                 # Accumulate results for current q and angle
                 tft += drho[k] * fac
                 tfs += deirho[k] * fac
                 tfr += dadensity[k] * fac
-
             # Update fft, ffs, ffc, ffr for this q value and alf angle
             fft[i] += np.abs(tft) ** 2 * sin_alf
             ffs[i] += tfs ** 2 * sin_alf
             ffc[i] += tfs * tfr * sin_alf
             ffr[i] += tfr ** 2 * sin_alf
-
         # Multiply by dalf once at the end to complete integration
         fft[i] *= dalf
         ffs[i] *= dalf
         ffc[i] *= dalf
         ffr[i] *= dalf
-
     return fft, ffs, ffc, ffr
 
 class Cylinder_Uniform: #Please put the class name same as the function name
@@ -321,12 +271,11 @@ class Cylinder_Uniform: #Please put the class name same as the function name
     def cylinder_dict(self, q, R, H, HvvgtR, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, Nalf=1000):
         form, eiform, aform, cform = self.cylinder(q, R, H, HvvgtR, Rsig, rho, eirho, adensity, dist=dist, Np=Np,
                                                     Nalf=Nalf)
-        return {
-            'SAXS-term': eiform,
-            'Resonant-term': aform,
-            'Cross-term': cform,
-            'Total': form
-        }.get(key, form)
+        result={'SAXS-term': eiform,
+                'Resonant-term': aform,
+                'Cross-term': cform,
+                'Total': form}
+        return result
 
     def update_params(self):
         """Update parameters based on fitting values."""

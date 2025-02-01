@@ -234,44 +234,31 @@ class Sphere_Uniform_2: #Please put the class name same as the function name
     #     return result, r, rdist
 
     @lru_cache(maxsize=10)
-    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, tol=1e-3, keys=('SAXS-term',)):
-        result = {}
-
-        # Perform the calculation once and only access the required fields based on keys
+    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, tol=1e-3):
+    # Perform the calculation once and only access the required fields based on keys
         form, eiform, aform, cform, r, rdist = self.new_sphere(q, R, Rsig, rho, eirho, adensity, dist=dist, Np=Np,
                                                                tol=tol)
-
-        # Build result dict based on requested keys
-        if 'SAXS-term' in keys:
-            result['SAXS-term'] = eiform
-        if 'Resonant-term' in keys:
-            result['Resonant-term'] = aform
-        if 'Cross-term' in keys:
-            result['Cross-term'] = cform
-
-        # Always return the total form
-        result['Total'] = form
-
+        result = {
+            'SAXS-term': eiform,
+            'Resonant-term': aform,
+            'Cross-term': cform,
+            'Total': form
+        }
         return result, r, rdist
 
     def update_params(self):
-        mkey=self.__mkeys__[0]
-        key='Density'
-        Nmpar=len(self.__mpar__[mkey][key])
-        self.__density__=tuple([self.params['__%s_%s_%03d'%(mkey,key,i)].value for i in range(Nmpar)])
-        key='SolDensity'
-        self.__solDensity__=tuple([self.params['__%s_%s_%03d'%(mkey,key,i)].value for i in range(Nmpar)])
-        key='Rmoles'
-        self.__Rmoles__=tuple([self.params['__%s_%s_%03d'%(mkey,key,i)].value for i in range(Nmpar)])
-        key='R'
-        self.__R__=tuple([self.params['__%s_%s_%03d'%(mkey,key,i)].value for i in range(Nmpar)])
-        key = 'Rsig'
-        self.__Rsig__ = tuple([self.params['__%s_%s_%03d' % (mkey, key, i)].value for i in range(Nmpar)])
-        key='Material'
-        self.__material__=tuple([self.__mpar__[mkey][key][i] for i in range(Nmpar)])
-        self.__bkg__={'SAXS-term':self.params['sbkg'],'Cross-term':self.params['cbkg'],
-                      'Resonant-term':self.params['abkg'],'Total':self.params['sbkg']}
-
+        """Update parameters based on fitting values."""
+        mkey = self.__mkeys__[0]
+        param_types = ['Density', 'SolDensity', 'Rmoles', 'R', 'Rsig']
+        params=self.params
+        # print(list(self.params.keys()))
+        for key in param_types:
+            param_len = len(self.__mpar__[mkey][key])
+            setattr(self, f'__{key}__',
+                    tuple([params[f'__{mkey}_{key}_{i:03d}'].value for i in range(param_len)]))
+        self.__Material__ = tuple([self.__mpar__[mkey]['Material'][i] for i in range(param_len)])
+        self.__bkg__ = {'SAXS-term': params['sbkg'], 'Cross-term': params['cbkg'],
+                        'Resonant-term': params['abkg'], 'Total': params['sbkg']}
 
     def y(self):
         """
@@ -279,10 +266,10 @@ class Sphere_Uniform_2: #Please put the class name same as the function name
         """
         scale = 1e27 / 6.022e23
         self.update_params()
-        rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=self.__R__, material=self.__material__,
+        rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=self.__R__, material=self.__Material__,
                                                                  relement=self.relement,
-                                                                 density=self.__density__,
-                                                                 sol_density=self.__solDensity__,
+                                                                 density=self.__Density__,
+                                                                 sol_density=self.__SolDensity__,
                                                                  Energy=self.Energy, Rmoles=self.__Rmoles__,
                                                                  NrDep=self.NrDep)
 
@@ -292,20 +279,19 @@ class Sphere_Uniform_2: #Please put the class name same as the function name
             sphere, Rl, rdist = self.new_sphere_dict(tuple(self.x[xkeys[0]]), self.__R__,
                                                                        self.__Rsig__, tuple(rho), tuple(eirho),
                                                                        tuple(adensity), dist=self.dist,
-                                                                       Np=self.Np,tol=self.tol,keys=tuple(xkeys))  # in cm^-1
+                                                                       Np=self.Np,tol=self.tol)  # in cm^-1
+            if self.SF is None:
+                struct = np.ones_like(self.x[xkeys[0]])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
+            elif self.SF == 'Hard-Sphere':
+                struct = hard_sphere_sf(self.x[xkeys[0]], D=self.D, phi=self.phi)
+                # struct = js.sf.PercusYevick(self.x[key], self.D / 2, eta=self.phi)[1]
+            elif self.SF == 'Sticky-Sphere':
+                struct = sticky_sphere_sf(self.x[xkeys[0]], D=self.D, phi=self.phi, U=self.U, delta=0.01)
+                # struct = js.sf.stickyHardSphere(self.x[key],self.D,0.01,self.U,phi=self.phi)[1]
+                # tau = np.exp(self.U) * (self.D + 0.01) / 12.0 / 0.01
+                # struct = js.sf.adhesiveHardSphere(self.x[key], self.D / 2, tau, 0.01, eta=self.phi).array[1, :]
             for key in xkeys:
-                sqf[key] = self.norm * 1e-9 * 6.022e20 * sphere[key]
-                if self.SF is None:
-                    struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
-                elif self.SF == 'Hard-Sphere':
-                    struct = hard_sphere_sf(self.x[key], D=self.D, phi=self.phi)
-                    # struct = js.sf.PercusYevick(self.x[key], self.D / 2, eta=self.phi)[1]
-                elif self.SF == 'Sticky-Sphere':
-                    struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
-                    # struct = js.sf.stickyHardSphere(self.x[key],self.D,0.01,self.U,phi=self.phi)[1]
-                    # tau = np.exp(self.U) * (self.D + 0.01) / 12.0 / 0.01
-                    # struct = js.sf.adhesiveHardSphere(self.x[key], self.D / 2, tau, 0.01, eta=self.phi).array[1, :]
-                sqf[key]=sqf[key]*struct+self.__bkg__[key]
+                sqf[key] = self.norm * 1e-9 * 6.022e20 * sphere[key]*struct+self.__bkg__[key]
 
             if not self.__fit__:
                 for i, j in combinations(range(len(self.__R__[:-1])), 2):
@@ -357,7 +343,7 @@ class Sphere_Uniform_2: #Please put the class name same as the function name
             tsqf, Rl, rdist = self.new_sphere_dict(tuple(self.x), self.__R__, self.__Rsig__,
                                                    tuple(rho), tuple(eirho),
                                                    tuple(adensity), dist=self.dist,
-                                                   Np=self.Np,tol=self.tol,keys=tuple(self.choices['term']))
+                                                   Np=self.Np,tol=self.tol)
             absnorm = self.norm * 1e-9 * 6.022e20 * struct
             if not self.__fit__:
                 for i, j in combinations(range(len(self.__R__[:-1])),2):

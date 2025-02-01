@@ -20,7 +20,7 @@ import time
 
 from numba import njit, prange
 
-@njit(parallel=True,cache=True)
+@njit(parallel=False,cache=False)
 def ellipsoid_ml_asaxs(q,Rx,RzRatio,rho,eirho,adensity,Nalf):
     dalf = 3.14159 / Nalf
     NLayers=len(rho)

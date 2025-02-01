@@ -4,17 +4,91 @@ from PyQt5 import uic
 from PyQt5 import Qt
 import sys
 import tabulate
-from xmodfit import XModFit
+from importlib import import_module, reload
 from collections import OrderedDict
+import traceback
 import time
+import os
 import numpy as np
+import pandas as pd
+import emcee
+import ray
+
+os.environ["OMP_NUM_THREADS"]="1"
+
+from Fit_Routines import Fit
+
+if ray.is_initialized():
+    ray.shutdown()
+ray.init(log_to_driver=False)
+
+
+def combine_hdf(files, newfile, nwalkers, ndim, nsteps):
+    if os.path.exists(newfile):
+        os.remove(newfile)
+    backend = emcee.backends.HDFBackend(newfile)
+    backend.reset(len(files) * nwalkers, ndim)
+    backend.grow(nsteps, None)
+    with backend.open(mode='a') as f:
+        g = f['mcmc']
+        for i, file in enumerate(files):
+            with h5py.File(file, 'r') as ft:
+                gt = ft['mcmc']
+                g['accepted'][i * nwalkers:(i + 1) * nwalkers] = gt['accepted'][:]
+                g['chain'][:, i * nwalkers:(i + 1) * nwalkers, :] = gt['chain'][:, :, :]
+                g['log_prob'][:, i * nwalkers:(i + 1) * nwalkers] = gt['log_prob'][:, :]
+            os.remove(file)
+        g.attrs["nwalkers"] = len(files) * nwalkers
+        g.attrs["ndim"] = ndim
+        g.attrs["has_blobs"] = False
+        g.attrs["iteration"] = nsteps
+
+
+def plot_chains(hdf_file):
+    backend = emcee.backends.HDFBackend(hdf_file, read_only=False)
+    flat_samples = backend.get_chain(discard=100, thin=1, flat=True)
+    labels = list(params.keys())
+    fig = corner.corner(flat_samples, labels=labels, truths=initial, quantiles=[0.16, 0.5, 0.84],
+                        show_titles=True, bins=100, title_fmt='.3f', plot_contours=True,
+                        smooth=0.0, smooth1d=1.0)
+
+# @ray.remote
+def run_mcmc(filenum, file_prefix, nwalkers, nsteps, params, parminmax, x, y, yerr, save_steps):
+    fit = Fit(Linear, params, x, y, yerr)
+    initial = np.array([params[key].value for key in params.keys()])
+    parmin = np.array([parminmax[key][0] for key in parminmax.keys()])
+    parmax = np.array([parminmax[key][1] for key in parminmax.keys()])
+    pos = np.random.uniform(parmin, parmax, (nwalkers, len(initial)))
+    nwalkers, ndim = pos.shape
+    state = emcee.state.State(pos)
+    file = file_prefix + '_%d.h5' % filenum
+    if os.path.exists(file):
+        os.remove(file)
+    backend = emcee.backends.HDFBackend(file)
+    backend.reset(nwalkers, ndim)
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, fit.log_probability, args=[parminmax]
+                                    , backend=None, parameter_names=list(params.keys()))
+    for sample in sampler.sample(pos, iterations=nsteps, store=True):
+        # rayvars.increment.remote(filenum)
+        if (sampler.iteration) % save_steps == 0:
+            backend.grow(save_steps, None)
+            with backend.open(mode='a') as f:
+                g = f['mcmc']
+                g['accepted'][...] = sampler.acceptance_fraction * sampler.iteration
+                g['chain'][-save_steps:, :, :] = sampler.get_chain()[-save_steps:, :, :]
+                g['log_prob'][-save_steps:, :] = sampler.get_log_prob()[-save_steps:, :]
+                g.attrs["iteration"] = sampler.iteration
+    return file
+
+
 
 class EMCEE_ConfInterval_Window(QMainWindow):
-    def __init__(self, emcee_walker=10, emcee_steps=100, emcee_burn=1, emcee_thin=1, emcee_cores=1, backendFile=None, parent=None):
+    def __init__(self, fitFile=None, emcee_walker=10, emcee_steps=10000, emcee_burn=1, emcee_thin=1, emcee_cores=1, backendFile=None, parent=None):
         QMainWindow.__init__(self, parent)
         uic.loadUi('./UI_Forms/MCMC_ConfInterval_Window.ui', self)
         self.setWindowTitle('MCMC Confidence Interval Calculator')
         self.menuBar().setNativeMenuBar(False)
+        self.fitFile=fitFile
         self.emcee_walker = emcee_walker
         self.emcee_steps = emcee_steps
         self.emcee_burn = emcee_burn
@@ -25,17 +99,20 @@ class EMCEE_ConfInterval_Window(QMainWindow):
         self.MCMCStepsLineEdit.setText(str(self.emcee_steps))
         self.MCMCBurnLineEdit.setText(str(self.emcee_burn))
         self.MCMCThinLineEdit.setText(str(self.emcee_thin))
-        self.ParallelCoresLineEdit.setText(str(self.emcee_cores))
-        self.ParallelCoresLineEdit.setEnabled(False)
+        self.parallelCoresNumSpinBox.setMinimum(1)
+        self.parallelCoresNumSpinBox.setValue(self.emcee_cores)
+        self.NCores=int(ray.cluster_resources()['CPU'])
+        self.parallelCoresNumSpinBox.setMaximum(self.NCores-2)
+        self.parallelCoresNumSpinBox.valueChanged.connect(self.parallelCoresChanged)
         self.progressBar.setValue(0)
-        self.xmodfit=XModFit()
+        self.backend=None
 
         self.init_signals()
 
-
     def init_signals(self):
-        self.actionOpen_MCMC_run_file.triggered.connect(self.openMCMCRunFile)
-        self.actionSave_MCMC_run_file.triggered.connect(self.saveMCMCRunFile)
+        self.actionLoad_Fit_File.triggered.connect(lambda x:self.loadFitFile(fname=None))
+        self.actionLoad_MCMC_File.triggered.connect(self.loadMCMCFile)
+        self.actionNew_MCMC_File.triggered.connect(self.newMCMCFile)
         self.actionQuit.triggered.connect(self.close)
         self.startSamplingPushButton.clicked.connect(self.start_emcee_sampling)
         self.MCMCWalkerLineEdit.returnPressed.connect(self.MCMCWalker_changed)
@@ -45,13 +122,257 @@ class EMCEE_ConfInterval_Window(QMainWindow):
         self.saveUserDefinedParamPushButton.clicked.connect(self.saveMCMCUserDefinedParam)
         self.loadUserDefinedParamPushButton.clicked.connect(self.loadMCMCUserDefinedParam)
         self.userDefinedParamTreeWidget.itemDoubleClicked.connect(self.openMCMCUserDefinedParam)
+        self.tabWidget.setCurrentIndex(0)
 
-    def openMCMCRunFile(self):
+    def parallelCoresChanged(self):
+        self.emcee_cores=self.parallelCoresNumSpinBox.value()
 
-        self.xmodfit.loadParameters()
 
-    def saveMCMCRunFile(self):
+    def loadFitFile(self, fname=None):
+        """
+        loads parameters from a parameter file
+        """
+        # if self.funcListWidget.currentItem() is not None:
+        if fname is None:
+            fname = QFileDialog.getOpenFileName(self, caption='Open Fit File',# directory=self.curDir,
+                                                filter='Fit Files (*.xfit)')[0]
+        else:
+            fname = fname
+        if fname != '':
+            self.curDir = os.path.dirname(fname)
+            try:
+                fh = open(fname, 'r')
+                lines = fh.readlines()
+                category = lines[1].split(': ')[1].strip()
+                func = lines[2].split(': ')[1].strip()
+                module = 'Functions.%s.%s' % (category, func)
+                funcClass=import_module(module)
+                self.fit=Fit(getattr(funcClass,func),[1.0])
+                # self.fit.func.init_params()
+                lnum = 3
+                sfline = None
+                mfline = None
+                for line in lines[3:]:
+                    if line == '#Fixed Parameters:\n':
+                        fline = lnum + 2
+                    elif line == '#Single fitting parameters:\n':
+                        sfline = lnum + 2
+                    elif line == '#Multiple fitting parameters:\n':
+                        mfline = lnum + 2
+                    elif 'col_names' in line:
+                        self.col_names=eval(line.split('=')[1].strip())
+                    elif 'Fit Scale' in line:
+                        self.fit_scale = line.split('=')[1].strip()
+                    lnum += 1
+                if sfline is None:
+                    sendnum = lnum
+                else:
+                    sendnum = sfline - 2
+                if mfline is None:
+                    mendnum = lnum
+                else:
+                    mendnum = mfline - 2
+                for line in lines[fline:sendnum]:
+                    key, val = line[1:].strip().split('\t')
+                    try:
+                        val = eval(val.strip())
+                    except:
+                        val = val.strip()
+                    self.fit.params[key] = val
+                if sfline is not None:
+                    for line in lines[sfline:mendnum]:
+                        parname, parval, parfit, parmin, parmax, parexpr, parbrute = line[1:].strip().split('\t')
+                        self.fit.params[parname] = float(parval)
+                        self.fit.fit_params[parname].set(value=float(parval), vary=int(parfit), min=float(parmin),
+                                                         max=float(parmax))
+                        try:
+                            self.fit.fit_params[parname].set(expr=eval(parexpr))
+                        except:
+                            self.fit.fit_params[parname].set(expr=str(parexpr))
+                        try:
+                            self.fit.fit_params[parname].set(brute_step=eval(parbrute))
+                        except:
+                            self.fit.fit_params[parname].set(brute_step=str(parbrute))
+
+                if mfline is not None:
+                    val = {}
+                    expr = {}
+                    pmin = {}
+                    pmax = {}
+                    pbrute = {}
+                    pfit = {}
+                    for line in lines[mfline:]:
+                        tlist = line[1:].strip().split('\t')
+                        if 'Fit Statistics' not in line:
+                            if len(tlist) > 2:
+                                parname, parval, parfit, parmin, parmax, parexpr, parbrute = tlist
+                                val[parname] = float(parval)
+                                pmin[parname] = float(parmin)
+                                pmax[parname] = float(parmax)
+                                pfit[parname] = int(parfit)
+                                try:
+                                    expr[parname] = eval(parexpr)
+                                except:
+                                    expr[parname] = str(parexpr)
+                                try:
+                                    pbrute[parname] = eval(parbrute)
+                                except:
+                                    pbrute[parname] = str(parbrute)
+                                try:  # Here the expr is set to None and will be taken care at the for loop just after this for loop
+                                    self.fit.fit_params[parname].set(val[parname], vary=pfit[parname],
+                                                                     min=pmin[parname],
+                                                                     max=pmax[parname], expr=None,
+                                                                     brute_step=pbrute[parname])
+                                except:
+                                    self.fit.fit_params.add(parname, value=val[parname], vary=pfit[parname],
+                                                            min=pmin[parname],
+                                                            max=pmax[parname], expr=None,
+                                                            brute_step=pbrute[parname])
+                                mkey, pkey, num = parname[2:].split('_')
+                                num = int(num)
+                                try:
+                                    self.fit.params['__mpar__'][mkey][pkey][num] = float(parval)
+                                except:
+                                    self.fit.params['__mpar__'][mkey][pkey].insert(num, float(parval))
+                            else:
+                                parname,parval=tlist
+                                mkey,pkey,num=parname[2:].split('_')
+                                num=int(num)
+                                try:
+                                    self.fit.params['__mpar__'][mkey][pkey][num]=parval
+                                except:
+                                    self.fit.params['__mpar__'][mkey][pkey].insert(num,parval)
+                        else:
+                            break
+                    for parname in val.keys():  # Here is the expr is put into the parameters
+                        try:
+                            self.fit.fit_params[parname].set(value=val[parname], vary=pfit[parname],
+                                                             min=pmin[parname],
+                                                             max=pmax[parname], expr=expr[parname],
+                                                             brute_step=pbrute[parname])
+                        except:
+                            self.fit.fit_params.add(parname, value=val[parname], vary=pfit[parname],
+                                                    min=pmin[parname],
+                                                    max=pmax[parname], expr=expr[parname],
+                                                    brute_step=pbrute[parname])
+                self.readData(fname, self.col_names)
+                self.fitPlot()
+                self.fitFileLineEdit.setText(fname)
+                if len(self.fitPlotNames)>2: #For multi-column data and error-bars
+                    x={}
+                    y={}
+                    yerr={}
+                    for name in self.fitPlotNames:
+                        if 'fit' not in name and 'calc' not in name:
+                            x[name]=self.data['x_'+name].values
+                            y[name]=self.data['y_'+name].values
+                            yerr[name]=self.data['yerr_'+name].values
+                else:
+                    for name in self.fitPlotNames: #For single-column data and error-bars
+                        if 'fit' not in name and 'calc' not in name:
+                            x = self.data['x_' + name].values
+                            y = self.data['y_' + name].values
+                            yerr = self.data['yerr_' + name].values
+                self.fit.set_x(x,y=y,yerr=yerr)
+                self.ycalc=self.fit.evaluate()
+                self.calcPlot()
+                self.tabWidget.setCurrentIndex(0)
+                self.fitParamsList=[]
+                self.fitKeyList=[]
+                for key in self.fit.fit_params.keys():
+                    if self.fit.fit_params[key].vary:
+                        self.fitParamsList.append(self.fit.fit_params[key].value)
+                        self.fitKeyList.append(key)
+                if not self.fitCalcMatch:
+                    QMessageBox.warning(self, "Fit Function Warning", "The fitted values doesnot match with the calculated values from the function", QMessageBox.Ok)
+                else:
+                    self.MCMCWalker_changed()
+            except:
+                QMessageBox.warning(self, 'File Import Error',
+                                    'Some problems in the fit file\n' + traceback.format_exc(), QMessageBox.Ok)
+
+
+    def MCMCWalker_changed(self):
+        self.mcmc_iterations=0
+        self.reuseSamplerCheckBox.setChecked(False)
+        self.update_emcee_parameters()
+
+
+    def update_emcee_parameters(self):
+        self.emcee_walker=int(self.MCMCWalkerLineEdit.text())
+        self.emcee_steps=int(self.MCMCStepsLineEdit.text())
+        self.emcee_burn=int(self.MCMCBurnLineEdit.text())
+        self.emcee_thin = int(self.MCMCThinLineEdit.text())
+        if self.reuseSamplerCheckBox.isChecked():
+            self.reuse_sampler=True
+        else:
+            self.reuse_sampler=False
+        self.emcee_cores = self.parallelCoresNumSpinBox.value()
+
+    def loadMCMCFile(self):
         pass
+
+
+    def newMCMCFile(self):
+        file = QFileDialog.getSaveFileName(self, 'Start MCMC file as', filter='MCMC Files (*.h5)')[0]
+        # self.iterations=0
+        if file != '':
+            if os.path.exists(file):
+                os.remove(file)
+            self.MCMCBackendFile = file
+            self.MCMCFileLineEdit.setText(self.MCMCBackendFile)
+            self.backend = emcee.backends.HDFBackend(self.MCMCBackendFile)
+            self.autoCorrTime = np.array([[0, 1.0]])
+            self.MCMC_starting_step = self.autoCorrTime[-1, 0]
+            self.autoCorrTimeMPLWidget.clear()
+            self.autoCorrPlot_ax1 = self.autoCorrTimeMPLWidget.fig.add_subplot(1, 1, 1)
+            self.autoCorrPlot_sp, = self.autoCorrPlot_ax1.plot(self.autoCorrTime[:, 0], self.autoCorrTime[:, 1], '.')
+            self.autoCorrPlot_ax1.set_xlabel('Iterations')
+            self.autoCorrPlot_ax1.set_ylabel('correlation_time')
+            self.autoCorrTimeMPLWidget.fig.canvas.draw()
+            self.autoCorrTimeMPLWidget.fig.canvas.flush_events()
+            self.tabWidget.setCurrentIndex(4)
+            self.reuseSamplerCheckBox.setChecked(False)
+            self.autoCorrTimeTextEdit.clear()
+            self.autoCorrTimeTextEdit.append('#MCMC_steps\tCorr_Time')
+            self.autoCorrTimeTextEdit.append(
+                '%d\t%.3f' % (self.autoCorrTime[-1, 0], self.autoCorrTime[-1, 1]))
+        else:
+            self.backend = None
+
+
+
+    def readData(self, fname, col_names):
+        self.data=pd.read_csv(fname,names=col_names,comment='#',delimiter=' ')
+
+    def fitPlot(self):
+        self.fitPlotNames=[]
+        for i in range(int(len(self.col_names)/4)):
+            x=self.data[self.col_names[i*4]].values
+            y=self.data[self.col_names[i*4+1]].values
+            yerr=self.data[self.col_names[i*4+2]].values
+            yfit=self.data[self.col_names[i*4+3]].values
+            name=self.col_names[i*4][2:]
+            self.fitPlotWidget.add_data(x,y,yerr=yerr,name=name)
+            self.fitPlotNames.append(name)
+            self.fitPlotWidget.add_data(x,yfit,name=name+'_fit',fit=True)
+            self.fitPlotNames.append(name+'_fit')
+        self.fitPlotWidget.Plot(self.fitPlotNames)
+
+
+    def calcPlot(self):
+        self.calcPlotNames=[]
+        self.fitCalcMatch=True
+        if type(self.ycalc)==dict:
+            for key in self.ycalc.keys():
+                self.fitPlotWidget.add_data(self.fit.x[key],self.ycalc[key],name=key+'_calc',fit=True)
+                self.calcPlotNames.append(key+'_calc')
+                self.fitCalcMatch=self.fitCalcMatch and np.allclose(self.fit.yfit[key],self.ycalc[key])
+        else:
+            self.fitPlotWidget.add_data(self.fit.x,self.ycalc,name='data_calc',fit=True)
+            self.calcPlotNames.append('data_calc')
+            self.fitCalcMatch = self.fitCalcMatch and np.allclose(self.fit.yfit, self.ycalc)
+        self.fitPlotWidget.Plot(self.fitPlotNames + self.calcPlotNames)
 
 
     def EnableUserDefinedParameterButtons(self,enable=False):
@@ -213,23 +534,6 @@ class EMCEE_ConfInterval_Window(QMainWindow):
 
 
 
-
-    def MCMCWalker_changed(self):
-        self.reuseSamplerCheckBox.setCheckState(Qt.Unchecked)
-        self.update_emcee_parameters()
-
-
-    def update_emcee_parameters(self):
-        self.emcee_walker=int(self.MCMCWalkerLineEdit.text())
-        self.emcee_steps=int(self.MCMCStepsLineEdit.text())
-        self.emcee_burn=int(self.MCMCBurnLineEdit.text())
-        self.emcee_thin = int(self.MCMCThinLineEdit.text())
-        if self.reuseSamplerCheckBox.isChecked():
-            self.reuse_sampler=True
-        else:
-            self.reuse_sampler=False
-        self.emcee_cores = int(self.ParallelCoresLineEdit.text())
-
     def start_emcee_sampling(self):
         try:
             self.parameterTreeWidget.itemSelectionChanged.disconnect()
@@ -240,13 +544,48 @@ class EMCEE_ConfInterval_Window(QMainWindow):
         self.correlationMPLWidget.clear()
         self.cornerPlotMPLWidget.clear()
         self.confIntervalTextEdit.clear()
-        self.update_emcee_parameters()
-        if not self.errorAvailable:
-            self.emcee_frac=self.emcee_burn/self.emcee_steps
-        self.doFit(fit_method='emcee', emcee_walker=self.emcee_walker, emcee_steps=self.emcee_steps,
-                       emcee_cores=self.emcee_cores, reuse_sampler=self.reuse_sampler, emcee_burn=self.emcee_burn,
-                   emcee_thin=self.emcee_thin,backendFile='mcmc_chains.h5')
+        #self.fit.functionCalled.connect(self.updateMCMCStatus)
+        self.setMCMC()
+        self.runMCMC()
 
+
+    def setMCMC(self):
+        self.update_emcee_parameters()
+        self.sampler = emcee.EnsembleSampler(self.emcee_walker, len(self.fitParamsList), self.fit.log_probability,
+                                             args=(self.fitKeyList, self.fit_scale), backend=self.backend)
+
+    def runMCMC(self):
+        start_pos = np.array(self.fitParamsList)+1e-4*np.random.randn(self.emcee_walker, len(self.fitParamsList))
+        # We'll track how the average autocorrelation time estimate changes
+        index = 0
+        autocorr = []
+
+        # This will be useful to testing convergence
+        old_tau = np.inf
+        for sample in self.sampler.sample(start_pos, iterations=self.emcee_steps, progress=True):
+            if self.sampler.iteration % 100:
+                continue
+                # Compute the autocorrelation time so far
+                # Using tol=0 means that we'll always get an estimate even
+                # if it isn't trustworthy
+            tau = self.sampler.get_autocorr_time(tol=0)
+            autocorr.append(np.mean(tau))
+            index += 1
+
+            # Check convergence
+            converged = np.all(tau * 100 < self.sampler.iteration)
+            converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
+            self.updateMCMCStatus(autocorr[-1])
+            if converged:
+                break
+            old_tau = tau
+        print("Iterations stopped or Convergence achieved")
+
+        # self.sampler.run_mcmc(start_pos, self.emcee_steps, progress=True)
+
+    def updateMCMCStatus(self, autocorr):
+        self.fitIterLabel.setText("Iterations=%d, autocorr=%.3f"%(self.sampler.iteration, autocorr))
+        QApplication.processEvents()
 
     def conf_interv_status(self,params,iterations,residual,fit_scale):
         self.confIntervalStatus.setText(self.confIntervalStatus.text().split('\n')[0]+'\n\n {:^s} = {:10d}'.format('Iteration',iterations))

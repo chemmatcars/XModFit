@@ -138,7 +138,7 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
         """
         q = np.array(q)
         atom_ff = []
-        atom_vol = []
+        atom_vol = {}
         unique_elements=[]
         contrast = []
         hydration = []
@@ -149,6 +149,7 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
                 unique_elements.append(element)
                 vol = 4 * 3.14159 * eval('mendeleev.%s.vdw_radius' % element) ** 3 / 3.0 / 1.0e6
                 sol_fac[element] = vol * np.exp((-q ** 2 * vol ** (2.0 / 3.0)) / 4.0 / np.pi)
+                atom_vol[element] = vol
             f0 = self.__xdb__.f0(element, q)
             if energy is not None:
                 f1 = self.__xdb__.f1_chantler(element = element, energy = energy * 1e3, smoothing = 0)
@@ -159,7 +160,7 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
             atom_ff.append(ff)
             hydration.append(sasa[i] * fw)
             contrast.append(sol_fac[element])
-        return unique_elements, atom_ff, hydration, contrast
+        return unique_elements, atom_ff, hydration, contrast, atom_vol
 
     #@lru_cache(maxsize=10)
     def get_pairs(self, Natoms, pos):
@@ -171,9 +172,9 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
                 distances.append(np.sqrt(np.sum((np.array(pos[i]) - np.array(pos[j]))**2)))
         return pairs, np.array(distances)
 
-    def calc_formol(self, q, atom_ff, atom_pairs, atom_dist, atom_vol, sol, unique_elements, relement, Rmoles):
+    def calc_formol(self, q, atom_ff, atom_pairs, atom_dist, atom_vol, sol, elements, relement, Rmoles):
         """
-        Calculates the form factor of a molecule with know atomic positions
+        Calculates the form factor of a molecule with known atomic positions
         :param q: reciprocal lattice vector in inv-Angs
         :param atom_ff: Array of atomic form factors of all the elements where rows represent each of the elements and cols
                         represents different form factor at different q values
@@ -181,28 +182,28 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
         :param atom_dist: list of distance between the pairs
         :param atom_vol: Van Der Waals Atomic volume of each of the unique atoms in the system
         :param sol: solvent density in el/Angs^3
-        :param unique_elements: list of unique elements in the system
+        :param elements: list of elements in each of the positions
         :param relement: resonant element in the system
         :param Rmoles: No. of moles of the resonant element in the system
         :return:
         """
         form = np.zeros_like(q)
-        mole_frac = np.where(np.array(unique_elements) == relement, Rmoles, 1.0)
+        mole_frac = np.where(np.array(elements) == relement, Rmoles, 1.0)
         for k, atom in enumerate(atom_pairs):
             i, j = atom
             sinc = np.sinc(atom_dist[k]*q/np.pi)
             # form = form + np.real((atom_ff[i]-sol*atom_vol[i])*(atom_ff[j]-sol*atom_vol[j]).conjugate())# * sinc
-            sol_faci = sol * atom_vol[i] * np.exp((-q ** 2 * atom_vol[i] ** (2.0 / 3.0)) / 4.0 / np.pi)
-            sol_facj = sol * atom_vol[j] * np.exp((-q ** 2 * atom_vol[j] ** (2.0 / 3.0)) / 4.0 / np.pi)
-            form = form + np.real((atom_ff[k]*mole_frac[i]-sol_faci)*(atom_ff[k]*mole_frac[j]-sol_facj).conjugate()) * sinc
+            sol_faci = sol * atom_vol[elements[i]] * np.exp((-q ** 2 * atom_vol[elements[i]] ** (2.0 / 3.0)) / 4.0 / np.pi)
+            sol_facj = sol * atom_vol[elements[j]] * np.exp((-q ** 2 * atom_vol[elements[j]] ** (2.0 / 3.0)) / 4.0 / np.pi)
+            form = form + np.real((atom_ff[i]*mole_frac[i]-sol_faci)*(atom_ff[j]*mole_frac[j]-sol_facj).conjugate()) * sinc
         return form
 
     @lru_cache(maxsize=10)
     def calc_form(self, q, fname, sol, scale, relement, Rmoles, energy=None):
         Natoms, elements, pos, sasa = self.readPDB(fname)
-        unique_elements, atom_ff, hydration, contrast = self.get_ff(q, tuple(elements), tuple(sasa), energy = energy)
+        unique_elements, atom_ff, hydration, contrast, atom_vol = self.get_ff(q, tuple(elements), tuple(sasa), energy = energy)
         atom_pairs, atom_dist = self.get_pairs(Natoms, pos)
-        return self.calc_formol(np.array(q), atom_ff, atom_pairs, scale*atom_dist, atom_vol, sol, unique_elements, relement, Rmoles)
+        return self.calc_formol(np.array(q), atom_ff, atom_pairs, scale*atom_dist, atom_vol, sol, elements, relement, Rmoles)
 
 
     def y(self):

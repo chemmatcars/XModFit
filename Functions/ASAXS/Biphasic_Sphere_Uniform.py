@@ -19,21 +19,22 @@ from functools import lru_cache
 import time
 
 from numba import njit, prange
+from ASAXS.Sphere_Uniform import ff_sphere_ml
 
-@njit(parallel=True, cache=True)
-def ff_sphere_ml(q,R,rho):
-    Nlayers=len(R)
-    aff=np.ones_like(q)*complex(0,0)
-    ff=np.zeros_like(q)
-    for i in prange(len(q)):
-        fact = 0.0
-        rt = 0.0
-        for j in prange(1,Nlayers):
-            rt += R[j - 1]
-            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
-        aff[i] = fact
-        ff[i] = abs(fact) ** 2
-    return ff,aff
+# @njit(parallel=True, cache=True)
+# def ff_sphere_ml(q,R,rho):
+#     Nlayers=len(R)
+#     aff=np.ones_like(q)*complex(0,0)
+#     ff=np.zeros_like(q)
+#     for i in prange(len(q)):
+#         fact = 0.0
+#         rt = 0.0
+#         for j in prange(1,Nlayers):
+#             rt += R[j - 1]
+#             fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
+#         aff[i] = fact
+#         ff[i] = abs(fact) ** 2
+#     return ff,aff
 
 class Biphasic_Sphere_Uniform: #Please put the class name same as the function name
     def __init__(self, x=0, Np=20, error_factor=1.0, term='Total',dist='Gaussian', Energy=None, relement='Au', NrDep='False',
@@ -192,16 +193,13 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
         return pfac * form, pfac * eiform, pfac * aform, np.abs(pfac * cform)/2  # in cm^2
 
     @lru_cache(maxsize=2)
-    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian',Np=10,key='SAXS-term'):
+    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian',Np=10):
         form, eiform, aform, cform = self.new_sphere(q, R, Rsig, rho, eirho, adensity,dist=dist,Np=Np)
-        if key == 'SAXS-term':
-            return eiform
-        elif key == 'Resonant-term':
-            return aform
-        elif key == 'Cross-term':
-            return cform
-        elif key == 'Total':
-            return form
+        result={'SAXS-term': eiform,
+                'Resonant-term': aform,
+                'Cross-term': cform,
+                'Total': form}
+        return result
 
     def update_params(self):
         for mkey in self.__mkeys__:
@@ -265,28 +263,25 @@ class Biphasic_Sphere_Uniform: #Please put the class name same as the function n
                 adensity = adensity + vf * tadensity
 
         if type(self.x) == dict:
-            sqf = {}
+            key = 'SAXS-term'
+            sqf = self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__[self.__mkeys__[0]]),
+                                 self.Rsig, tuple(rho), tuple(eirho),
+                                 tuple(adensity), key=key, dist=self.dist, Np=self.Np)
+            if self.SF is None:
+                struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
+            elif self.SF == 'Hard-Sphere':
+                struct = hard_sphere_sf(self.x[key], D=self.D, phi=self.phi)
+            else:
+                struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
             for key in self.x.keys():
-                sqf[key] = self.norm*1e-9 * 6.022e20 * self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__[self.__mkeys__[0]]),
-                                                                       self.Rsig, tuple(rho), tuple(eirho),
-                                                                       tuple(adensity), key=key, dist=self.dist,Np=self.Np)  # in cm^-1
-                if self.SF is None:
-                    struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
-                elif self.SF == 'Hard-Sphere':
-                    struct = hard_sphere_sf(self.x[key], D=self.D, phi=self.phi)
-                else:
-                    struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
                 if key == 'SAXS-term':
-                    sqf[key] = sqf[key] * struct + self.sbkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * sqf[key] * struct + self.sbkg  # in cm^-1
                 if key == 'Cross-term':
-                    sqf[key] = sqf[key] * struct + self.cbkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * sqf[key] * struct + self.cbkg  # in cm^-1
                 if key == 'Resonant-term':
-                    sqf[key] = sqf[key] * struct + self.abkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * sqf[key] * struct + self.abkg  # in cm^-1
             key1 = 'Total'
-            total = self.norm*1e-9 * 6.022e20 * struct * self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__[self.__mkeys__[0]]),
-                                                                         self.Rsig, tuple(rho), tuple(eirho),
-                                                                         tuple(adensity),
-                                                                         key=key1,dist=self.dist,Np=self.Np) + self.sbkg  # in cm^-1
+            total = self.norm * 1e-9 * 6.022e20 * struct * sqf[key1] + self.sbkg  # in cm^-1
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__[self.__mkeys__[0]]), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist}

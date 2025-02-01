@@ -9,18 +9,12 @@ sys.path.append(os.path.abspath('./Fortran_routines'))
 ####Please do not remove lines above####
 
 ####Import your modules below if needed####
-# from FormFactors.Sphere import Sphere
-# from ff_sphere import ff_sphere_ml
-from Chemical_Formula import Chemical_Formula
-from PeakFunctions import LogNormal, Gaussian
 from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 from utils import find_minmax, calc_rho, create_steps
 from functools import lru_cache
 
 from numba import njit, prange
-
-
-@njit(parallel=True, cache=True)
+njit(parallel=False, cache=True)
 def ff_sphere_ml(q, R, rho):
     Nlayers = len(R)
     aff = np.zeros_like(q, dtype=np.complex128)
@@ -87,7 +81,6 @@ class Sphere_Uniform: #Please put the class name same as the function name
         self.Energy=Energy
         self.relement=relement
         self.NrDep=NrDep
-        #self.rhosol=rhosol
         self.error_factor=error_factor
         self.D=D
         self.phi=phi
@@ -163,29 +156,15 @@ class Sphere_Uniform: #Please put the class name same as the function name
         return pfac * form, pfac * eiform, pfac * aform, np.abs(pfac * cform) / 2
 
     @lru_cache(maxsize=2)
-    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, key='SAXS-term'):
+    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10):
         form, eiform, aform, cform = self.new_sphere(q, R, Rsig, rho, eirho, adensity, dist=dist, Np=Np)
-        return {
+        result={
             'SAXS-term': eiform,
             'Resonant-term': aform,
             'Cross-term': cform,
             'Total': form
-        }.get(key, form)
-
-
-    # def update_params(self):
-    #     mkey=self.__mkeys__[0]
-    #     key = 'Density'
-    #     Nmpar=len(self.__mpar__[mkey][key])
-    #     self.__Density__ = [self.params['__%s_%s_%03d' % (mkey, key, i)].value for i in range(Nmpar)]
-    #     key = 'SolDensity'
-    #     self.__SolDensity__ = [self.params['__%s_%s_%03d' % (mkey, key, i)].value for i in range(Nmpar)]
-    #     key = 'Rmoles'
-    #     self.__Rmoles__ = [self.params['__%s_%s_%03d' % (mkey, key, i)].value for i in range(Nmpar)]
-    #     key = 'R'
-    #     self.__R__ = [self.params['__%s_%s_%03d' % (mkey, key, i)].value for i in range(Nmpar)]
-    #     key = 'Material'
-    #     self.__Material__ = [self.__mpar__[mkey][key][i] for i in range(Nmpar)]
+        }
+        return result
 
     def update_params(self):
         """Update parameters based on fitting values."""
@@ -215,27 +194,25 @@ class Sphere_Uniform: #Please put the class name same as the function name
                                                                       NrDep=self.NrDep)
         if type(self.x) == dict:
             sqf = {}
+            key='SAXS-term'
+            sqf = self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__),
+                                                                   self.Rsig, tuple(rho), tuple(eirho),
+                                                                   tuple(adensity), dist=self.dist,Np=self.Np)  # in cm^-1
+            if self.SF is None:
+                struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
+            elif self.SF == 'Hard-Sphere':
+                struct = hard_sphere_sf(self.x[key], D=self.D, phi=self.phi)
+            else:
+                struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
             for key in self.x.keys():
-                sqf[key] = self.norm*1e-9 * 6.022e20 * self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__),
-                                                                       self.Rsig, tuple(rho), tuple(eirho),
-                                                                       tuple(adensity), key=key, dist=self.dist,Np=self.Np)  # in cm^-1
-                if self.SF is None:
-                    struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
-                elif self.SF == 'Hard-Sphere':
-                    struct = hard_sphere_sf(self.x[key], D=self.D, phi=self.phi)
-                else:
-                    struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
                 if key == 'SAXS-term':
-                    sqf[key] = sqf[key] * struct + self.sbkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * sqf[key] * struct + self.sbkg
                 if key == 'Cross-term':
-                    sqf[key] = sqf[key] * struct + self.cbkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * sqf[key] * struct + self.cbkg
                 if key == 'Resonant-term':
-                    sqf[key] = sqf[key] * struct + self.abkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * sqf[key] * struct + self.abkg
             key1 = 'Total'
-            total = self.norm*1e-9 * 6.022e20 * struct * self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__),
-                                                                         self.Rsig, tuple(rho), tuple(eirho),
-                                                                         tuple(adensity),
-                                                                         key=key1,dist=self.dist,Np=self.Np) + self.sbkg  # in cm^-1
+            total = self.norm*1e-9 * 6.022e20 * struct * sqf[key1] + self.sbkg  # in cm^-1
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist, 'names':['R (Angs)','P(R)']}

@@ -22,21 +22,22 @@ from functools import lru_cache
 from itertools import combinations
 
 from numba import njit, prange
+from ASAXS.Sphere_Uniform import ff_sphere_ml
 
-@njit(parallel=True, cache=True)
-def ff_sphere_ml(q,R,rho):
-    Nlayers=len(R)
-    aff=np.ones_like(q)*complex(0,0)
-    ff=np.zeros_like(q)
-    for i in prange(len(q)):
-        fact = 0.0
-        rt = 0.0
-        for j in prange(1,Nlayers):
-            rt += R[j - 1]
-            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
-        aff[i] = fact
-        ff[i] = abs(fact) ** 2
-    return ff,aff
+# @njit(parallel=True, cache=True)
+# def ff_sphere_ml(q,R,rho):
+#     Nlayers=len(R)
+#     aff=np.ones_like(q)*complex(0,0)
+#     ff=np.zeros_like(q)
+#     for i in prange(len(q)):
+#         fact = 0.0
+#         rt = 0.0
+#         for j in prange(1,Nlayers):
+#             rt += R[j - 1]
+#             fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
+#         aff[i] = fact
+#         ff[i] = abs(fact) ** 2
+#     return ff,aff
 
 class Bimodal_Sphere_Uniform_2: #Please put the class name same as the function name
     def __init__(self, x=0, Np=20, error_factor=1.0, term='Total',dist='Gaussian', Energy=None, relement='Au', NrDep='False',
@@ -205,18 +206,12 @@ class Bimodal_Sphere_Uniform_2: #Please put the class name same as the function 
         return form, eiform, aform, cform, Rl[:i], rdist[:i]
 
     @lru_cache(maxsize=10)
-    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, tol=1e-3, keys=('SAXS-term')):
-        result = {}
-        form, eiform, aform, cform, r, rdist = self.new_sphere(q, R, Rsig, rho, eirho, adensity, dist=dist, Np=Np,
-                                                               tol=tol)
-        for key in keys:
-            if key == 'SAXS-term':
-                result[key] = eiform
-            elif key == 'Resonant-term':
-                result[key] = aform
-            elif key == 'Cross-term':
-                result[key] = cform
-        result['Total'] = form
+    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10, tol=1e-3):
+        form, eiform, aform, cform, r, rdist = self.new_sphere(q, R, Rsig, rho, eirho, adensity, dist=dist, Np=Np, tol=tol)
+        result={'SAXS-term': eiform,
+                'Resonant-term': aform,
+                'Cross-term': cform,
+                'Total': form}
         return result, r, rdist
 
 
@@ -276,24 +271,24 @@ class Bimodal_Sphere_Uniform_2: #Please put the class name same as the function 
                     D,phi,U=self.D1,self.phi1,self.U1
                 else:
                     D,phi,U=self.D2,self.phi2,self.U2
+
+                if self.SF is None:
+                    struct[mkey] = np.ones_like(self.x[xkeys[0]])
+                    # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
+                elif self.SF == 'Hard-Sphere':
+                    struct[mkey] = hard_sphere_sf(self.x[xkeys[0]], D=D, phi=phi)
+                    # struct[mkey] = js.sf.PercusYevick(self.x[xkeys[0]], D, eta=phi)[1]
+                else:
+                    struct[mkey] = sticky_sphere_sf(self.x[xkeys[0]], D=D, phi=phi, U=U, delta=0.01)
+
                 for key in xkeys:
-                    if self.SF is None:
-                        struct[mkey] = np.ones_like(self.x[xkeys[0]])
-                        # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
-                    elif self.SF == 'Hard-Sphere':
-                        struct[mkey] = hard_sphere_sf(self.x[key], D=D, phi=phi)
-                        # struct[mkey] = js.sf.PercusYevick(self.x[xkeys[0]], D, eta=phi)[1]
-                    else:
-                        struct[mkey] = sticky_sphere_sf(self.x[key], D=D, phi=phi, U=U, delta=0.01)
-                        # tau = np.exp(U) * (D + 0.01) / 12.0 /0.01
-                        # struct[mkey] = js.sf.adhesiveHardSphere(self.x[xkeys[0]], D / 2, tau, 0.01, eta=phi).array[1, :]
                     sqf[key] = sqf[key] + frac[mkey] * sphere[key] * struct[mkey]
                 total = total + frac[mkey] * sphere['Total'] * struct[mkey]
 
-                sqf['SAXS-term']=sqf['SAXS-term']+self.sbkg
-                sqf['Resonant-term']=sqf['Resonant-term']+self.abkg
-                sqf['Cross-term']=sqf['Cross-term']+self.sbkg
-                total=total+self.sbkg
+            sqf['SAXS-term']=sqf['SAXS-term']+self.sbkg
+            sqf['Resonant-term']=sqf['Resonant-term']+self.abkg
+            sqf['Cross-term']=sqf['Cross-term']+self.sbkg
+            total=total+self.sbkg
 
             if not self.__fit__:
                 signal = total
