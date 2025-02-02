@@ -200,10 +200,12 @@ class Fit(QObject):
     def set_emcee_minimizer(self,fit_scale='Linear',emcee_walkers=100, emcee_steps=100, emcee_cores=1,
                             emcee_burn=0, reuse_sampler=False, emcee_thin=1,backend=None):
 
-        fiterr = np.array(
-            [self.result.params[key].stderr / self.result.params[key].value for key in self.result.params.keys() if
-             self.result.params[key].vary == 1])
         funcname = type(self.func).__name__
+        if funcname=='XLayersPDB':
+            fiterr = np.array([self.result.params[key].stderr / self.result.params[key].value
+                               for key in self.result.params.keys() if self.result.params[key].vary == 1])
+        else:
+            fiterr = 0
         self.emcee_params = self.result.params.copy()
         if 'w/o' in fit_scale:
             self.emcee_params.add('__lnsigma', value=-1.0, vary=True, min=np.log(0.001), max=np.log(2.0))

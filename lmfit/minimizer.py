@@ -1243,6 +1243,8 @@ class Minimizer:
             Print a progress bar to the console while running.
         backend : None, optional
             EMCEE backend to store the MCMC chains (example: backend=emcee.backends.HDFBackend(backendFile))
+        fiterr : standard error avaialble from lmfit minimizer normalized by the parameter value
+        funcname : name of the function
         run_mcmc_kwargs : dict, optional
             Additional (optional) keyword arguments that are passed to
             ``emcee.EnsembleSampler.run_mcmc``.
