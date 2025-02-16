@@ -266,14 +266,16 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
                         del self.output_params[tkey]
                 if Energy is not None:
                     self.output_params['simulated_w_err_%.4fkeV' % Energy] = {'x': self.x[key], 'y': sqerr * minsignal,
-                                                                                   'yerr': np.sqrt(
+                                                                              'yerr': np.sqrt(
                                                                                        normsignal) * minsignal * self.error_factor,
-                                                                                   'meta': meta}
+                                                                              'meta': meta,
+                                                                              'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
                 else:
                     self.output_params['simulated_w_err'] = {'x': self.x[key], 'y': sqerr * minsignal,
                                                              'yerr': np.sqrt(
                                                                  normsignal) * minsignal * self.error_factor,
-                                                             'meta': meta}
+                                                             'meta': meta,
+                                                             'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
         else:
             #Contribution from first molecule
             if self.fname1 is not None:
@@ -319,10 +321,13 @@ class ForMol_Uniform_Edep: #Please put the class name same as the function name
             if self.Energy is not None:
                 self.output_params['simulated_w_err_%.3fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
                                                                                'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
-                                                                               'meta': meta}
+                                                                               'meta': meta,
+                                                                               'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
             else:
                 self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
-                                                         'yerr': np.sqrt(normsignal) * minsignal * self.error_factor, 'meta': meta}
+                                                         'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
+                                                         'meta': meta,
+                                                         'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
         return sqf
 
 

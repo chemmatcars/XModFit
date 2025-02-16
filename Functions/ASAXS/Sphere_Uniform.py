@@ -11,6 +11,7 @@ sys.path.append(os.path.abspath('./Fortran_routines'))
 ####Import your modules below if needed####
 from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 from utils import find_minmax, calc_rho, create_steps
+from PeakFunctions import LogNormal, Gaussian
 from functools import lru_cache
 
 from numba import njit, prange
@@ -195,7 +196,7 @@ class Sphere_Uniform: #Please put the class name same as the function name
         if type(self.x) == dict:
             sqf = {}
             key='SAXS-term'
-            sqf = self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__),
+            tsqf = self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__),
                                                                    self.Rsig, tuple(rho), tuple(eirho),
                                                                    tuple(adensity), dist=self.dist,Np=self.Np)  # in cm^-1
             if self.SF is None:
@@ -206,13 +207,13 @@ class Sphere_Uniform: #Please put the class name same as the function name
                 struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
             for key in self.x.keys():
                 if key == 'SAXS-term':
-                    sqf[key] = self.norm*1e-9 * 6.022e20 * sqf[key] * struct + self.sbkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * tsqf[key] * struct + self.sbkg
                 if key == 'Cross-term':
-                    sqf[key] = self.norm*1e-9 * 6.022e20 * sqf[key] * struct + self.cbkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * tsqf[key] * struct + self.cbkg
                 if key == 'Resonant-term':
-                    sqf[key] = self.norm*1e-9 * 6.022e20 * sqf[key] * struct + self.abkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * tsqf[key] * struct + self.abkg
             key1 = 'Total'
-            total = self.norm*1e-9 * 6.022e20 * struct * sqf[key1] + self.sbkg  # in cm^-1
+            total = self.norm*1e-9 * 6.022e20 * struct * tsqf[key1] + self.sbkg  # in cm^-1
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist, 'names':['R (Angs)','P(R)']}

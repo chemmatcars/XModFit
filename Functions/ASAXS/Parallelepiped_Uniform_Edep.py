@@ -255,7 +255,8 @@ class Parallelepiped_Uniform_Edep: #Please put the class name same as the functi
                     self.output_params['simulated_w_err_' + Energy + 'keV'] = {'x': self.x[key], 'y': sqerr * minsignal,
                                                                                'yerr': np.sqrt(
                                                                                    normsignal) * minsignal * self.error_factor,
-                                                                               'meta': meta}
+                                                                               'meta': meta,
+                                                                               'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
 
 
                 self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],
@@ -313,11 +314,13 @@ class Parallelepiped_Uniform_Edep: #Please put the class name same as the functi
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
                                                                                    'yerr': np.sqrt(
                                                                                        normsignal) * minsignal * self.error_factor,
-                                                                                   'meta': meta}
+                                                                                   'meta': meta,
+                                                                                   'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
                 else:
                     self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
                                                              'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
-                                                             'meta': meta}
+                                                             'meta': meta,
+                                                             'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
                 self.output_params['Total'] = {'x': self.x, 'y': sqf}
                 # self.output_params['Resonant-term'] = {'x': self.x, 'y': asqf}
                 # self.output_params['SAXS-term'] = {'x': self.x, 'y': eisqf}

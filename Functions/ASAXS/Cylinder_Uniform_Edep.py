@@ -244,8 +244,7 @@ class Cylinder_Uniform_Edep: #Please put the class name same as the function nam
                                                                                'yerr': np.sqrt(
                                                                                    normsignal) * minsignal * self.error_factor,
                                                                                'meta': meta,
-                                                                               'names': ['q (Angs<sup>-1</sup>)',
-                                                                                         'I (cm<sup>-1</sup>)']}
+                                                                               'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
 
         else:
             if self.Energy is not None:
@@ -285,11 +284,13 @@ class Cylinder_Uniform_Edep: #Please put the class name same as the function nam
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
                                                                                    'yerr': np.sqrt(
                                                                                        normsignal) * minsignal * self.error_factor,
-                                                                                   'meta': meta}
+                                                                                   'meta': meta,
+                                                                                   'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
                 else:
                     self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
                                                              'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
-                                                             'meta': meta}
+                                                             'meta': meta,
+                                                             'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
                 self.output_params['Total'] = {'x': self.x, 'y': sqf}
                 self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],
                                                'names': ['r (Angs)', 'Electron Density (el/Angs^3)']}
