@@ -19,6 +19,7 @@ class Gaussian:
         self.bkg=0.0
         self.__mpar__=mpar
         self.choices={}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.output_params={'scaler_parameters':{}}
         self.init_params()
 

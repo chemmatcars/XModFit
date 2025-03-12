@@ -16,22 +16,25 @@ from PeakFunctions import LogNormal, Gaussian
 from utils import find_minmax, calc_rho
 from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 
-from numba import njit, prange
+from ASAXS.Sphere_Uniform import ff_sphere_ml
 
-@njit(parallel=True,cache=True)
-def ff_sphere_ml(q,R,rho):
-    Nlayers=len(R)
-    aff=np.ones_like(q)*complex(0,0)
-    ff=np.zeros_like(q)
-    for i in prange(len(q)):
-        fact = 0.0
-        rt = 0.0
-        for j in prange(1,Nlayers):
-            rt = rt + R[j - 1]
-            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
-        aff[i] = fact
-        ff[i] = abs(fact) ** 2
-    return ff,aff
+#optimized code
+# @njit(parallel=True, cache=True)
+# def ff_sphere_ml(q, R, rho):
+#     Nlayers = len(R)
+#     aff = np.zeros_like(q, dtype=np.complex128)
+#     ff = np.zeros_like(q)
+#
+#     for i in prange(len(q)):
+#         fact = 0.0
+#         rt = 0.0
+#         for j in range(1, Nlayers):
+#             rt += R[j - 1]
+#             q_rt = q[i] * rt
+#             fact += (rho[j - 1] - rho[j]) * (np.sin(q_rt) - q_rt * np.cos(q_rt)) / q[i] ** 3
+#         aff[i] = fact
+#         ff[i] = np.abs(fact) ** 2
+#     return ff, aff
 
 
 class Sphere_Uniform_Edep: #Please put the class name same as the function name
@@ -92,6 +95,7 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
         self.choices={'dist':['Gaussian','LogNormal'],'NrDep':['True','False'],
                       'SF':['None','Hard-Sphere','Sticky-Sphere'],
                       'normQ':[0,1,2,3,4]} #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__fit__=False
         self.output_params={'scaler_parameters':{}}
         self.__mkeys__=list(self.__mpar__.keys())
@@ -116,23 +120,21 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
                     for i in range(len(self.__mpar__[mkey][key])):
                         self.params.add('__%s_%s_%03d'%(mkey,key,i),value=self.__mpar__[mkey][key][i],vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
 
-
     @lru_cache(maxsize=10)
     def calc_Rdist(self, R, Rsig, dist, N):
+        """Calculate the radius distribution."""
         R = np.array(R)
         totalR = np.sum(R[:-1])
         if Rsig > 0.001:
-            fdist = eval(dist + '.' + dist + '(x=0.001, pos=totalR, wid=Rsig)')
             if dist == 'Gaussian':
                 rmin, rmax = max(0.001, totalR - 5 * Rsig), totalR + 5 * Rsig
                 dr = np.linspace(rmin, rmax, N)
             else:
                 rmin, rmax = max(-3, np.log(totalR) - 5 * Rsig), np.log(totalR) + 5 * Rsig
-                dr = np.logspace(rmin, rmax, N,base=np.exp(1.0))
+                dr = np.logspace(rmin, rmax, N, base=np.exp(1.0))
+            fdist = eval(f'{dist}.{dist}(x=0.001, pos=totalR, wid=Rsig)')
             fdist.x = dr
-            rdist = fdist.y()
-            sumdist = np.sum(rdist)
-            rdist = rdist / sumdist
+            rdist = fdist.y() / np.sum(fdist.y())
             return dr, rdist, totalR
         else:
             return [totalR], [1.0], totalR
@@ -224,7 +226,7 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
                     self.output_params['simulated_w_err_' + Energy+'keV'] = {'x': self.x[key], 'y': sqerr * minsignal,
                                                                    'yerr': np.sqrt(normsignal) * minsignal*self.error_factor,
                                                                              'meta':meta,
-                                                                             'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)']}
+                                                                             'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
         else:
             if self.Energy is not None:
                 Energy=self.Energy+self.Energy_Offset
@@ -263,12 +265,12 @@ class Sphere_Uniform_Edep: #Please put the class name same as the function name
                     self.output_params['simulated_w_err_%.3fkeV'%Energy] = {'x': self.x, 'y': sqerr * minsignal,
                                                                                  'yerr': np.sqrt(normsignal) * minsignal*self.error_factor,
                                                                                  'meta':meta,
-                                                                                 'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)']}
+                                                                                 'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
                 else:
                     self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
                                                              'yerr': np.sqrt(normsignal) * minsignal*self.error_factor,
                                                              'meta':meta,
-                                                             'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)']}
+                                                             'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
                 self.output_params['Structure_Factor'] = {'x': self.x, 'y': struct, 'names':['R (Angs)', 'P(R)']}
                 self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1], 'names':['r (Angs)', 'rho (el/Angs<sup>3</sup>)']}
                 self.output_params['eirho_r'] = {'x': eirhor[:, 0], 'y': eirhor[:, 1], 'names':['r (Angs)', 'rho (el/Angs<sup>3</sup>)']}

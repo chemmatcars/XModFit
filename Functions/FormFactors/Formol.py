@@ -65,6 +65,7 @@ class Formol: #Please put the class name same as the function name
         self.sig=sig
         self.__mpar__=mpar #If there is any multivalued parameter
         self.choices={} #If there are choices available for any fixed parameters
+        self.filepaths = {'fname1':self.fname1,'fname2':self.fname2}  # If a parameter is a filename with path
         self.__fnames__=[self.fname1,self.fname2]
         self.__E__=E
         self.__xdb__=XrayDB()

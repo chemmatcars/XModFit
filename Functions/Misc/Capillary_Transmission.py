@@ -48,6 +48,7 @@ class Capillary_Transmission: #Please put the class name same as the function na
         self.Npts=Npts
         self.__mpar__=mpar #If there is any multivalued parameter
         self.choices={} #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__fit__=False
         self.__mkeys__=list(self.__mpar__.keys())
         self.output_params={'scaler_parameters':{}}

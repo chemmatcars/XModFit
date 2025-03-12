@@ -41,5 +41,6 @@ from .parameter import Parameter, Parameters
 from .printfuncs import ci_report, fit_report, report_ci, report_fit
 from .model import Model, CompositeModel
 from . import lineshapes, models
+from .customsampler import CustomSampler
 
 from lmfit.version import version as __version__

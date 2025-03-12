@@ -20,7 +20,7 @@ from numba import njit, prange
 from scipy.special import j1
 import numba_scipy.special
 
-@njit(parallel=True,cache=True)
+@njit(parallel=False,cache=False)
 def disk_ml_asaxs(q, H, R, RvvgtH, rho, eirho, adensity, Nalf):
     #RvvgtH: R>>H  Disk with infinite Radius
     dalf = np.pi/Nalf
@@ -37,7 +37,7 @@ def disk_ml_asaxs(q, H, R, RvvgtH, rho, eirho, adensity, Nalf):
     for i in prange(len(q)):
         for ialf in prange(Nalf):
             alf = ialf*dalf + 1e-6
-            tft = np.complex(0.0,0.0)
+            tft = 0.0j
             tfs = 0.0
             tfr = 0.0
             for k in prange(Nlayers-1):
@@ -132,6 +132,7 @@ class Disk_Uniform: #Please put the class name same as the function name
                       'term': ['SAXS-term', 'Cross-term', 'Resonant-term',
                                'Total']
                       } #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__cf__=Chemical_Formula()
         self.__fit__=False
         self.output_params={'scaler_parameters':{}}

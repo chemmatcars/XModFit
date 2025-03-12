@@ -1,4 +1,6 @@
 ####Please do not remove lines below####
+from sqlalchemy.sql import True_
+
 from lmfit import Parameters
 import numpy as np
 import sys
@@ -14,35 +16,39 @@ from functools import lru_cache
 ####Import your modules below if needed####
 # from xr_ref import parratt
 from numba import njit, prange
-@njit(parallel=True,cache=True)
+@njit(parallel=False,cache=False)
 def parratt_numba(q,lam,d,rho,beta):
-    ref=np.ones_like(q)
-    refc=np.ones_like(q)*complex(1.0,0.0)
+    Nl = len(d)
+    Nq = len(q)
+    ref=np.ones(Nq)
+    refc=np.ones(Nq)*complex(1.0,0.0)
     f1=16.0*np.pi*2.818e-5
     f2=-32.0*np.pi**2/lam**2
-    Nl=len(d)
-    for j in range(len(q)):
-        r=complex(0.0,0.0)
+    qc=f1*(rho-rho[0])
+    betaf=f2*beta
+    for j in range(Nq):
+        refc[j]=complex(0.0,0.0)
         for it in range(1,Nl):
             i=Nl-it
-            qc1=f1*(rho[i-1]-rho[0])
-            qc2=f1*(rho[i]-rho[0])
-            k1=np.sqrt(complex(q[j]**2-qc1,f2*beta[i-1]))
-            k2=np.sqrt(complex(q[j]**2-qc2,f2*beta[i]))
+            # qc1=f1*(rho[i-1]-rho[0])
+            # qc2=f1*(rho[i]-rho[0])
+            k1=np.sqrt(complex(q[j]**2-qc[i-1],betaf[i-1]))
+            k2=np.sqrt(complex(q[j]**2-qc[i],betaf[i]))
             X=(k1-k2)/(k1+k2)
             fact1=complex(np.cos(k2.real*d[i]),np.sin(k2.real*d[i]))
             fact2=np.exp(-k2.imag*d[i])
             fact=fact1*fact2
-            r=(X+r*fact)/(1.0+X*r*fact)
-        ref[j]=np.abs(r)**2
-        refc[j]=r
-    return ref, r
+            refc[j]=(X+refc[j]*fact)/(1.0+X*refc[j]*fact)
+        ref[j]=np.abs(refc[j])**2
+    return ref, refc
+
+# def parratt_numba(q, lam, d, rho, beta, parallel=False, cache=False):
+#     return njit(parallel=parallel, cache=cache)(parratt_numba_serial)(q, lam, d, rho, beta)
 
 
 class XLayers: #Please put the class name same as the function name
-    def __init__(self, x=0.1, E=10.0, mpar={
-        'Model': {'Layers': ['top', 'bottom'], 'd': [0.0, 1.0], 'rho': [0.0, 0.333], 'mu': [0.0, 0.0],
-                   'sig': [0.0, 3.0]}},
+    def __init__(self, x=0.1, E=10.0, mpar={'Model': {'Layers': ['top', 'bottom'], 'd': [0.0, 1.0], 'rho': [0.0, 0.333],
+                                                      'mu': [0.0, 0.0],'sig': [0.0, 3.0]}},
                  dz=0.5, rrf=True, fix_sig=True, qoff=0.0, yscale=1, bkg=0.0):
         """
         Calculates X-ray reflectivity from a system of multiple layers using Parratt formalism
@@ -75,6 +81,7 @@ class XLayers: #Please put the class name same as the function name
         self.bkg = bkg
         self.yscale = yscale
         self.choices = {'rrf': [True, False], 'fix_sig': [True, False]}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__d__ = {}
         self.__rho__ = {}
         self.__mu__ = {}

@@ -20,22 +20,23 @@ import time
 from functools import lru_cache
 from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 # import jscatter as js
+from ASAXS.Sphere_Uniform import ff_sphere_ml
 
-from numba import njit, prange
-@njit(parallel=True,cache=True)
-def ff_sphere_ml(q,R,rho):
-    Nlayers=len(R)
-    aff=np.ones_like(q)*complex(0,0)
-    ff=np.zeros_like(q)
-    for i in prange(len(q)):
-        fact = 0.0
-        rt = 0.0
-        for j in prange(1,Nlayers):
-            rt += R[j - 1]
-            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
-        aff[i] = fact
-        ff[i] = abs(fact) ** 2
-    return ff,aff
+# from numba import njit, prange
+# @njit(parallel=True,cache=True)
+# def ff_sphere_ml(q,R,rho):
+#     Nlayers=len(R)
+#     aff=np.ones_like(q)*complex(0,0)
+#     ff=np.zeros_like(q)
+#     for i in prange(len(q)):
+#         fact = 0.0
+#         rt = 0.0
+#         for j in prange(1,Nlayers):
+#             rt += R[j - 1]
+#             fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
+#         aff[i] = fact
+#         ff[i] = abs(fact) ** 2
+#     return ff,aff
 
 
 
@@ -115,6 +116,7 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
         self.__mpar__ = mpar  # If there is any multivalued parameter
         self.choices = {'dist': ['Gaussian', 'LogNormal'],'SF':['None','Hard-Sphere', 'Sticky-Sphere'],
                         'term':['SAXS-term','Cross-term','Resonant-term','Total'], 'NrDep': [True, False],'term':{'Total','SAXS-term','Cross-term','Resonant-term'}}  # If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__cf__ = Chemical_Formula()
         self.__fit__ = False
         self.output_params={'scaler_parameters':{}}
@@ -283,20 +285,19 @@ class Sphere_Double_Layer: #Please put the class name same as the function name
 
     @lru_cache(maxsize=10)
     def calc_Rdist(self, R, Rsig, dist, N):
+        """Calculate the radius distribution."""
         R = np.array(R)
         totalR = np.sum(R[:-1])
         if Rsig > 0.001:
-            fdist = eval(dist + '.' + dist + '(x=0.001, pos=totalR, wid=Rsig)')
             if dist == 'Gaussian':
                 rmin, rmax = max(0.001, totalR - 5 * Rsig), totalR + 5 * Rsig
                 dr = np.linspace(rmin, rmax, N)
             else:
                 rmin, rmax = max(-3, np.log(totalR) - 5 * Rsig), np.log(totalR) + 5 * Rsig
                 dr = np.logspace(rmin, rmax, N, base=np.exp(1.0))
+            fdist = eval(f'{dist}.{dist}(x=0.001, pos=totalR, wid=Rsig)')
             fdist.x = dr
-            rdist = fdist.y()
-            sumdist = np.sum(rdist)
-            rdist = rdist / sumdist
+            rdist = fdist.y() / np.sum(fdist.y())
             return dr, rdist, totalR
         else:
             return [totalR], [1.0], totalR

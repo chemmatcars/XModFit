@@ -6,9 +6,24 @@ sys.path.append(os.path.abspath('./'))
 sys.path.append(os.path.abspath('./Functions'))
 sys.path.append(os.path.abspath('./Fortran_routines/'))
 from utils import find_minmax
-from PeakFunctions import Gaussian, LogNormal
-from ff_sphere import ff_sphere, ff_sphere_ml
 from functools import lru_cache
+
+from numba import njit, prange
+
+@njit(parallel=True,cache=True)
+def ff_sphere_ml(q,R,rho):
+    Nlayers=len(R)
+    aff=np.ones_like(q)*complex(0,0)
+    ff=np.zeros_like(q)
+    for i in prange(len(q)):
+        fact = 0.0
+        rt = 0.0
+        for j in prange(1,Nlayers):
+            rt = rt + R[j - 1]
+            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
+        aff[i] = fact
+        ff[i] = abs(fact) ** 2
+    return ff,aff
 
 
 class ContinuousSphere:
@@ -37,7 +52,8 @@ class ContinuousSphere:
         self.N=N
         self.__mpar__=mpar
         self.__mkeys__ = list(self.__mpar__.keys())
-        self.choices={'dist':['Gaussian','LogNormal']} #Its not implemented yet
+        self.choices={'dist':['Gaussian','LogNormal']}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.output_params={'scaler_parameters':{}}
         self.init_params()
 

@@ -9,31 +9,28 @@ sys.path.append(os.path.abspath('./Fortran_routines'))
 ####Please do not remove lines above####
 
 ####Import your modules below if needed####
-# from FormFactors.Sphere import Sphere
-# from ff_sphere import ff_sphere_ml
-from Chemical_Formula import Chemical_Formula
-from PeakFunctions import LogNormal, Gaussian
 from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 from utils import find_minmax, calc_rho, create_steps
+from PeakFunctions import LogNormal, Gaussian
 from functools import lru_cache
-import time
 
 from numba import njit, prange
+njit(parallel=False, cache=True)
+def ff_sphere_ml(q, R, rho):
+    Nlayers = len(R)
+    aff = np.zeros_like(q, dtype=np.complex128)
+    ff = np.zeros_like(q)
 
-@njit(parallel=True,cache=True)
-def ff_sphere_ml(q,R,rho):
-    Nlayers=len(R)
-    aff=np.ones_like(q)*complex(0,0)
-    ff=np.zeros_like(q)
     for i in prange(len(q)):
         fact = 0.0
         rt = 0.0
-        for j in prange(1,Nlayers):
-            rt = rt + R[j - 1]
-            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
+        for j in range(1, Nlayers):
+            rt += R[j - 1]
+            q_rt = q[i] * rt
+            fact += (rho[j - 1] - rho[j]) * (np.sin(q_rt) - q_rt * np.cos(q_rt)) / q[i] ** 3
         aff[i] = fact
-        ff[i] = abs(fact) ** 2
-    return ff,aff
+        ff[i] = np.abs(fact) ** 2
+    return ff, aff
 
 
 
@@ -85,7 +82,6 @@ class Sphere_Uniform: #Please put the class name same as the function name
         self.Energy=Energy
         self.relement=relement
         self.NrDep=NrDep
-        #self.rhosol=rhosol
         self.error_factor=error_factor
         self.D=D
         self.phi=phi
@@ -96,6 +92,7 @@ class Sphere_Uniform: #Please put the class name same as the function name
         self.Rsig=Rsig
         self.choices={'dist':['Gaussian','LogNormal'],'NrDep':['True','False'],'SF':['None','Hard-Sphere', 'Sticky-Sphere'],
                       'term':['SAXS-term','Cross-term','Resonant-term','Total']} #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__fit__=False
         self.__mkeys__=list(self.__mpar__.keys())
         self.init_params()
@@ -121,73 +118,65 @@ class Sphere_Uniform: #Please put the class name same as the function name
                     for i in range(len(self.__mpar__[mkey][key])):
                         self.params.add('__%s_%s_%03d'%(mkey, key,i),value=self.__mpar__[mkey][key][i],vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
 
-
     @lru_cache(maxsize=10)
     def calc_Rdist(self, R, Rsig, dist, N):
+        """Calculate the radius distribution."""
         R = np.array(R)
         totalR = np.sum(R[:-1])
         if Rsig > 0.001:
-            fdist = eval(dist + '.' + dist + '(x=0.001, pos=totalR, wid=Rsig)')
             if dist == 'Gaussian':
                 rmin, rmax = max(0.001, totalR - 5 * Rsig), totalR + 5 * Rsig
                 dr = np.linspace(rmin, rmax, N)
             else:
                 rmin, rmax = max(-3, np.log(totalR) - 5 * Rsig), np.log(totalR) + 5 * Rsig
                 dr = np.logspace(rmin, rmax, N, base=np.exp(1.0))
+            fdist = eval(f'{dist}.{dist}(x=0.001, pos=totalR, wid=Rsig)')
             fdist.x = dr
-            rdist = fdist.y()
-            sumdist = np.sum(rdist)
-            rdist = rdist / sumdist
+            rdist = fdist.y() / np.sum(fdist.y())
             return dr, rdist, totalR
         else:
             return [totalR], [1.0], totalR
 
     @lru_cache(maxsize=10)
-    def new_sphere(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian',Np=10):
+    def new_sphere(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10):
         q = np.array(q)
         dr, rdist, totalR = self.calc_Rdist(R, Rsig, dist, Np)
-        form = np.zeros_like(q)
-        eiform = np.zeros_like(q)
-        aform = np.zeros_like(q)
-        cform = np.zeros_like(q)
-        pfac = 1.254e-23 #(4 * np.pi * 2.818e-5 * 1.0e-8) ** 2
+        pfac = 1.254e-23
+        form, eiform, aform, cform = np.zeros_like(q), np.zeros_like(q), np.zeros_like(q), np.zeros_like(q, dtype=np.complex128)
+
         for i in range(len(dr)):
             r = np.array(R) * (1 + (dr[i] - totalR) / totalR)
             ff, mff = ff_sphere_ml(q, r, rho)
-            form = form + rdist[i] * ff
-            eiff, meiff = ff_sphere_ml(q, r, eirho)
-            eiform = eiform + rdist[i] * eiff
+            form += rdist[i] * ff
+            eiff, _ = ff_sphere_ml(q, r, eirho)
             aff, maff = ff_sphere_ml(q, r, adensity)
-            aform = aform + rdist[i] * aff
-            cform = cform + rdist[i] * (meiff * maff.conjugate()+meiff.conjugate()*maff)
-        return pfac * form, pfac * eiform, pfac * aform, np.abs(pfac * cform)/2  # in cm^2
+            eiform += rdist[i] * eiff
+            aform += rdist[i] * aff
+            cform += rdist[i] * (mff * maff.conjugate() + mff.conjugate() * maff)
+
+        return pfac * form, pfac * eiform, pfac * aform, np.abs(pfac * cform) / 2
 
     @lru_cache(maxsize=2)
-    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian',Np=10,key='SAXS-term'):
-        form, eiform, aform, cform = self.new_sphere(q, R, Rsig, rho, eirho, adensity,dist=dist,Np=Np)
-        if key == 'SAXS-term':
-            return eiform
-        elif key == 'Resonant-term':
-            return aform
-        elif key == 'Cross-term':
-            return cform
-        elif key == 'Total':
-            return form
+    def new_sphere_dict(self, q, R, Rsig, rho, eirho, adensity, dist='Gaussian', Np=10):
+        form, eiform, aform, cform = self.new_sphere(q, R, Rsig, rho, eirho, adensity, dist=dist, Np=Np)
+        result={
+            'SAXS-term': eiform,
+            'Resonant-term': aform,
+            'Cross-term': cform,
+            'Total': form
+        }
+        return result
 
     def update_params(self):
-        mkey=self.__mkeys__[0]
-        key = 'Density'
-        Nmpar=len(self.__mpar__[mkey][key])
-        self.__density__ = [self.params['__%s_%s_%03d' % (mkey, key, i)].value for i in range(Nmpar)]
-        key = 'SolDensity'
-        self.__sol_density__ = [self.params['__%s_%s_%03d' % (mkey, key, i)].value for i in range(Nmpar)]
-        key = 'Rmoles'
-        self.__Rmoles__ = [self.params['__%s_%s_%03d' % (mkey, key, i)].value for i in range(Nmpar)]
-        key = 'R'
-        self.__R__ = [self.params['__%s_%s_%03d' % (mkey, key, i)].value for i in range(Nmpar)]
-        key = 'Material'
-        self.__material__ = [self.__mpar__[mkey][key][i] for i in range(Nmpar)]
-
+        """Update parameters based on fitting values."""
+        mkey = self.__mkeys__[0]
+        param_types = ['Density', 'SolDensity', 'Rmoles', 'R']
+        # print(list(self.params.keys()))
+        for key in param_types:
+            param_len = len(self.__mpar__[mkey][key])
+            setattr(self, f'__{key}__',
+                    [self.params[f'__{mkey}_{key}_{i:03d}'].value for i in range(param_len)])
+        self.__Material__ = [self.__mpar__[mkey]['Material'][i] for i in range(param_len)]
 
     def y(self):
         """
@@ -198,35 +187,33 @@ class Sphere_Uniform: #Please put the class name same as the function name
         self.output_params = {'scaler_parameters': {}}
         self.update_params()
         rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=tuple(self.__R__),
-                                                                      material=tuple(self.__material__),
+                                                                      material=tuple(self.__Material__),
                                                                       relement=self.relement,
-                                                                      density=tuple(self.__density__),
-                                                                      sol_density=tuple(self.__sol_density__),
+                                                                      density=tuple(self.__Density__),
+                                                                      sol_density=tuple(self.__SolDensity__),
                                                                       Energy=self.Energy, Rmoles=tuple(self.__Rmoles__),
                                                                       NrDep=self.NrDep)
         if type(self.x) == dict:
             sqf = {}
+            key='SAXS-term'
+            tsqf = self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__),
+                                                                   self.Rsig, tuple(rho), tuple(eirho),
+                                                                   tuple(adensity), dist=self.dist,Np=self.Np)  # in cm^-1
+            if self.SF is None:
+                struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
+            elif self.SF == 'Hard-Sphere':
+                struct = hard_sphere_sf(self.x[key], D=self.D, phi=self.phi)
+            else:
+                struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
             for key in self.x.keys():
-                sqf[key] = self.norm*1e-9 * 6.022e20 * self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__),
-                                                                       self.Rsig, tuple(rho), tuple(eirho),
-                                                                       tuple(adensity), key=key, dist=self.dist,Np=self.Np)  # in cm^-1
-                if self.SF is None:
-                    struct = np.ones_like(self.x[key])  # hard_sphere_sf(self.x[key], D = self.D, phi = 0.0)
-                elif self.SF == 'Hard-Sphere':
-                    struct = hard_sphere_sf(self.x[key], D=self.D, phi=self.phi)
-                else:
-                    struct = sticky_sphere_sf(self.x[key], D=self.D, phi=self.phi, U=self.U, delta=0.01)
                 if key == 'SAXS-term':
-                    sqf[key] = sqf[key] * struct + self.sbkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * tsqf[key] * struct + self.sbkg
                 if key == 'Cross-term':
-                    sqf[key] = sqf[key] * struct + self.cbkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * tsqf[key] * struct + self.cbkg
                 if key == 'Resonant-term':
-                    sqf[key] = sqf[key] * struct + self.abkg
+                    sqf[key] = self.norm*1e-9 * 6.022e20 * tsqf[key] * struct + self.abkg
             key1 = 'Total'
-            total = self.norm*1e-9 * 6.022e20 * struct * self.new_sphere_dict(tuple(self.x[key]), tuple(self.__R__),
-                                                                         self.Rsig, tuple(rho), tuple(eirho),
-                                                                         tuple(adensity),
-                                                                         key=key1,dist=self.dist,Np=self.Np) + self.sbkg  # in cm^-1
+            total = self.norm*1e-9 * 6.022e20 * struct * tsqf[key1] + self.sbkg  # in cm^-1
             if not self.__fit__:
                 dr, rdist, totalR = self.calc_Rdist(tuple(self.__R__), self.Rsig, self.dist, self.Np)
                 self.output_params['Distribution'] = {'x': dr, 'y': rdist, 'names':['R (Angs)','P(R)']}
@@ -258,7 +245,7 @@ class Sphere_Uniform: #Please put the class name same as the function name
                                                           'names': ['q (Angs<sup>-1</sup>)','S(q)']}
                 xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__Rmoles__[:-1])
                 self.output_params['Rmoles_radial'] = {'x': xtmp, 'y': ytmp, 'names':['r (Angs)', 'Rmoles']}
-                xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__density__[:-1])
+                xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__Density__[:-1])
                 self.output_params['Density_radial'] = {'x': xtmp, 'y': ytmp, 'names':['r (Angs)','Density (g/cm<sup>3</sup>)']}
         else:
             if self.SF is None:
@@ -311,7 +298,7 @@ class Sphere_Uniform: #Please put the class name same as the function name
                 xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__Rmoles__[:-1])
                 self.output_params['Rmoles_radial'] = {'x': xtmp, 'y': ytmp,
                                                        'names':['r (Angs)', 'Rmoles']}
-                xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__density__[:-1])
+                xtmp, ytmp = create_steps(x=self.__R__[:-1], y=self.__Density__[:-1])
                 self.output_params['Density_radial'] = {'x': xtmp, 'y': ytmp,
                                                         'names':['r (Angs)', 'Density (g/cm<sup>3</sup>)']}
             sqf = self.output_params[self.term]['y']

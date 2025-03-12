@@ -11,30 +11,7 @@ from functools import lru_cache
 
 ####Import your modules below if needed####
 # from xr_ref import parratt
-from numba import njit, prange
-@njit(parallel=True,cache=True)
-def parratt_numba(q,lam,d,rho,beta):
-    ref=np.ones_like(q)
-    refc=np.ones_like(q)*complex(1.0,0.0)
-    f1=16.0*np.pi*2.818e-5
-    f2=-32.0*np.pi**2/lam**2
-    Nl=len(d)
-    for j in range(len(q)):
-        r=complex(0.0,0.0)
-        for it in range(1,Nl):
-            i=Nl-it
-            qc1=f1*(rho[i-1]-rho[0])
-            qc2=f1*(rho[i]-rho[0])
-            k1=np.sqrt(complex(q[j]**2-qc1,f2*beta[i-1]))
-            k2=np.sqrt(complex(q[j]**2-qc2,f2*beta[i]))
-            X=(k1-k2)/(k1+k2)
-            fact1=complex(np.cos(k2.real*d[i]),np.sin(k2.real*d[i]))
-            fact2=np.exp(-k2.imag*d[i])
-            fact=fact1*fact2
-            r=(X+r*fact)/(1.0+X*r*fact)
-        ref[j]=np.abs(r)**2
-        refc[j]=r
-    return ref,r
+from XRR.XLayers import parratt_numba
 
 class MultiSphereAtInterface: #Please put the class name same as the function name
     def __init__(self,x=0.1,E=10.0,Rc=10.0,rhoc=4.68,Tsh=20.0,rhosh=0.0,rhoup=0.333,rhodown=0.38,sig=3.0,
@@ -77,6 +54,7 @@ class MultiSphereAtInterface: #Please put the class name same as the function na
         self.rrf=rrf
         self.qoff=qoff
         self.choices={'rrf':[True,False]}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__fit__=False
         self.__mkeys__=list(self.__mpar__.keys())
         self.output_params = {'scaler_parameters': {}}

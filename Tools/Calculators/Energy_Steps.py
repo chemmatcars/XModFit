@@ -25,7 +25,10 @@ class Energy_Steps(QMainWindow):
 
     def initialize_UI(self):
         self.doubleValidator=QDoubleValidator()
-        self.elements = self.xrdb.atomic_symbols
+        try:
+            self.elements = self.xrdb.atomic_symbols
+        except:
+            self.elements = [self.xrdb.symbol(i) for i in range(1,99)]
         self.elementComboBox.addItems(
             [str(self.xrdb.atomic_number(element)) + ': ' + element for element in self.elements])
         self.element=self.elementComboBox.currentText().split(': ')[1]

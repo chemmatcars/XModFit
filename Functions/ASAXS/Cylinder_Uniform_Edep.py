@@ -20,45 +20,8 @@ from numba import njit, prange
 from scipy.special import j1
 import numba_scipy.special
 
-@njit(parallel=True,cache=True)
-def cylinder_ml_asaxs(q, H, R, HvvgtR, rho, eirho, adensity, Nalf):
-    #HvvgtR: H>>R means infinitely long cylinder
-    pi = 3.14159
-    dalf = pi/Nalf/2
-    fft = np.zeros_like(q)
-    ffs = np.zeros_like(q)
-    ffc = np.zeros_like(q)
-    ffr = np.zeros_like(q)
-    Nlayers = len(R)
-    tR = np.cumsum(R)
-    V = pi*tR[:-1]**2*H
-    drho = 2.0 * np.diff(np.array(rho))*V
-    deirho = 2.0 * np.diff(np.array(eirho))*V
-    dadensity = 2.0 * np.diff(np.array(adensity))*V
-    for i in prange(len(q)):
-        for ialf in prange(Nalf):
-            alf = ialf * dalf + 1e-6
-            tft = np.complex(0.0, 0.0)
-            tfs = 0.0
-            tfr = 0.0
-            for k in prange(Nlayers-1):
-                qh = q[i] * H * np.cos(alf) / 2
-                fach = (1.0 - HvvgtR) * np.sin(qh) / qh + HvvgtR * np.cos(qh - pi / 4.0) * np.sqrt(2 / pi / qh)
-                qr = q[i] * tR[k] * np.sin(alf)
-                facR = j1(qr) / qr
-                fac = fach * facR
-                tft += drho[k] * fac
-                tfs += deirho[k] * fac
-                tfr += dadensity[k] * fac
-            fft[i] += np.abs(tft) ** 2 * np.sin(alf)
-            ffs[i] += tfs ** 2 * np.sin(alf)
-            ffc[i] += tfs * tfr * np.sin(alf)
-            ffr[i] += tfr ** 2 * np.sin(alf)
-        fft[i] *= dalf
-        ffs[i] *= dalf
-        ffc[i] *= dalf
-        ffr[i] *= dalf
-    return fft,ffs,ffc,ffr
+from ASAXS.Cylinder_Uniform import cylinder_ml_asaxs
+
 
 class Cylinder_Uniform_Edep: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, dist='Gaussian', Energy=None, Energy_Offset=0.0, relement='Au', NrDep='False', H=1.0, HvvgtR=False,
@@ -130,6 +93,7 @@ class Cylinder_Uniform_Edep: #Please put the class name same as the function nam
                                'Total'],
                       'normQ': [0, 1, 2, 3, 4]
                       } #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__cf__=Chemical_Formula()
         self.__fit__=False
         self.output_params={'scaler_parameters':{}}
@@ -189,7 +153,7 @@ class Cylinder_Uniform_Edep: #Please put the class name same as the function nam
         for i in range(len(dr)):
             r = np.array(R) * (1 + (dr[i] - totalR) / totalR)
             # fft, ffs, ffc, ffr = ff_cylinder_ml_asaxs(q, H, r, rho, eirho, adensity, Nalf)
-            fft, ffs, ffc, ffr = cylinder_ml_asaxs(q, H, r, HvvgtR, rho, eirho, adensity, Nalf)
+            fft, ffs, ffc, ffr = cylinder_ml_asaxs(q, H, tuple(r), HvvgtR, rho, eirho, adensity, Nalf)
             form = form + rdist[i] * fft
             # eiform = eiform + rdist[i] * ffs
             # aform = aform + rdist[i] * ffr
@@ -280,8 +244,7 @@ class Cylinder_Uniform_Edep: #Please put the class name same as the function nam
                                                                                'yerr': np.sqrt(
                                                                                    normsignal) * minsignal * self.error_factor,
                                                                                'meta': meta,
-                                                                               'names': ['q (Angs<sup>-1</sup>)',
-                                                                                         'I (cm<sup>-1</sup>)']}
+                                                                               'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
 
         else:
             if self.Energy is not None:
@@ -321,11 +284,13 @@ class Cylinder_Uniform_Edep: #Please put the class name same as the function nam
                     self.output_params['simulated_w_err_%.4fkeV' % self.Energy] = {'x': self.x, 'y': sqerr * minsignal,
                                                                                    'yerr': np.sqrt(
                                                                                        normsignal) * minsignal * self.error_factor,
-                                                                                   'meta': meta}
+                                                                                   'meta': meta,
+                                                                                   'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
                 else:
                     self.output_params['simulated_w_err'] = {'x': self.x, 'y': sqerr * minsignal,
                                                              'yerr': np.sqrt(normsignal) * minsignal * self.error_factor,
-                                                             'meta': meta}
+                                                             'meta': meta,
+                                                             'names':['q (Angs<sup>-1</sup>)', 'I (cm<sup>-1</sup>)', 'Ierr (cm<sup>-1</sup>)']}
                 self.output_params['Total'] = {'x': self.x, 'y': sqf}
                 self.output_params['rho_r'] = {'x': rhor[:, 0], 'y': rhor[:, 1],
                                                'names': ['r (Angs)', 'Electron Density (el/Angs^3)']}

@@ -20,103 +20,7 @@ from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 from utils import find_minmax, calc_rho, create_steps
 
 from numba import njit, prange
-from scipy.special import j1
-import numba_scipy.special
-
-@njit(parallel=True,cache=True, fastmath=True)
-def parallelopiped_ml(q, L, B, H, rho, Nphi, Npsi, HggtLB=True):
-    if HggtLB:
-        tfac=2*np.pi/q/H
-        Nphi=1
-        dphi=np.pi
-        Nqt=-1.0
-    else:
-        tfac=np.ones_like(q)
-        dphi=np.pi/Nphi
-        Nqt=1.0
-    dpsi=2.0*np.pi/Npsi
-    fft = np.zeros_like(q)
-    L=np.cumsum(L)
-    B=np.cumsum(B)
-    Nlayers=len(L)
-    V = L[:-1]*B[:-1]*H
-    drho=2.0*np.diff(np.array(rho))*V
-    dphidpsi=dphi*dpsi
-    for i in prange(len(q)):
-        for iphi in prange(0, Nphi):
-            phi = iphi*dphi
-            qh = q[i]*H*np.cos(phi)/2.0
-            shfac=((1.0-Nqt)+(1.0+Nqt)*np.sinc(qh/np.pi))/2.0
-            sphi=((1.0-Nqt)+(1.0+Nqt)*np.sin(phi))/2.0
-            qt = q[i]*sphi/2.0#((1.0-Nqt)+(1.0+Nqt)*q[i]*np.sin(phi)/2.0)/2.0
-            for ipsi in prange(0, Npsi):
-                psi = ipsi*dpsi
-                tft = np.complex(0.0, 0.0)
-                sc=qt*np.cos(psi)
-                ss=qt*np.sin(psi)
-                for k in prange(Nlayers-1):
-                    ql=L[k]*sc
-                    qb=B[k]*ss
-                    fac=np.sinc(ql/np.pi)*np.sinc(qb/np.pi)*shfac
-                    tft += drho[k] * fac
-                fft[i] += np.abs(tft) ** 2 * sphi
-    fft*=dphidpsi
-    return fft*tfac
-
-@njit(parallel=True,cache=True, fastmath=True)
-def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi, HggtLB):
-    if HggtLB:
-        tfac=2*np.pi/q/H
-        Nphi=1
-        dphi=np.pi
-        Nqt=-1.0
-    else:
-        tfac=np.ones_like(q)
-        dphi=np.pi/Nphi
-        Nqt=1.0
-    dpsi=2.0*np.pi/Npsi
-    fft = np.zeros_like(q)
-    ffs = np.zeros_like(q)
-    ffc = np.zeros_like(q)
-    ffr = np.zeros_like(q)
-    L=np.cumsum(L)
-    B=np.cumsum(B)
-    Nlayers=len(L)
-    V = L[:-1]*B[:-1]*H
-    drho=2.0*np.diff(np.array(rho))*V
-    deirho=2.0*np.diff(np.array(eirho))*V
-    dadensity=2.0*np.diff(np.array(adensity))*V
-    dphidpsi=dphi*dpsi
-    for i in prange(len(q)):
-        for iphi in prange(0, Nphi+1):
-            phi = iphi*dphi
-            qh = q[i]*H*np.cos(phi)/2.0
-            shfac = ((1.0 - Nqt) + (1.0 + Nqt) * np.sinc(qh / np.pi)) / 2.0
-            sphi=((1.0-Nqt)+(1.0+Nqt)*np.sin(phi))/2.0
-            qsphi=q[i]*sphi/2.0
-            for ipsi in prange(0, Npsi+1):
-                psi = ipsi*dpsi
-                tft = np.complex(0.0, 0.0)
-                tfs = 0.0
-                tfr = 0.0
-                sc=qsphi*np.cos(psi)
-                ss=qsphi*np.sin(psi)
-                for k in prange(Nlayers-1):
-                    ql=L[k]*sc
-                    qb=B[k]*ss
-                    fac=np.sinc(ql/np.pi)*np.sinc(qb/np.pi)*shfac
-                    tft += drho[k] * fac
-                    tfs += deirho[k] * fac
-                    tfr += dadensity[k] * fac
-                fft[i] +=  np.abs(tft)**2* sphi
-                ffs[i] +=  tfs**2* sphi
-                ffc[i] +=  tfs*tfr*sphi
-                ffr[i] +=  tfr**2*sphi
-    fft*=dphidpsi
-    ffs*=dphidpsi
-    ffc*=dphidpsi
-    ffr*=dphidpsi
-    return fft*tfac,ffs*tfac,ffc*tfac,ffr*tfac
+from ASAXS.Parallelepiped_Uniform import parallelopiped_ml_asaxs
 
 class Parallelepiped_Uniform_2: #Please put the class name same as the function name
     def __init__(self, x=0, Np=10, error_factor=1.0, dist='LogNormal', Energy=None, relement='Au', NrDep='True',term='Total',
@@ -187,6 +91,7 @@ class Parallelepiped_Uniform_2: #Please put the class name same as the function 
                       'normQ': [0, 1, 2, 3, 4],
                       'term': ['SAXS-term', 'Cross-term', 'Resonant-term', 'Total']
                       } #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__cf__=Chemical_Formula()
         self.__fit__=False
         self.output_params={'scaler_parameters':{}}

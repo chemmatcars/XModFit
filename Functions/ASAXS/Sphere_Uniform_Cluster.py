@@ -1,4 +1,5 @@
 ####Please do not remove lines below####
+from Functions.ASAXS.Sphere_Uniform_Edep import ff_sphere_ml
 from lmfit import Parameters
 import numpy as np
 import sys
@@ -16,24 +17,26 @@ from PeakFunctions import LogNormal, Gaussian
 from Structure_Factors import hard_sphere_sf, sticky_sphere_sf
 from utils import find_minmax, calc_rho, create_steps
 from functools import lru_cache
-import time
 
-from numba import njit, prange
+from ASAXS.Sphere_Uniform import ff_sphere_ml
 
-@njit(parallel=True,cache=True)
-def ff_sphere_ml(q,R,rho):
-    Nlayers=len(R)
-    aff=np.ones_like(q)*complex(0,0)
-    ff=np.zeros_like(q)
-    for i in prange(len(q)):
-        fact = 0.0
-        rt = 0.0
-        for j in prange(1,Nlayers):
-            rt = rt + R[j - 1]
-            fact += (rho[j - 1] - rho[j]) * (np.sin(q[i] * rt) - q[i] * rt * np.cos(q[i] * rt)) / q[i] ** 3
-        aff[i] = fact
-        ff[i] = abs(fact) ** 2
-    return ff,aff
+# #optimized code
+# @njit(parallel=True, cache=True)
+# def ff_sphere_ml(q, R, rho):
+#     Nlayers = len(R)
+#     aff = np.zeros_like(q, dtype=np.complex128)
+#     ff = np.zeros_like(q)
+#
+#     for i in prange(len(q)):
+#         fact = 0.0
+#         rt = 0.0
+#         for j in range(1, Nlayers):
+#             rt += R[j - 1]
+#             q_rt = q[i] * rt
+#             fact += (rho[j - 1] - rho[j]) * (np.sin(q_rt) - q_rt * np.cos(q_rt)) / q[i] ** 3
+#         aff[i] = fact
+#         ff[i] = np.abs(fact) ** 2
+#     return ff, aff
 
 
 
@@ -100,6 +103,7 @@ class Sphere_Uniform_Cluster: #Please put the class name same as the function na
         self.Rsig=Rsig
         self.choices={'dist':['Gaussian','LogNormal'],'NrDep':['True','False'],'SF':['None','Hard-Sphere', 'Sticky-Sphere'],
                       'term':['SAXS-term','Cross-term','Resonant-term','Total']} #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__fit__=False
         self.__mkeys__=list(self.__mpar__.keys())
         self.init_params()
@@ -127,23 +131,21 @@ class Sphere_Uniform_Cluster: #Please put the class name same as the function na
                     for i in range(len(self.__mpar__[mkey][key])):
                         self.params.add('__%s_%s_%03d'%(mkey, key,i),value=self.__mpar__[mkey][key][i],vary=0,min=-np.inf,max=np.inf,expr=None,brute_step=0.1)
 
-
     @lru_cache(maxsize=10)
     def calc_Rdist(self, R, Rsig, dist, N):
+        """Calculate the radius distribution."""
         R = np.array(R)
         totalR = np.sum(R[:-1])
         if Rsig > 0.001:
-            fdist = eval(dist + '.' + dist + '(x=0.001, pos=totalR, wid=Rsig)')
             if dist == 'Gaussian':
                 rmin, rmax = max(0.001, totalR - 5 * Rsig), totalR + 5 * Rsig
                 dr = np.linspace(rmin, rmax, N)
             else:
                 rmin, rmax = max(-3, np.log(totalR) - 5 * Rsig), np.log(totalR) + 5 * Rsig
                 dr = np.logspace(rmin, rmax, N, base=np.exp(1.0))
+            fdist = eval(f'{dist}.{dist}(x=0.001, pos=totalR, wid=Rsig)')
             fdist.x = dr
-            rdist = fdist.y()
-            sumdist = np.sum(rdist)
-            rdist = rdist / sumdist
+            rdist = fdist.y() / np.sum(fdist.y())
             return dr, rdist, totalR
         else:
             return [totalR], [1.0], totalR

@@ -1,0 +1,47 @@
+#File saved on Tue Sep 10 16:53:54 2024
+#Category: XRR
+#Function: XLayersPDB
+#Xrange=np.linspace(0.001,1.0,200)
+#Fit Range=0.027447:0.550447
+#Fit Method=Levenberg-Marquardt
+#Fit Scale=Linear
+#Fit Iterations=1000
+#Fixed Parameters:
+#param	value
+fname	./Data/tim3_hmmm_ext_all_bestframe.pdb
+E	10.0
+dz	0.5
+fslice	0.5
+rrf	True
+fix_sig	True
+#Single fitting parameters:
+#param	value	fit	min	max	expr	brute_step
+qoff	3.875214e-05	1	-inf	inf	None	0.1
+yscale	1.000000e+00	0	-inf	inf	None	0.1
+bkg	0.000000e+00	0	0	1	None	0.1
+theta	2.480711e+01	1	-inf	inf	None	1
+phi	1.371157e+02	1	-inf	inf	None	1
+protins	1.530436e+01	1	-inf	inf	None	0.1
+cov	9.066225e-02	1	0	1	None	0.1
+#Multiple fitting parameters:
+#param	value	fit	min	max	expr	brute_step
+__Model_Layers_000	top
+__Model_Layers_001	tail
+__Model_Layers_002	head
+__Model_Layers_003	bottom
+__Model_d_000	0.000000e+00	0	0.0	inf	None	0.05
+__Model_d_001	1.183798e+01	1	0.0	inf	None	0.05
+__Model_d_002	9.841533e+00	1	0.0	inf	None	0.05
+__Model_d_003	1.000000e+00	0	0.0	inf	None	0.05
+__Model_rho_000	0.000000e+00	0	0.0	inf	None	0.05
+__Model_rho_001	2.383146e-01	1	0.0	inf	None	0.05
+__Model_rho_002	4.477883e-01	1	0.0	inf	None	0.05
+__Model_rho_003	3.340000e-01	0	0.0	inf	None	0.05
+__Model_mu_000	0.000000e+00	0	0.0	inf	None	0.05
+__Model_mu_001	0.000000e+00	0	0.0	inf	None	0.05
+__Model_mu_002	0.000000e+00	0	0.0	inf	None	0.05
+__Model_mu_003	0.000000e+00	0	0.0	inf	None	0.05
+__Model_sig_000	3.400000e+00	0	0.0	inf	None	0.05
+__Model_sig_001	3.400000e+00	0	0.0	inf	None	0.05
+__Model_sig_002	3.400000e+00	0	0.0	inf	__Model_sig_001	0.05
+__Model_sig_003	3.400000e+00	0	0.0	inf	__Model_sig_001	0.05

@@ -16,6 +16,7 @@ class Fit(QObject):
         self.params=self.func.__dict__
         self.func.init_params()
         self.fit_params=self.func.params
+        self.function_calls=0
         self.fitter=None
         self.result=None
         self.Niter=0
@@ -78,10 +79,10 @@ class Fit(QObject):
     #     self.yfit=self.func.y()
     #     return self.yfit
     
-    def residual(self,params,fit_scale):
+    def residual(self, fit_params, fit_scale):
         for key in self.fit_params.keys():
-            self.params[key]=params[key].value
-            self.fit_params[key].value=params[key].value
+            self.params[key]=fit_params[key].value
+            self.fit_params[key].value=fit_params[key].value
         self.__fit__=True
         yfit=self.evaluate()
         if type(yfit)==dict:
@@ -118,8 +119,36 @@ class Fit(QObject):
             else:
                 y = (data-fit)/err
         self.Niter+=1
-        self.functionCalled.emit(params, self.Niter, y, fit_scale)
+        self.functionCalled.emit(fit_params, self.Niter, y, fit_scale)
         return y
+
+    def log_likelihood(self, fit_params, fit_scale):
+        residuals = self.residual(fit_params, fit_scale)
+        return -0.5 * np.sum(residuals**2)  # + np.log(sigma2))
+
+    def log_prior(self, paramkeys):
+        window = True
+        for key in paramkeys:
+            window = window and (self.func.params[key].min < self.func.params[key].value < self.func.params[key].max)
+        if window:
+            return 0.0
+        return -np.inf
+
+    def log_probability(self, fit_params, fit_keys, fit_scale):
+        """
+        Calculates logarithm of the Chisqr probablity distribution
+        :param fit_params: list of values for all the fitting parameters
+        :param fit_keys:  list of names/keys of fitting parameters
+        :param fit_scale:  scale used for fitting between ['Linear', 'Log', 'Log w/o error', 'Linear w/o error']
+        :return:
+        """
+        for i, key in enumerate(fit_keys):
+            self.func.params[key].value = fit_params[i]
+            self.fit_params[key].value=fit_params[i]
+        lp = self.log_prior(fit_keys)
+        if not np.isfinite(lp):
+            return -np.inf
+        return lp + self.log_likelihood(self.fit_params, fit_scale)
         
     def callback(self,params,iterations,residual,fit_scale):
         """
@@ -171,19 +200,25 @@ class Fit(QObject):
     def set_emcee_minimizer(self,fit_scale='Linear',emcee_walkers=100, emcee_steps=100, emcee_cores=1,
                             emcee_burn=0, reuse_sampler=False, emcee_thin=1,backend=None):
 
+        funcname = type(self.func).__name__
+        if funcname=='XLayersPDB':
+            fiterr = np.array([self.result.params[key].stderr / self.result.params[key].value
+                               for key in self.result.params.keys() if self.result.params[key].vary == 1])
+        else:
+            fiterr = 0
         self.emcee_params = self.result.params.copy()
         if 'w/o' in fit_scale:
             self.emcee_params.add('__lnsigma', value=-1.0, vary=True, min=np.log(0.001), max=np.log(2.0))
             fitter = Minimizer(self.residual, self.emcee_params, fcn_args=(fit_scale,),
                            iter_cb=self.callback,
                            nan_policy='raise', burn=emcee_burn, steps=emcee_steps, thin=emcee_thin,
-                           is_weighted=False, backend=backend,
+                           is_weighted=False, backend=backend, fiterr=fiterr, funcname=funcname,
                            nwalkers=emcee_walkers, workers=emcee_cores, reuse_sampler=reuse_sampler,
                            run_mcmc_kwargs={'store':True})
         else:
             fitter = Minimizer(self.residual, self.emcee_params, fcn_args=(fit_scale,), iter_cb=self.callback,
                            nan_policy='raise', burn=emcee_burn, steps=emcee_steps, thin=emcee_thin,
-                           is_weighted=True, backend=backend,
+                           is_weighted=True, backend=backend, fiterr=fiterr, funcname=funcname,
                            nwalkers=emcee_walkers, workers=emcee_cores, reuse_sampler=reuse_sampler,
                            run_mcmc_kwargs={'store':True})
         return fitter

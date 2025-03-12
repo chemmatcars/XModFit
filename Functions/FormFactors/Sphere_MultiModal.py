@@ -45,6 +45,7 @@ class Sphere_MultiModal:
         self.__mpar__=mpar
         self.__mkeys__=list(self.__mpar__.keys())
         self.choices={'dist':['Gaussian','LogNormal','Weibull']}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.init_params()
         self.output_params = {'scaler_parameters': {}}
 

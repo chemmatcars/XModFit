@@ -43,6 +43,7 @@ class Rod_Sphere: #Please put the class name same as the function name
         self.N=N
         self.__mpar__=mpar
         self.choices={'dist':['Gaussian','LogNormal']}
+        self.filepaths = {}  # If a parameter is a filename with path
         self.output_params={'scaler_parameters':{}}
 
 

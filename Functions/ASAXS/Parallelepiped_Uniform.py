@@ -20,7 +20,7 @@ from numba import njit, prange
 from scipy.special import j1
 import numba_scipy.special
 
-@njit(parallel=True, cache=True, fastmath=True)
+@njit(parallel=False, cache=True, fastmath=True)
 def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi, HggtLB):
     if HggtLB:
         tfac=2*np.pi/q/H
@@ -53,7 +53,7 @@ def parallelopiped_ml_asaxs(q, L, B, H, rho, eirho, adensity, Nphi, Npsi, HggtLB
             qsphi=q[i]*sphi/2.0
             for ipsi in prange(0, Npsi+1):
                 psi = ipsi*dpsi
-                tft = np.complex(0.0, 0.0)
+                tft = 0.0j
                 tfs = 0.0
                 tfr = 0.0
                 sc=qsphi*np.cos(psi)
@@ -149,6 +149,7 @@ class Parallelepiped_Uniform: #Please put the class name same as the function na
                       'term': ['SAXS-term', 'Cross-term', 'Resonant-term', 'Total'],
                       'HggtLB':['True','False']
                       } #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.__cf__=Chemical_Formula()
         self.__fit__=False
         self.output_params={'scaler_parameters':{}}
@@ -258,7 +259,6 @@ class Parallelepiped_Uniform: #Please put the class name same as the function na
         self.__B__=np.array(self.__Thickness__)*2 #This is done to convert thickness of the layer to the total Breadth of the parallelopiped
         self.__L__[0]=self.L
         self.__B__[0]=self.B
-        print(self.__L__,self.__B__)
         rho, eirho, adensity, rhor, eirhor, adensityr, cdensityr = calc_rho(R=tuple(self.__L__), material=tuple(self.__material__),
                                                                  relement=self.relement,
                                                                  density=tuple(self.__density__),

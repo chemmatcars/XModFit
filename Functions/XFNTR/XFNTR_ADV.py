@@ -14,7 +14,7 @@ sys.path.append(os.path.abspath('./Fortran_rountines'))
 ####Please do not remove lines above####
 
 ####Import your modules below if needed####
-
+from mendeleev import get_all_elements
 
 
 class XFNTR_ADV: #Please put the class name same as the function name
@@ -84,9 +84,13 @@ class XFNTR_ADV: #Please put the class name same as the function name
         self.topextra = topextra
         self.botextra = botextra
         #self.ion_depth = ion_depth
-        elelist = xdb.atomic_symbols
+        try:
+            elelist = [xdb.symbol(i) for i in range(1,100)]
+        except: #For campatiblity with older versions
+            elelist = xdb.atomic_symbols
         linelist = list(xdb.xray_lines(98).keys())
         self.choices={'element':elelist,'line': linelist, 'beam_profile':['Uniform', 'Gaussian'], 'x_axis':['Qz', 'sh']} #If there are choices available for any fixed parameters
+        self.filepaths = {}  # If a parameter is a filename with path
         self.output_params = {}
         self.init_params()
         self.__fit__=False
